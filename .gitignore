@@ -2,6 +2,7 @@
 .venv/
 venv/
 env/
+ENV/
 
 # Python
 __pycache__/
@@ -12,6 +13,10 @@ __pycache__/
 dist/
 build/
 *.whl
+*.so
+*.pyd
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Environment variables
 .env
@@ -24,10 +29,14 @@ build/
 *.swp
 *.swo
 *~
+.project
+.settings/
 
 # OS files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Testing / Linting
 .pytest_cache/
@@ -35,7 +44,10 @@ Thumbs.db
 .mypy_cache/
 .coverage
 htmlcov/
+coverage.xml
 *.junit.xml
+.tox/
+.nox/
 
 # Data
 data/
@@ -43,8 +55,15 @@ data/
 # Archive
 archive/
 
-# Claude
+# Local tooling config
 .claude/
 
 # Docker
 *.log
+
+# Distribution / Packaging
+*.tar.gz
+*.zip
+
+# Jupyter
+.ipynb_checkpoints/
