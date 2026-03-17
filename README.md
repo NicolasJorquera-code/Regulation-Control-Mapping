@@ -1,0 +1,213 @@
+# ControlNexus
+
+An intelligent internal controls management system that identifies gaps in financial control ecosystems and generates remediation controls using a multi-agent LLM pipeline.
+
+## Overview
+
+ControlNexus operates in three layers:
+
+1. **Analysis** -- Ingests existing control populations from Excel, runs 4 deterministic scanners (regulatory coverage, ecosystem balance, frequency coherence, evidence sufficiency), and produces a weighted gap report.
+2. **Dashboard** -- Streamlit-based HITL (Human-in-the-Loop) interface for reviewing gaps, accepting remediation targets, testing individual agents, and viewing evaluation reports.
+3. **Remediation** -- LangGraph-orchestrated multi-agent pipeline that generates new controls via SpecAgent, NarrativeAgent, EnricherAgent with deterministic validation, adversarial review, and deduplication.
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- (Optional) An LLM API key for production-quality narrative generation
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repo-url> && cd ControlNexus
+
+# Create virtual environment
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+# Install with dev dependencies
+pip install -e ".[dev]"
+```
+
+### Configuration
+
+```bash
+# Copy and edit environment variables
+cp .env.example .env
+```
+
+Supported LLM providers (configure one in `.env`):
+
+| Provider | Variables |
+|----------|-----------|
+| IBM Cloud AI (ICA) | `ICA_BASE_URL`, `ICA_API_KEY`, `ICA_MODEL` |
+| OpenAI | `OPENAI_API_KEY`, `OPENAI_MODEL` |
+| Anthropic | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` |
+
+> **Note:** All agents have deterministic fallback paths. The system runs fully without LLM credentials -- LLM is only needed for production-quality control narrative generation.
+
+### Run the Dashboard
+
+```bash
+streamlit run src/controlnexus/ui/app.py
+```
+
+Opens at `http://localhost:8501` with four tabs:
+- **Analysis** -- Upload Excel, run gap analysis, view gap dashboard
+- **Playground** -- Select and test any registered agent interactively
+- **Evaluation** -- View quality scores (faithfulness, completeness, diversity, gap closure)
+- **ControlForge** -- Browse config profiles, explore the control taxonomy, and run the control generation pipeline
+
+### Run Tests
+
+```bash
+# Full test suite (258 tests)
+pytest tests/ -v
+
+# Lint
+ruff check src/ tests/
+
+# Type check
+mypy src/controlnexus/ --ignore-missing-imports
+```
+
+### Docker
+
+```bash
+docker build -t controlnexus .
+docker run -p 8501:8501 --env-file .env controlnexus
+```
+
+## Project Structure
+
+```
+src/controlnexus/
+  core/           Models, state, config, constants, transport
+  agents/         SpecAgent, NarrativeAgent, EnricherAgent,
+                  AdversarialReviewer, DifferentiationAgent
+  analysis/       Excel ingest, 4 scanners, analysis pipeline
+  validation/     6-rule deterministic validator
+  graphs/         LangGraph state definitions + analysis/remediation graphs
+  hierarchy/      APQC hierarchy parser (Excel/CSV) + scope selection
+  pipeline/       Async orchestrator for control generation (3-phase)
+  remediation/    Planner, 4 gap-type path handlers
+  memory/         ChromaDB vector store + embedder protocol
+  tools/          5 function-calling tools + LangGraph ToolNode
+  evaluation/     4-dimension scoring harness
+  export/         Excel export for FinalControlRecord
+  ui/             Streamlit dashboard (4 tabs)
+
+config/
+  taxonomy.yaml             Control type taxonomy
+  standards.yaml            5W standards, phrase bank, quality ratings
+  placement_methods.yaml    Placement + method taxonomy
+  sections/section_*.yaml   Per-section profiles (13 sections)
+
+tests/                      258 tests (unit + integration + e2e)
+```
+
+## Data Flow
+
+### Gap Analysis (Analysis Tab)
+
+```
+Excel Upload --> ingest_excel() --> FinalControlRecord[]
+    --> 4 scanners (regulatory, balance, frequency, evidence)
+    --> GapReport (weighted score 0-100)
+    --> plan_assignments() --> route_assignment()
+    --> SpecAgent --> NarrativeAgent --> Validator (retry <= 3)
+    --> EnricherAgent --> quality gate --> dedup check
+    --> FinalControlRecord[] --> export_to_excel()
+    --> run_eval() --> EvalReport (4 dimensions)
+```
+
+### Control Generation (ControlForge Tab)
+
+```
+APQC Template (Excel) --> load_apqc_hierarchy() --> HierarchyNode[]
+    --> select_scope(sections) --> leaf nodes
+    --> Orchestrator.execute_planning()
+        Phase 1: Deterministic defaults (type, placement, BU, 5W)
+        Phase 2: Optional async LLM enrichment (Spec/Narrative/Enricher)
+        Phase 3: Merge + assign CTRL IDs --> FinalControlRecord[]
+    --> export_to_excel()
+```
+
+## Programmatic Usage
+
+### Gap Analysis
+
+```python
+from pathlib import Path
+from controlnexus.analysis.ingest import ingest_excel
+from controlnexus.analysis.pipeline import run_analysis
+from controlnexus.core.config import load_all_section_profiles
+
+controls = ingest_excel(Path("data/my_controls.xlsx"))
+profiles = load_all_section_profiles(Path("config"))
+gap_report = run_analysis(controls, profiles)
+
+print(f"Score: {gap_report.overall_score}/100")
+print(f"Summary: {gap_report.summary}")
+```
+
+### Control Generation
+
+```python
+import asyncio
+from pathlib import Path
+from controlnexus.core.models import RunConfig, ScopeConfig, SizingConfig
+from controlnexus.pipeline import Orchestrator
+
+run_config = RunConfig(
+    run_id="my-run",
+    scope=ScopeConfig(sections=["4", "9"]),
+    sizing=SizingConfig(target_count=100, dry_run_limit=20),
+)
+orchestrator = Orchestrator(run_config, project_root=Path("."))
+result = asyncio.run(orchestrator.execute_planning(Path("config")))
+
+print(f"Generated: {len(result.final_records)} controls")
+print(f"Sections: {list(result.section_allocation.keys())}")
+```
+
+## Score Weights
+
+| Dimension | Weight | What it measures |
+|-----------|--------|------------------|
+| Regulatory Coverage | 40% | Framework keyword coverage per section |
+| Ecosystem Balance | 25% | Control type distribution vs. expected ranges |
+| Frequency Coherence | 15% | Frequency alignment with control type expectations |
+| Evidence Sufficiency | 20% | Artifact name, preparer sign-off, retention location |
+
+## Evaluation Dimensions
+
+| Dimension | Range | What it measures |
+|-----------|-------|------------------|
+| Faithfulness | 0--4 | Spec-to-narrative alignment (who, where, type, placement) |
+| Completeness | 0--6 | 5W coverage: role title, action verb, frequency, system, risk word, word count |
+| Diversity | 0.0--1.0 | Pairwise cosine similarity, 0.92 dedup threshold |
+| Gap Closure | delta | Score improvement from re-running analysis on combined controls |
+
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci.yml`):
+1. **Lint** -- `ruff check` + `ruff format --check`
+2. **Type Check** -- `mypy` with strict mode
+3. **Test** -- `pytest` with JUnit XML export
+4. **Docker Build** -- Buildx with GitHub Actions cache
+
+## Pre-commit Hooks
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Hooks: ruff lint + format, mypy, trailing whitespace, end-of-file, YAML check, large file check, merge conflict check.
+
+## License
+
+Proprietary. All rights reserved.

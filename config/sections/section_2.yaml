@@ -1,0 +1,101 @@
+section_id: "2.0"
+domain: product_development_and_management
+
+risk_profile:
+  inherent_risk: 4
+  regulatory_intensity: 4
+  control_density: 3
+  multiplier: 2.4
+  rationale: >
+    New product development and ongoing product management in banking
+    carries significant regulatory, consumer protection, and operational
+    risk. Products must comply with fair lending, disclosure, suitability,
+    and safety-and-soundness requirements before and after launch.
+
+affinity:
+  HIGH:
+    - Authorization
+    - Verification and Validation
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Risk and Compliance Assessments
+  MEDIUM:
+    - Risk Escalation Processes
+    - Segregation of Duties
+    - Internal and External Audits
+    - System Change Management
+    - Third Party Due Diligence
+    - Automated Rules
+  LOW:
+    - Client Due Diligence and Transaction Monitoring
+    - Training and Awareness Programs
+    - Risk Limit Setting
+    - Exception Reporting
+  NONE:
+    - Reconciliation
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Staffing and Resourcing Adequacy
+    - Internal Compliance Monitoring
+    - Talent Management Practices
+    - System and Application Restrictions
+    - Data Security and Protection
+
+registry:
+  roles:
+    - Product Manager
+    - Product Development Analyst
+    - Product Owner
+    - Head of Product Management
+    - New Product Approval Committee Member
+    - Pricing Analyst
+    - Product Compliance Officer
+    - Product Risk Officer
+  systems:
+    - Product Lifecycle Management Platform
+    - Product Pricing and Profitability System
+    - New Product Approval Workflow Tool
+    - Regulatory Change Management System
+  data_objects:
+    - new product proposal documents
+    - product risk assessments
+    - product approval committee meeting minutes
+    - product pricing models and fee schedules
+    - product disclosure and terms documentation
+    - post-launch monitoring reports
+  evidence_artifacts:
+    - new product approval committee sign-off with risk and compliance attestation
+    - product risk assessment documentation with residual risk rating
+    - regulatory impact analysis with compliance officer approval
+    - post-launch product review report with issue tracking
+  event_triggers:
+    - on submission of new product or material product change proposal
+    - at each new product approval committee review cycle
+    - on regulatory change impacting existing product features or disclosures
+    - at each annual product review and rationalization cycle
+    - on identification of product-related consumer complaint trend
+  regulatory_frameworks:
+    - OCC New Product Risk Management Guidance
+    - UDAAP
+    - Regulation Z (Truth in Lending)
+    - Regulation DD (Truth in Savings)
+    - Fair Lending Laws
+    - CFPB Supervisory Guidance
+    - SEC Regulation Best Interest (where applicable)
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual
+    full_description: >
+      Prior to launch of any new product or material modification to an
+      existing product, the Product Manager submits the completed new
+      product proposal including risk assessment, compliance review, and
+      operational readiness certification to the New Product Approval
+      Committee for multi-disciplinary review and formal approval,
+      ensuring all risk, legal, compliance, and operational requirements
+      have been satisfied.
+    word_count: 52
+    quality_rating: Strong

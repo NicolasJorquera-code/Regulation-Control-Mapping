@@ -1,0 +1,44 @@
+placements:
+  - Preventive
+  - Detective
+  - Contingency Planning
+
+methods:
+  - Automated
+  - Manual
+  - Automated with Manual Component
+
+control_taxonomy:
+  level_1_options:
+    - Preventive
+    - Detective
+    - Contingency Planning
+  level_2_by_level_1:
+    Preventive:
+      - Authorization
+      - Staffing and Resourcing Adequacy
+      - Client Due Diligence and Transaction Monitoring
+      - Internal Compliance Monitoring
+      - Data Security and Protection
+      - Physical Safeguards
+      - Talent Management Practices
+      - Risk and Compliance Assessments
+      - Risk Limit Setting
+      - Segregation of Duties
+      - System and Application Restrictions
+      - System Change Management
+      - Third Party Due Diligence
+      - Automated Rules
+      - Training and Awareness Programs
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    Detective:
+      - Internal and External Audits
+      - Exception Reporting
+      - Reconciliation
+      - Surveillance
+      - Risk Escalation Processes
+      - Verification and Validation
+    Contingency Planning:
+      - Business Continuity Planning and Awareness
+      - Crisis Management
+      - Technology Disaster Recovery

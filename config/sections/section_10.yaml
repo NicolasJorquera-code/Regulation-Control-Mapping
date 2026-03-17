@@ -1,0 +1,103 @@
+section_id: "10.0"
+domain: asset_management
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 2
+  control_density: 2
+  multiplier: 1.6
+  rationale: >
+    Physical asset acquisition, construction, and management carries
+    risk related to capital expenditure governance, facility safety,
+    environmental compliance, and asset lifecycle management. Control
+    density is comparatively lower but failures can result in material
+    financial loss and business disruption.
+
+affinity:
+  HIGH:
+    - Authorization
+    - Physical Safeguards
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Verification and Validation
+  MEDIUM:
+    - Reconciliation
+    - Segregation of Duties
+    - Third Party Due Diligence
+    - Exception Reporting
+  LOW:
+    - Risk Escalation Processes
+    - Internal and External Audits
+    - Training and Awareness Programs
+    - Automated Rules
+    - Risk and Compliance Assessments
+  NONE:
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Staffing and Resourcing Adequacy
+    - Internal Compliance Monitoring
+    - Talent Management Practices
+    - Risk Limit Setting
+    - System and Application Restrictions
+    - Data Security and Protection
+    - System Change Management
+
+registry:
+  roles:
+    - Facilities Manager
+    - Real Estate Manager
+    - Capital Projects Manager
+    - Property Accountant
+    - Corporate Real Estate Director
+    - Physical Security Manager
+    - Environmental Health and Safety Officer
+    - Head of Corporate Services
+  systems:
+    - Fixed Asset Management System
+    - Facilities Management Platform
+    - Capital Expenditure Approval Workflow Tool
+    - Real Estate Portfolio Management System
+    - Building Management and Access Control System
+  data_objects:
+    - fixed asset register and depreciation schedules
+    - capital expenditure requests and approvals
+    - lease agreements and property records
+    - facility inspection and maintenance records
+    - construction project documentation
+    - environmental and safety compliance records
+  evidence_artifacts:
+    - capital expenditure approval with delegated authority sign-off
+    - fixed asset physical inventory reconciliation report
+    - facility safety inspection completion certificate
+    - lease agreement execution with legal review documentation
+    - construction project acceptance and sign-off documentation
+  event_triggers:
+    - on capital expenditure request exceeding approval threshold
+    - at each annual fixed asset physical inventory and reconciliation
+    - on new lease execution or material lease modification
+    - on completion of construction or facility improvement project
+    - at each periodic facility safety and environmental inspection
+    - on asset disposal or retirement
+  regulatory_frameworks:
+    - GAAP/IFRS (Asset Accounting and Impairment)
+    - ASC 842 (Lease Accounting)
+    - OSHA Workplace Safety Standards
+    - Environmental Compliance (EPA, State)
+    - ADA Accessibility Requirements
+    - Local Building Codes and Zoning
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      Prior to commitment of funds, the Capital Projects Manager submits
+      the capital expenditure request with business justification, vendor
+      bids, and projected ROI through the capital expenditure approval
+      workflow tool, and the Corporate Real Estate Director reviews and
+      approves requests within delegated authority limits, with requests
+      exceeding threshold escalated to the CFO for final authorization.
+    word_count: 52
+    quality_rating: Strong

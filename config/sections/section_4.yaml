@@ -1,0 +1,105 @@
+section_id: "4.0"
+domain: sourcing_and_procurement
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  multiplier: 2.3
+  rationale: >
+    Sourcing and procurement of materials and services, particularly
+    third-party vendor engagements, carries significant regulatory,
+    operational, and concentration risk. Regulatory expectations for
+    third-party risk management in banking are extensive and subject
+    to heightened supervisory focus.
+
+affinity:
+  HIGH:
+    - Third Party Due Diligence
+    - Authorization
+    - Verification and Validation
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+  MEDIUM:
+    - Risk and Compliance Assessments
+    - Risk Escalation Processes
+    - Segregation of Duties
+    - Automated Rules
+    - Exception Reporting
+  LOW:
+    - Reconciliation
+    - Internal and External Audits
+    - Training and Awareness Programs
+    - Data Security and Protection
+    - Risk Limit Setting
+  NONE:
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Staffing and Resourcing Adequacy
+    - Internal Compliance Monitoring
+    - Talent Management Practices
+    - System and Application Restrictions
+    - System Change Management
+
+registry:
+  roles:
+    - Procurement Analyst
+    - Procurement Manager
+    - Vendor Risk Analyst
+    - Third Party Risk Manager
+    - Contract Manager
+    - Sourcing Specialist
+    - Head of Procurement
+    - Vendor Governance Committee Member
+  systems:
+    - Vendor Management Platform
+    - Procurement and Requisition System
+    - Contract Lifecycle Management Platform
+    - Third Party Risk Assessment Tool
+    - Accounts Payable System
+  data_objects:
+    - vendor due diligence questionnaires and responses
+    - vendor risk assessment scorecards
+    - contracts and service level agreements
+    - purchase orders and requisitions
+    - vendor performance monitoring reports
+    - fourth-party and subcontractor disclosures
+    - SOC 1/SOC 2 reports from vendors
+  evidence_artifacts:
+    - vendor risk assessment with risk tier classification and sign-off
+    - contract approval log with legal, compliance, and business owner signatures
+    - vendor due diligence completion certificate with supporting documentation
+    - vendor performance review report with issue remediation tracking
+    - annual vendor recertification and risk re-rating documentation
+  event_triggers:
+    - on new vendor engagement or contract initiation
+    - at each annual vendor risk reassessment cycle
+    - on material vendor contract renewal or amendment
+    - on vendor performance breach or SLA failure
+    - on identification of critical or high-risk vendor concentration
+    - on vendor offboarding or contract termination
+  regulatory_frameworks:
+    - OCC Third Party Risk Management Guidance (OCC 2023-17)
+    - Federal Reserve SR 13-19
+    - FFIEC Outsourcing Guidance
+    - GLBA Safeguards Rule
+    - BSA/AML (vendor screening)
+    - OFAC Sanctions Screening
+
+exemplars:
+  - control_type: Third Party Due Diligence
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      Prior to contract execution, the Vendor Risk Analyst completes the
+      third-party risk assessment in the vendor management platform,
+      including financial viability review, information security
+      questionnaire evaluation, SOC report review, and regulatory
+      compliance screening, and the Third Party Risk Manager validates
+      the risk tier classification and provides formal approval before
+      the vendor is onboarded.
+    word_count: 52
+    quality_rating: Strong

@@ -1,0 +1,103 @@
+section_id: "3.0"
+domain: marketing_and_sales
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  multiplier: 2.2
+  rationale: >
+    Marketing and sales activities carry elevated regulatory risk due to
+    consumer protection, fair lending, advertising standards, and
+    suitability requirements. Misleading communications or unfair
+    practices can result in significant enforcement action and reputational harm.
+
+affinity:
+  HIGH:
+    - Authorization
+    - Verification and Validation
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Client Due Diligence and Transaction Monitoring
+  MEDIUM:
+    - Internal Compliance Monitoring
+    - Training and Awareness Programs
+    - Risk Escalation Processes
+    - Automated Rules
+  LOW:
+    - Segregation of Duties
+    - Exception Reporting
+    - Risk and Compliance Assessments
+    - Internal and External Audits
+  NONE:
+    - Reconciliation
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Staffing and Resourcing Adequacy
+    - Talent Management Practices
+    - Risk Limit Setting
+    - System and Application Restrictions
+    - Data Security and Protection
+    - System Change Management
+    - Third Party Due Diligence
+
+registry:
+  roles:
+    - Marketing Manager
+    - Marketing Compliance Reviewer
+    - Sales Manager
+    - Relationship Manager
+    - Business Development Officer
+    - Channel Strategy Manager
+    - Head of Marketing
+    - Fair Lending Officer
+  systems:
+    - Marketing Campaign Management Platform
+    - Customer Relationship Management System
+    - Marketing Content Approval Workflow Tool
+    - Sales Pipeline and Tracking System
+    - Digital Marketing and Analytics Platform
+  data_objects:
+    - marketing materials and disclosures
+    - campaign performance reports
+    - sales activity and pipeline records
+    - customer suitability assessments
+    - marketing compliance review logs
+    - advertising and promotional content
+  evidence_artifacts:
+    - marketing material compliance review and approval log
+    - campaign launch authorization with legal and compliance sign-off
+    - suitability assessment documentation for advisory product sales
+    - fair lending analysis of marketing distribution and targeting
+  event_triggers:
+    - on submission of new marketing material or campaign for approval
+    - on launch of new sales initiative or incentive program
+    - at each quarterly marketing compliance review cycle
+    - on detection of customer complaint trend related to sales practices
+    - at each annual fair lending marketing review
+  regulatory_frameworks:
+    - UDAAP
+    - Fair Lending Laws (ECOA, Fair Housing Act)
+    - Regulation Z (Advertising Requirements)
+    - Regulation DD (Advertising Requirements)
+    - FINRA Advertising Rules (where applicable)
+    - SEC Marketing Rule (where applicable)
+    - CAN-SPAM Act
+    - TCPA
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      Prior to external distribution, the Marketing Manager submits all
+      marketing materials including advertisements, email campaigns, and
+      product disclosures to the Marketing Compliance Reviewer through
+      the content approval workflow tool for review against regulatory
+      disclosure requirements, fair lending standards, and UDAAP
+      guidelines, and the material cannot be published until compliance
+      approval is recorded in the system.
+    word_count: 53
+    quality_rating: Strong

@@ -1,0 +1,110 @@
+section_id: "13.0"
+domain: business_capability_development
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 3
+  control_density: 3
+  multiplier: 2.0
+  rationale: >
+    Business capability development encompasses enterprise program
+    management, process improvement, data governance, and organizational
+    transformation initiatives. Risk arises from inadequate change
+    management, capability gaps, and failure to sustain operational
+    effectiveness during transformation programs.
+
+affinity:
+  HIGH:
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Verification and Validation
+    - Authorization
+    - Staffing and Resourcing Adequacy
+  MEDIUM:
+    - System Change Management
+    - Training and Awareness Programs
+    - Risk and Compliance Assessments
+    - Risk Escalation Processes
+    - Segregation of Duties
+  LOW:
+    - Exception Reporting
+    - Internal and External Audits
+    - Automated Rules
+    - Data Security and Protection
+    - Third Party Due Diligence
+  NONE:
+    - Reconciliation
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Internal Compliance Monitoring
+    - Talent Management Practices
+    - Risk Limit Setting
+    - System and Application Restrictions
+
+registry:
+  roles:
+    - Program Manager
+    - Project Manager
+    - Business Analyst
+    - Process Improvement Manager
+    - Data Governance Manager
+    - Enterprise Architect
+    - Transformation Lead
+    - Change Management Specialist
+    - Head of Enterprise Program Management
+    - Chief Data Officer
+  systems:
+    - Enterprise Project and Portfolio Management Platform
+    - Business Process Management Tool
+    - Data Governance and Data Quality Platform
+    - Enterprise Architecture Repository
+    - Requirements Management and Traceability Tool
+    - Change Management Tracking System
+  data_objects:
+    - program and project charters
+    - business requirements documents
+    - process maps and standard operating procedures
+    - data quality scorecards and lineage documentation
+    - enterprise architecture models and roadmaps
+    - change impact assessments
+    - transformation milestone and status reports
+    - capability maturity assessment results
+  evidence_artifacts:
+    - project charter with executive sponsor approval and funding authorization
+    - business requirements sign-off with stakeholder attestation
+    - process improvement implementation documentation with before/after metrics
+    - data governance policy approval with data steward assignment log
+    - transformation program milestone review with steering committee sign-off
+    - capability maturity assessment report with gap remediation plan
+  event_triggers:
+    - on initiation of new enterprise program or transformation initiative
+    - at each program steering committee review cycle
+    - on completion of project phase gate requiring stakeholder approval
+    - at each annual enterprise capability maturity assessment
+    - on identification of data quality issue requiring remediation
+    - on material change to enterprise architecture or operating model
+    - at each quarterly enterprise project portfolio review
+  regulatory_frameworks:
+    - OCC Heightened Standards (Governance and Change Management)
+    - BCBS 239 (Risk Data Aggregation and Reporting)
+    - Federal Reserve SR Letters (Operational Effectiveness)
+    - SOX Section 404 (Process and Control Documentation)
+    - FFIEC IT Examination Handbook (where technology-related)
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      At each phase gate, the Program Manager submits the completed
+      deliverables, updated risk register, and resource forecast to
+      the Program Steering Committee through the enterprise project
+      portfolio management platform for review and formal gate
+      approval, and the program cannot advance to the next phase
+      until steering committee authorization is recorded in the
+      system with documented acceptance criteria confirmation.
+    word_count: 54
+    quality_rating: Strong

@@ -1,0 +1,104 @@
+section_id: "12.0"
+domain: external_relationship_management
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  multiplier: 2.2
+  rationale: >
+    Management of external relationships with regulators, government
+    entities, industry bodies, and counterparties carries risk related
+    to regulatory standing, information disclosure, and reputational
+    exposure. Ineffective external relationship management can result
+    in supervisory criticism and loss of regulatory confidence.
+
+affinity:
+  HIGH:
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Authorization
+    - Verification and Validation
+    - Risk Escalation Processes
+  MEDIUM:
+    - Third Party Due Diligence
+    - Internal Compliance Monitoring
+    - Risk and Compliance Assessments
+    - Training and Awareness Programs
+  LOW:
+    - Segregation of Duties
+    - Exception Reporting
+    - Internal and External Audits
+    - Automated Rules
+  NONE:
+    - Reconciliation
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Staffing and Resourcing Adequacy
+    - Talent Management Practices
+    - Risk Limit Setting
+    - System and Application Restrictions
+    - Data Security and Protection
+    - System Change Management
+
+registry:
+  roles:
+    - Regulatory Relations Manager
+    - Government Affairs Manager
+    - External Affairs Director
+    - Regulatory Examination Coordinator
+    - Industry Association Liaison
+    - Community Relations Manager
+    - Head of Regulatory Affairs
+    - Corporate Communications Manager
+  systems:
+    - Regulatory Examination Management System
+    - Regulatory Filing and Submission Platform
+    - Government Affairs Tracking System
+    - External Communications Approval Workflow Tool
+    - Stakeholder Relationship Management Platform
+  data_objects:
+    - regulatory examination schedules and correspondence
+    - regulatory filing submissions and confirmations
+    - government affairs activity logs
+    - external communication drafts and approvals
+    - industry association membership and participation records
+    - community reinvestment activity documentation
+  evidence_artifacts:
+    - regulatory examination response package with executive sign-off
+    - regulatory filing submission confirmation with completeness checklist
+    - external communication approval log with legal and compliance review
+    - government affairs activity report with disclosure compliance
+    - community reinvestment reporting documentation
+  event_triggers:
+    - on receipt of regulatory examination notification or information request
+    - at each regulatory filing submission deadline
+    - on scheduling of regulator meeting or examination entrance conference
+    - at each annual Community Reinvestment Act reporting cycle
+    - on material external communication requiring legal and compliance review
+    - on engagement with new external counterparty or industry body
+  regulatory_frameworks:
+    - OCC Examination Process Requirements
+    - Federal Reserve Supervisory Process
+    - SEC Disclosure Requirements
+    - Community Reinvestment Act
+    - Lobbying Disclosure Act
+    - FOIA and Public Records Requirements
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual
+    full_description: >
+      Prior to submission, the Regulatory Relations Manager reviews all
+      regulatory examination response packages for completeness and
+      accuracy, and obtains formal sign-off from the relevant business
+      line executive, Chief Risk Officer, and General Counsel before
+      transmitting the response to the examining regulatory agency,
+      ensuring all commitments and representations are authorized at
+      the appropriate governance level.
+    word_count: 51
+    quality_rating: Strong

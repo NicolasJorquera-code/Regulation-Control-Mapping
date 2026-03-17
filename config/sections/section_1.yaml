@@ -1,0 +1,97 @@
+section_id: "1.0"
+domain: vision_and_strategy
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 3
+  control_density: 2
+  multiplier: 1.8
+  rationale: >
+    Strategic planning and governance processes carry risk related to
+    misalignment of enterprise objectives with risk appetite, regulatory
+    expectations, and market conditions. Control density is lower but
+    failures have outsized downstream impact across all business lines.
+
+affinity:
+  HIGH:
+    - Risk Limit Setting
+    - Risk and Compliance Assessments
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Authorization
+  MEDIUM:
+    - Risk Escalation Processes
+    - Verification and Validation
+    - Staffing and Resourcing Adequacy
+    - Internal and External Audits
+  LOW:
+    - Segregation of Duties
+    - Training and Awareness Programs
+    - Exception Reporting
+    - Automated Rules
+  NONE:
+    - Reconciliation
+    - System and Application Restrictions
+    - Data Security and Protection
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Internal Compliance Monitoring
+    - Talent Management Practices
+    - System Change Management
+    - Third Party Due Diligence
+
+registry:
+  roles:
+    - Chief Executive Officer
+    - Chief Operating Officer
+    - Chief Financial Officer
+    - Chief Risk Officer
+    - Chief Strategy Officer
+    - Head of Corporate Development
+    - Strategic Planning Analyst
+    - Board of Directors
+    - Board Committee Chairs
+  systems:
+    - Enterprise Performance Management Platform
+    - Board Portal and Governance Platform
+    - Strategic Planning and Forecasting Tool
+  data_objects:
+    - strategic plan documents
+    - risk appetite statements
+    - board meeting minutes and resolutions
+    - capital allocation plans
+    - enterprise performance scorecards
+  evidence_artifacts:
+    - board-approved strategic plan with sign-off
+    - risk appetite framework approval documentation
+    - capital plan review and approval log
+    - strategic initiative prioritization matrix with governance sign-off
+  event_triggers:
+    - at each annual strategic planning cycle
+    - at each quarterly board of directors meeting
+    - on material change to enterprise risk appetite or tolerance
+    - on significant merger, acquisition, or divestiture decision
+    - at each annual capital planning and stress testing cycle
+  regulatory_frameworks:
+    - OCC Heightened Standards (Governance)
+    - Regulation YY (Enhanced Prudential Standards)
+    - CCAR/DFAST Capital Planning
+    - SEC Corporate Governance Requirements
+    - Federal Reserve SR Letters (Board Effectiveness)
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual
+    full_description: >
+      Prior to execution of any strategic initiative requiring capital
+      expenditure exceeding the materiality threshold, the Chief Strategy
+      Officer presents the initiative business case, risk assessment, and
+      projected ROI to the Board Risk Committee for review and formal
+      approval, ensuring alignment with the board-approved risk appetite
+      statement and strategic plan.
+    word_count: 50
+    quality_rating: Strong

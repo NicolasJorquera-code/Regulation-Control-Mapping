@@ -1,0 +1,98 @@
+section_id: "8"
+domain: information_technology
+
+risk_profile:
+  inherent_risk: 4
+  regulatory_intensity: 4
+  control_density: 5
+  multiplier: 2.8
+  rationale: >
+    IT General Controls (ITGCs) underpin the reliability of financially
+    significant applications and automated controls. High control density
+    spans access management, change management, computer operations, and
+    data security, with direct SOX 404 and regulatory examination exposure.
+
+affinity:
+  HIGH:
+    - System and Application Restrictions
+    - Data Security and Protection
+    - Verification and Validation
+    - Authorization
+    - Segregation of Duties
+  MEDIUM:
+    - Automated Rules
+    - Exception Reporting
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Internal and External Audits
+  LOW:
+    - Reconciliation
+    - Training and Awareness Programs
+    - Risk Escalation Processes
+  NONE:
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+
+registry:
+  roles:
+    - IT Administrator
+    - Systems Administrator
+    - Security Engineer
+    - Identity and Access Management Analyst
+    - Database Administrator
+    - Change Manager
+    - IT Risk Analyst
+    - IT Audit Liaison
+    - Infrastructure Operations Manager
+    - Chief Information Security Officer
+  systems:
+    - Identity and Access Management Platform
+    - Privileged Access Management Tool
+    - Security Information and Event Management System
+    - IT Service Management Platform
+    - Configuration Management Database
+    - Endpoint Detection and Response Platform
+    - Source Code Repository
+    - Deployment and Release Management Tool
+  data_objects:
+    - access provisioning and deprovisioning records
+    - privileged account activity logs
+    - change request and approval records
+    - system configuration baselines
+    - firewall and network access rules
+    - vulnerability scan results
+    - batch job schedules and completion logs
+  evidence_artifacts:
+    - user access review completion with manager sign-off
+    - change advisory board meeting minutes and approval log
+    - privileged access session recording or log extract
+    - vulnerability remediation tracking report
+    - SOC 1 / SOC 2 report review and gap assessment
+  event_triggers:
+    - on user provisioning or deprovisioning request
+    - on privileged access elevation or modification
+    - on change request submission to production environment
+    - at each quarterly user access recertification cycle
+    - on detection of critical or high-severity vulnerability
+    - at each annual IT risk assessment cycle
+  regulatory_frameworks:
+    - SOX Section 404 (ITGCs)
+    - FFIEC IT Examination Handbook
+    - NIST Cybersecurity Framework
+    - ISO 27001 / 27002
+    - GLBA Safeguards Rule
+    - PCI DSS (where applicable)
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      Upon receipt of an access provisioning request, the Identity and Access
+      Management Analyst verifies that the request includes documented manager
+      approval and a valid business justification in the IT Service Management
+      Platform, and confirms that the requested role does not create a
+      segregation-of-duties conflict using the IAM platform's role-conflict
+      detection module, before granting access to the target application.
+    word_count: 56
+    quality_rating: Strong

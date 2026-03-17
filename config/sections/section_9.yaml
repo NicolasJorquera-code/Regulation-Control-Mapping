@@ -1,0 +1,71 @@
+section_id: "9"
+domain: financial_accounting
+
+risk_profile:
+  inherent_risk: 4
+  regulatory_intensity: 5
+  control_density: 4
+  multiplier: 2.9
+  rationale: >
+    SOX 404 core area with high control density around reconciliations,
+    journal processing, and financial close activities.
+
+affinity:
+  HIGH:
+    - Reconciliation
+    - Authorization
+    - Verification and Validation
+    - Exception Reporting
+    - Segregation of Duties
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+  MEDIUM:
+    - Internal and External Audits
+    - Automated Rules
+    - Risk Escalation Processes
+    - Training and Awareness Programs
+  LOW:
+    - System and Application Restrictions
+    - Data Security and Protection
+  NONE:
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+
+registry:
+  roles:
+    - Staff Accountant
+    - Senior Accountant
+    - GL Accountant
+    - Accounting Manager
+    - Assistant Controller
+    - Controller
+  systems:
+    - General Ledger System
+    - Sub-Ledger System
+    - Financial Consolidation Platform
+  data_objects:
+    - journal entries
+    - GL postings
+    - trial balance
+  evidence_artifacts:
+    - GL account reconciliation with sign-off
+    - journal entry approval log
+  event_triggers:
+    - at each month-end close
+    - at each quarter-end reporting cycle
+  regulatory_frameworks:
+    - SOX Section 404
+    - GAAP/IFRS
+
+exemplars:
+  - control_type: Reconciliation
+    placement: Detective
+    method: Automated with Manual Component
+    full_description: >
+      Daily, by 10:00 AM on the following business day, the Operations Team Lead
+      reconciles deposit transaction totals between the core banking system and
+      the general ledger using the GL reconciliation module to identify and
+      resolve discrepancies in deposit posting that could result in inaccurate
+      financial reporting.
+    word_count: 48
+    quality_rating: Strong

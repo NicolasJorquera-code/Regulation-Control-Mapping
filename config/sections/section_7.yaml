@@ -1,0 +1,109 @@
+section_id: "7.0"
+domain: human_capital_management
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 3
+  control_density: 3
+  multiplier: 2.0
+  rationale: >
+    Human capital management processes carry risk related to workforce
+    competency, regulatory registration and licensing requirements,
+    employee misconduct, and organizational capacity. Failures in
+    talent management and training directly impact the effectiveness
+    of the enterprise control environment.
+
+affinity:
+  HIGH:
+    - Talent Management Practices
+    - Staffing and Resourcing Adequacy
+    - Training and Awareness Programs
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+  MEDIUM:
+    - Authorization
+    - Verification and Validation
+    - Segregation of Duties
+    - Risk Escalation Processes
+  LOW:
+    - Data Security and Protection
+    - System and Application Restrictions
+    - Internal and External Audits
+    - Exception Reporting
+    - Automated Rules
+  NONE:
+    - Reconciliation
+    - Client Due Diligence and Transaction Monitoring
+    - Surveillance
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Internal Compliance Monitoring
+    - Risk and Compliance Assessments
+    - Risk Limit Setting
+    - System Change Management
+    - Third Party Due Diligence
+
+registry:
+  roles:
+    - HR Business Partner
+    - Talent Acquisition Specialist
+    - Compensation and Benefits Analyst
+    - Employee Relations Specialist
+    - Learning and Development Manager
+    - Workforce Planning Analyst
+    - HR Compliance Officer
+    - Head of Human Resources
+    - Chief Human Resources Officer
+  systems:
+    - Human Capital Management Platform
+    - Learning Management System
+    - Applicant Tracking System
+    - Payroll and Benefits Administration System
+    - Performance Management Platform
+    - Employee Relations Case Management Tool
+  data_objects:
+    - employee personnel records
+    - background check and screening results
+    - training completion and certification records
+    - performance review documentation
+    - compensation and benefits data
+    - employee relations investigation files
+    - registration and licensing records (FINRA, NMLS)
+    - mandatory vacation compliance records
+  evidence_artifacts:
+    - background check completion certificate with adjudication decision
+    - training completion report with non-attendance escalation log
+    - mandatory vacation compliance attestation
+    - FINRA/NMLS registration verification documentation
+    - annual staffing assessment report with capacity gap analysis
+  event_triggers:
+    - on new hire onboarding initiation
+    - on employee role change or promotion requiring updated registration
+    - at each annual performance review cycle
+    - on detection of training non-completion by escalation deadline
+    - at each annual staffing and resourcing adequacy assessment
+    - on employee separation or termination
+    - on receipt of employee relations complaint or misconduct allegation
+  regulatory_frameworks:
+    - EEO/OFCCP Requirements
+    - FLSA
+    - ERISA
+    - FINRA Registration Requirements
+    - NMLS Licensing Requirements
+    - State Employment Laws
+    - OSHA Workplace Safety Standards
+
+exemplars:
+  - control_type: Talent Management Practices
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      Prior to granting system access and assignment of job responsibilities,
+      the Talent Acquisition Specialist confirms that the new hire background
+      check has been completed and adjudicated as satisfactory in the
+      applicant tracking system, and that all required regulatory
+      registrations and licenses have been verified as active, before
+      the HR Business Partner authorizes the onboarding process to proceed.
+    word_count: 53
+    quality_rating: Strong

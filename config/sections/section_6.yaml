@@ -1,0 +1,105 @@
+section_id: "6.0"
+domain: customer_service
+
+risk_profile:
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  multiplier: 2.2
+  rationale: >
+    Customer service operations carry regulatory risk related to
+    consumer protection, complaint management, fair treatment, and
+    data privacy. Complaint handling failures can trigger UDAAP
+    enforcement, supervisory criticism, and significant reputational damage.
+
+affinity:
+  HIGH:
+    - Verification and Validation
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Exception Reporting
+    - Authorization
+  MEDIUM:
+    - Client Due Diligence and Transaction Monitoring
+    - Risk Escalation Processes
+    - Training and Awareness Programs
+    - Automated Rules
+  LOW:
+    - Segregation of Duties
+    - Surveillance
+    - Internal and External Audits
+    - Risk and Compliance Assessments
+    - Data Security and Protection
+  NONE:
+    - Reconciliation
+    - Physical Safeguards
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+    - Staffing and Resourcing Adequacy
+    - Internal Compliance Monitoring
+    - Talent Management Practices
+    - Risk Limit Setting
+    - System and Application Restrictions
+    - System Change Management
+    - Third Party Due Diligence
+
+registry:
+  roles:
+    - Customer Service Representative
+    - Senior Customer Service Representative
+    - Customer Service Team Lead
+    - Complaint Management Specialist
+    - Customer Service Manager
+    - Customer Experience Manager
+    - Head of Customer Service
+    - Complaint Resolution Officer
+  systems:
+    - Customer Relationship Management System
+    - Complaint Management and Tracking Platform
+    - Interactive Voice Response System
+    - Quality Assurance and Call Recording Platform
+    - Case Management and Ticketing System
+    - Knowledge Management System
+  data_objects:
+    - customer interaction records and call logs
+    - complaint case files
+    - complaint categorization and root cause data
+    - customer satisfaction survey results
+    - quality assurance review scorecards
+    - service level performance metrics
+    - regulatory complaint submissions (CFPB, OCC)
+  evidence_artifacts:
+    - complaint resolution documentation with customer notification and sign-off
+    - quality assurance review scorecard with supervisor assessment
+    - complaint trend analysis and root cause report
+    - regulatory complaint response filing confirmation
+    - escalation log for unresolved or high-severity complaints
+  event_triggers:
+    - on receipt of customer complaint or dispute
+    - on identification of complaint aging beyond SLA threshold
+    - on receipt of regulatory complaint from CFPB or OCC
+    - at each monthly complaint trend analysis review
+    - at each quarterly quality assurance calibration cycle
+    - on detection of systemic complaint pattern or root cause theme
+  regulatory_frameworks:
+    - UDAAP
+    - CFPB Complaint Management Expectations
+    - Regulation E (Error Resolution)
+    - Regulation Z (Billing Dispute Resolution)
+    - Fair Lending Laws
+    - OCC Consumer Compliance Examination Procedures
+    - ADA Accessibility Requirements
+
+exemplars:
+  - control_type: Exception Reporting
+    placement: Detective
+    method: Automated with Manual Component
+    full_description: >
+      Daily, the complaint management platform generates an aging report
+      identifying all open customer complaints exceeding the defined SLA
+      threshold, and the Complaint Management Specialist reviews each
+      aged item, documents the reason for delay and remediation plan,
+      and escalates complaints exceeding the secondary threshold to the
+      Customer Service Manager for intervention and resolution tracking.
+    word_count: 51
+    quality_rating: Strong

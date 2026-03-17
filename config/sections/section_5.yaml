@@ -1,0 +1,97 @@
+section_id: "5"
+domain: banking_operations
+
+risk_profile:
+  inherent_risk: 4
+  regulatory_intensity: 4
+  control_density: 4
+  multiplier: 2.7
+  rationale: >
+    Customer-facing operational processes carry execution, settlement, and
+    regulatory risk requiring dense preventive and detective controls across
+    transaction processing, payment operations, and account servicing
+    activities, with direct consumer protection and prudential regulation
+    exposure.
+
+affinity:
+  HIGH:
+    - Authorization
+    - Verification and Validation
+    - Exception Reporting
+    - Segregation of Duties
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+  MEDIUM:
+    - Reconciliation
+    - Automated Rules
+    - Risk Escalation Processes
+    - System and Application Restrictions
+  LOW:
+    - Internal and External Audits
+    - Training and Awareness Programs
+    - Data Security and Protection
+  NONE:
+    - Surveillance
+    - Physical Safeguards
+    - Client Due Diligence and Transaction Monitoring
+
+registry:
+  roles:
+    - Operations Analyst
+    - Operations Specialist
+    - Payment Processing Analyst
+    - Wire Transfer Specialist
+    - Account Services Representative
+    - Operations Team Lead
+    - Operations Manager
+    - Branch Operations Manager
+    - Head of Banking Operations
+  systems:
+    - Core Banking Platform
+    - Payment Processing and Settlement System
+    - Wire Transfer Platform
+    - ACH Processing System
+    - Workflow and Case Management Tool
+    - Customer Relationship Management System
+    - Document Management System
+  data_objects:
+    - transaction records
+    - payment instructions and settlement files
+    - wire transfer requests
+    - ACH batch files
+    - account maintenance requests
+    - service exception and override logs
+    - nostro and suspense account entries
+  evidence_artifacts:
+    - dual-authorization approval log for high-value transactions
+    - daily transaction balancing and settlement report
+    - exception and override resolution documentation with sign-off
+    - payment rejection and return investigation log
+    - account maintenance request with supervisory approval
+  event_triggers:
+    - on receipt of payment instruction or wire transfer request
+    - at each daily transaction processing and settlement cycle
+    - on detection of transaction exception or processing error
+    - at each month-end nostro and suspense account clearance
+    - on customer account maintenance or servicing request
+    - at each quarterly operations quality assurance review
+  regulatory_frameworks:
+    - Regulation CC (Funds Availability)
+    - Regulation E (Electronic Fund Transfers)
+    - UCC Article 4A (Funds Transfers)
+    - NACHA Operating Rules
+    - OCC Heightened Standards (where applicable)
+    - Internal Operational Risk Policy
+
+exemplars:
+  - control_type: Authorization
+    placement: Preventive
+    method: Manual with System Support
+    full_description: >
+      Prior to release, the Wire Transfer Specialist prepares the outgoing wire
+      instruction in the wire transfer platform, and a second Operations Team
+      Lead independently verifies the beneficiary details, amount, and purpose
+      code against the originating request documentation before providing
+      dual-authorization approval, ensuring no single individual can initiate
+      and release a wire transfer.
+    word_count: 52
+    quality_rating: Strong

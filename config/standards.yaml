@@ -1,0 +1,25 @@
+five_w:
+  who: Define accountable role performing the control.
+  what: Define specific action and control objective.
+  when: Define trigger, frequency, and timing.
+  where: Define system/location/process where control executes.
+  why: Define risk prevented or detected and impact.
+
+phrase_bank:
+  action_verbs:
+    - reviews
+    - reconciles
+    - validates
+    - approves
+    - investigates
+  timing_phrases:
+    - daily
+    - weekly
+    - monthly
+    - at month-end close
+
+quality_ratings:
+  - Strong
+  - Effective
+  - Satisfactory
+  - Needs Improvement

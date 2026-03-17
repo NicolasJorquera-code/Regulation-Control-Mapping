@@ -1,0 +1,359 @@
+control_types:
+  - control_type: Reconciliation
+    definition: Comparison of features, transactions, activities, or data to validate the accuracy, completeness, or appropriateness of the target outputs. This should include discrete steps for investigating and resolving any discrepancies that are identified.
+  - control_type: Authorization
+    definition: Review and validation of documentation, transaction information, or other details to determine whether they are appropriate, complete, or accurate before allowing a process or activity to continue.
+  - control_type: Verification and Validation
+    definition: Examining information (e.g., documentation, transaction details) to validate the accuracy, appropriateness, or completeness of information or the completion of required actions.
+  - control_type: Exception Reporting
+    definition: Creation of reports and alerts to identify risk limit breaches, system capacity constraints or breakdowns, ageing items, outstanding requests or activities that need to be closed out or resolved.
+  - control_type: Segregation of Duties
+    definition: Organize or assign activities, responsibilities, or tasks within a process such that no individual or group is able to complete the process on their own thereby limiting the potential for manipulating the outputs or outcomes of the process.
+  - control_type: Documentation, Data, and Activity Completeness and Appropriateness Checks
+    definition: Review, approval, and management of data, documentation, and assigned activities to validate completeness, accuracy, and appropriateness of information and outputs, and securing alternative methods to capture and restore access to missing or lost data.
+  - control_type: Internal and External Audits
+    definition: Testing and review of internal controls or processes to assess effectiveness or determine alignment with regulatory requirements.
+  - control_type: Automated Rules
+    definition: Implementation of pre-defined rules into systems or applications to control or restrict the execution of actions (e.g., the types of data required, the types of actions permitted).
+  - control_type: Risk Escalation Processes
+    definition: Establishing mechanisms for reporting and alerting relevant stakeholders to violations, breaches, or transgressions of risk limits, operational thresholds, or internal employee misconduct, including via the use of whistleblower hotlines.
+  - control_type: Training and Awareness Programs
+    definition: Development and implementation of mechanisms to formally transfer knowledge such as training courses or online self-learning modules to assess the level of desired knowledge, skills, or competence attained. Any training program must have a formal, standardized curriculum, must include tracked attendance, and must include an escalation protocol for instances of non-attendance.
+  - control_type: System and Application Restrictions
+    definition: Restrict, control, or manage the access of users to enterprise devices, intranet portals, software, or internal or external networks based on their level of access credentials or user privileges to prevent unauthorized access or changes to enterprise applications or hardware.
+  - control_type: Data Security and Protection
+    definition: Securely storing, maintaining, and safeguarding data to prevent the disclosure, destruction, corruption, or unauthorized access of enterprise or client data including use of encryption, alternative data servers, and firewalls.
+  - control_type: Client Due Diligence and Transaction Monitoring
+    definition: Performing validation of client identity and documentation during onboarding, reviewing client transactions and activities for suspicious behaviors or anomalies, and periodically updating client risk profiles to refresh level of risk-based monitoring.
+  - control_type: Surveillance
+    definition: Monitoring, scanning, or observing behaviors, activities, or other data signals subject to ongoing change and modification and usually performed on a real-time basis.
+  - control_type: Physical Safeguards
+    definition: Implementing physical tools, infrastructure, or devices that are used to safeguard and protect physical assets including buildings, property, equipment, or documents.
+  - control_type: Business Continuity Planning and Awareness
+    definition: Development and maintenance of business protocols and processes to be deployed in the event of an outage or crisis including identification of critical functions or stakeholders needed for discharging and sustaining business continuity activities during an active crisis.
+  - control_type: Crisis Management
+    definition: Implementation of business contingency plan and activation of response and communication strategy to provide messaging to stakeholders as well as monitoring and reporting on status of crisis management plan progress and milestones.
+  - control_type: Technology Disaster Recovery
+    definition: Development and maintenance of technology recovery plan to identify key systems and technology requirements needed to sustain business activities during a crisis and interventions to restore access to and preserve key technology systems.
+  - control_type: Staffing and Resourcing Adequacy
+    definition: Conducting a staffing and skills assessment or other similar resourcing assessment to determine the required levels of employee and operational capacity to execute business functions and activities across the enterprise.
+  - control_type: Internal Compliance Monitoring
+    definition: Monitoring the release of material, non-public information from the enterprise and monitoring trading activity to identify illegal or prohibited transactions based on enterprise trading policies and practices.
+  - control_type: Talent Management Practices
+    definition: Managing staff and resources to ensure appropriate alignment with business objectives, such as background checks, mandatory vacations, and registrations checks.
+  - control_type: Risk and Compliance Assessments
+    definition: Conduct Business Unit and enterprise-wide assessments to identify inherent risks associated with business processes, measure effectiveness of controls, determine residual risk ratings, and identify additional risk mitigation activities to be undertaken in response to residual risks and identified issues.
+  - control_type: Risk Limit Setting
+    definition: Setting risk limits and risk tolerance thresholds to govern enterprise risk appetite, enterprise and employee trading, and client activities, and establish system of alerts to notify relevant stakeholders of limit breaches.
+  - control_type: System Change Management
+    definition: Perform software testing to validate the behavior of newly implemented or updated systems, assess the technical performance of hardware components, test the effectiveness and functionality of new products, and understand effects of system updates on existing infrastructure.
+  - control_type: Third Party Due Diligence
+    definition: Perform due diligence on third-party vendors to understand risk exposures of outsourcing key business services and activities and assess the strength of the vendor control environment to understand vendor risk profile and suitability for engagement.
+
+business_units:
+  - business_unit_id: "BU-001"
+    name: Retail Banking
+    description: Provides consumer deposit accounts, personal loans, mortgages, credit cards, and branch-based financial services to individual customers and small businesses.
+    primary_sections: ["5.0", "3.0", "6.0"]
+    key_control_types:
+      - Authorization
+      - Client Due Diligence and Transaction Monitoring
+      - Segregation of Duties
+      - Exception Reporting
+      - Training and Awareness Programs
+    regulatory_exposure:
+      - Regulation E (Electronic Fund Transfers)
+      - Regulation Z (Truth in Lending)
+      - Regulation CC (Funds Availability)
+      - BSA/AML
+      - UDAAP
+      - Community Reinvestment Act
+
+  - business_unit_id: "BU-002"
+    name: Commercial Banking
+    description: Delivers lending, treasury management, and deposit solutions to mid-market and large corporate clients, including term loans, revolving credit facilities, and commercial real estate financing.
+    primary_sections: ["5.0", "2.0", "3.0"]
+    key_control_types:
+      - Authorization
+      - Client Due Diligence and Transaction Monitoring
+      - Verification and Validation
+      - Risk Limit Setting
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    regulatory_exposure:
+      - OCC Lending Standards
+      - BSA/AML
+      - Interagency CRE Guidance
+      - Leveraged Lending Guidance
+      - CECL (Credit Loss Accounting)
+
+  - business_unit_id: "BU-003"
+    name: Corporate and Investment Banking
+    description: Provides capital markets advisory, underwriting, syndicated lending, mergers and acquisitions advisory, and structured finance solutions to institutional and corporate clients.
+    primary_sections: ["2.0", "3.0", "5.0"]
+    key_control_types:
+      - Authorization
+      - Segregation of Duties
+      - Internal Compliance Monitoring
+      - Risk Limit Setting
+      - Surveillance
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    regulatory_exposure:
+      - SEC Regulations
+      - FINRA Rules
+      - Volcker Rule
+      - Dodd-Frank Act
+      - BSA/AML
+
+  - business_unit_id: "BU-004"
+    name: Wealth Management and Private Banking
+    description: Delivers investment advisory, portfolio management, trust and estate services, financial planning, and private banking solutions to high-net-worth and ultra-high-net-worth individuals and families.
+    primary_sections: ["5.0", "3.0", "6.0"]
+    key_control_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Authorization
+      - Surveillance
+      - Verification and Validation
+      - Risk Limit Setting
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    regulatory_exposure:
+      - SEC Investment Advisers Act
+      - FINRA Suitability and Best Interest Rules
+      - BSA/AML
+      - Regulation Best Interest
+      - ERISA (where applicable)
+
+  - business_unit_id: "BU-005"
+    name: Asset Management
+    description: Manages pooled investment vehicles, institutional separate accounts, and fund administration services, executing investment strategies across equities, fixed income, alternatives, and multi-asset portfolios.
+    primary_sections: ["2.0", "5.0", "9.0"]
+    key_control_types:
+      - Reconciliation
+      - Verification and Validation
+      - Risk Limit Setting
+      - Surveillance
+      - Internal Compliance Monitoring
+      - Automated Rules
+    regulatory_exposure:
+      - SEC Investment Company Act
+      - SEC Investment Advisers Act
+      - ERISA
+      - GIPS Standards
+      - BSA/AML
+
+  - business_unit_id: "BU-006"
+    name: Treasury and Capital Markets
+    description: Manages the enterprise balance sheet, liquidity positioning, interest rate risk, funding strategies, and proprietary investment portfolio, including interaction with central bank facilities and wholesale funding markets.
+    primary_sections: ["9.0", "11.0", "5.0"]
+    key_control_types:
+      - Risk Limit Setting
+      - Reconciliation
+      - Authorization
+      - Exception Reporting
+      - Automated Rules
+      - Segregation of Duties
+    regulatory_exposure:
+      - Basel III Liquidity Requirements (LCR/NSFR)
+      - Regulation YY (Enhanced Prudential Standards)
+      - FHLB Collateral Requirements
+      - SOX Section 404
+      - Volcker Rule
+
+  - business_unit_id: "BU-007"
+    name: Operations
+    description: Executes transaction processing, payment settlement, account servicing, trade operations, and back-office support functions across all lines of business, ensuring accurate and timely operational execution.
+    primary_sections: ["5.0", "9.0", "8.0"]
+    key_control_types:
+      - Reconciliation
+      - Authorization
+      - Verification and Validation
+      - Exception Reporting
+      - Segregation of Duties
+      - Automated Rules
+    regulatory_exposure:
+      - Regulation CC (Funds Availability)
+      - Regulation E (Electronic Fund Transfers)
+      - UCC Article 4A (Funds Transfers)
+      - NACHA Operating Rules
+      - OCC Heightened Standards
+
+  - business_unit_id: "BU-008"
+    name: Risk Management
+    description: Provides independent identification, measurement, monitoring, and reporting of credit, market, operational, liquidity, and model risk across the enterprise, and establishes the enterprise risk appetite framework.
+    primary_sections: ["11.0", "9.0", "1.0"]
+    key_control_types:
+      - Risk and Compliance Assessments
+      - Risk Limit Setting
+      - Risk Escalation Processes
+      - Exception Reporting
+      - Verification and Validation
+      - Internal and External Audits
+    regulatory_exposure:
+      - OCC Heightened Standards
+      - Regulation YY (Enhanced Prudential Standards)
+      - Basel III Capital and Liquidity Frameworks
+      - SR 11-7 (Model Risk Management)
+      - CCAR/DFAST Stress Testing
+
+  - business_unit_id: "BU-009"
+    name: Compliance
+    description: Establishes and maintains the enterprise compliance management program, including regulatory change management, compliance testing, BSA/AML program administration, sanctions screening, and consumer compliance oversight.
+    primary_sections: ["11.0", "12.0", "7.0"]
+    key_control_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Surveillance
+      - Internal Compliance Monitoring
+      - Risk and Compliance Assessments
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+    regulatory_exposure:
+      - BSA/AML
+      - OFAC Sanctions
+      - UDAAP
+      - Fair Lending Laws
+      - FINRA Rules (where applicable)
+      - SEC Regulations (where applicable)
+
+  - business_unit_id: "BU-010"
+    name: Internal Audit
+    description: Provides independent and objective assurance over the effectiveness of governance, risk management, and internal controls across the enterprise, reporting directly to the Audit Committee of the Board of Directors.
+    primary_sections: ["11.0", "13.0", "9.0"]
+    key_control_types:
+      - Internal and External Audits
+      - Risk and Compliance Assessments
+      - Verification and Validation
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Risk Escalation Processes
+    regulatory_exposure:
+      - IIA Standards
+      - SOX Section 404
+      - OCC Heightened Standards
+      - Federal Reserve SR Letters
+      - FDICIA
+
+  - business_unit_id: "BU-011"
+    name: Finance and Accounting
+    description: Manages financial reporting, general ledger accounting, regulatory capital reporting, tax compliance, budgeting and forecasting, and financial consolidation for the enterprise.
+    primary_sections: ["9.0", "11.0", "1.0"]
+    key_control_types:
+      - Reconciliation
+      - Authorization
+      - Verification and Validation
+      - Segregation of Duties
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Internal and External Audits
+    regulatory_exposure:
+      - SOX Section 404
+      - GAAP/IFRS
+      - SEC Reporting Requirements
+      - FDICIA
+      - Basel III Capital Reporting
+      - Call Report/FR Y-9C
+
+  - business_unit_id: "BU-012"
+    name: Information Technology
+    description: Delivers enterprise technology infrastructure, application development and support, cybersecurity, identity and access management, IT service management, and technology change management across all business lines.
+    primary_sections: ["8.0", "11.0", "13.0"]
+    key_control_types:
+      - System and Application Restrictions
+      - Data Security and Protection
+      - System Change Management
+      - Authorization
+      - Segregation of Duties
+      - Technology Disaster Recovery
+    regulatory_exposure:
+      - SOX Section 404 (ITGCs)
+      - FFIEC IT Examination Handbook
+      - NIST Cybersecurity Framework
+      - GLBA Safeguards Rule
+      - PCI DSS (where applicable)
+      - ISO 27001/27002
+
+  - business_unit_id: "BU-013"
+    name: Human Resources
+    description: Manages talent acquisition, employee relations, compensation and benefits administration, workforce planning, performance management, and mandatory training and certification programs across the enterprise.
+    primary_sections: ["7.0", "11.0", "13.0"]
+    key_control_types:
+      - Talent Management Practices
+      - Staffing and Resourcing Adequacy
+      - Training and Awareness Programs
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Authorization
+      - Data Security and Protection
+    regulatory_exposure:
+      - EEO/OFCCP Requirements
+      - FLSA
+      - ERISA
+      - FINRA Registration Requirements (where applicable)
+      - State Employment Laws
+
+  - business_unit_id: "BU-014"
+    name: Legal
+    description: Provides legal advisory services, manages litigation and regulatory enforcement matters, oversees contract management, and supports regulatory examination responses and corporate governance activities.
+    primary_sections: ["11.0", "12.0", "1.0"]
+    key_control_types:
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Authorization
+      - Risk Escalation Processes
+      - Verification and Validation
+      - Internal Compliance Monitoring
+    regulatory_exposure:
+      - Attorney-Client Privilege Obligations
+      - SEC Disclosure Requirements
+      - Consent Order and MRA Compliance
+      - Dodd-Frank Act
+      - State Banking Laws
+
+  - business_unit_id: "BU-015"
+    name: Third Party Risk Management
+    description: Oversees the enterprise vendor management lifecycle including due diligence, onboarding, ongoing monitoring, performance management, and offboarding of third-party and fourth-party service providers.
+    primary_sections: ["4.0", "11.0", "12.0"]
+    key_control_types:
+      - Third Party Due Diligence
+      - Risk and Compliance Assessments
+      - Verification and Validation
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Risk Escalation Processes
+      - Authorization
+    regulatory_exposure:
+      - OCC Third Party Risk Management Guidance
+      - Federal Reserve SR 13-19
+      - FFIEC Outsourcing Guidance
+      - GLBA Safeguards Rule
+      - BSA/AML (vendor screening)
+
+  - business_unit_id: "BU-016"
+    name: Business Continuity and Corporate Security
+    description: Develops, maintains, and tests enterprise business continuity plans, crisis management protocols, workplace safety programs, and physical security measures to ensure operational resilience.
+    primary_sections: ["11.0", "8.0", "10.0"]
+    key_control_types:
+      - Business Continuity Planning and Awareness
+      - Crisis Management
+      - Technology Disaster Recovery
+      - Physical Safeguards
+      - Risk Escalation Processes
+      - Training and Awareness Programs
+    regulatory_exposure:
+      - FFIEC Business Continuity Handbook
+      - OCC Heightened Standards
+      - Regulation YY (Recovery and Resolution Planning)
+      - Interagency Paper on Sound Practices for Operational Resilience
+      - OSHA Requirements
+
+  - business_unit_id: "BU-017"
+    name: Mortgage Banking
+    description: Originates, underwrites, closes, services, and sells residential mortgage loans, including secondary market activities, escrow administration, and loss mitigation and default servicing operations.
+    primary_sections: ["2.0", "5.0", "6.0"]
+    key_control_types:
+      - Authorization
+      - Verification and Validation
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Reconciliation
+      - Client Due Diligence and Transaction Monitoring
+      - Segregation of Duties
+    regulatory_exposure:
+      - RESPA/TILA (TRID)
+      - HMDA
+      - Fair Lending Laws
+      - CFPB Servicing Rules
+      - GSE Seller/Servicer Guidelines
+      - BSA/AML
