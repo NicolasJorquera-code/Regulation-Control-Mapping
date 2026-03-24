@@ -81,9 +81,9 @@ def render_gap_dashboard(gap_report: GapReport) -> None:
 
     st.markdown(f"**{total_gaps}** gaps identified across all dimensions.")
 
-    if st.button("Accept All Gaps for Remediation", type="primary", use_container_width=True):
+    if st.button("Accept All Gaps for Remediation", type="primary", width="stretch"):
         st.session_state["accepted_gaps"] = gap_report
-        st.success("Gaps accepted. Switch to the Remediation section to generate controls.")
+        st.success("Gaps accepted. Scroll down to the Remediation section below to select gaps and generate controls.")
 
 
 # -- Helpers -------------------------------------------------------------------
@@ -123,11 +123,11 @@ def _render_regulatory_gaps(gaps: list) -> None:
             st.success("All regulatory frameworks have adequate coverage.")
             return
         for gap in gaps:
-            framework = gap.get("framework", "Unknown")
-            coverage = gap.get("coverage_pct", 0)
-            section = gap.get("section_id", "")
+            framework = gap.framework
+            coverage = gap.current_coverage
+            theme = gap.required_theme
             st.markdown(
-                f"- **{framework}** (section {section}): "
+                f"- **{framework}** ({theme}): "
                 f"Coverage {coverage:.0f}% — below 60% threshold"
             )
 
@@ -139,13 +139,13 @@ def _render_balance_gaps(gaps: list) -> None:
             st.success("Control type distribution is within expected ranges.")
             return
         for gap in gaps:
-            ctrl_type = gap.get("control_type", "Unknown")
-            direction = gap.get("direction", "")
-            actual = gap.get("actual_pct", 0)
-            expected = gap.get("expected_range", "")
+            ctrl_type = gap.control_type
+            direction = gap.direction
+            actual = gap.actual_pct
+            expected = gap.expected_pct
             st.markdown(
                 f"- **{ctrl_type}**: {direction}-represented "
-                f"(actual {actual:.1f}%, expected {expected})"
+                f"(actual {actual:.1f}%, expected {expected:.1f}%)"
             )
 
 
@@ -156,9 +156,9 @@ def _render_frequency_issues(issues: list) -> None:
             st.success("All control frequencies are consistent with their types.")
             return
         for issue in issues:
-            ctrl_id = issue.get("control_id", "Unknown")
-            actual = issue.get("actual_frequency", "")
-            expected = issue.get("expected_frequency", "")
+            ctrl_id = issue.control_id
+            actual = issue.actual_frequency
+            expected = issue.expected_frequency
             st.markdown(
                 f"- **{ctrl_id}**: Frequency is *{actual}*, expected *{expected}*"
             )
@@ -171,9 +171,8 @@ def _render_evidence_issues(issues: list) -> None:
             st.success("All controls have adequate evidence documentation.")
             return
         for issue in issues:
-            ctrl_id = issue.get("control_id", "Unknown")
-            score = issue.get("evidence_score", 0)
-            missing = issue.get("missing", [])
+            ctrl_id = issue.control_id
+            detail = issue.issue
             st.markdown(
-                f"- **{ctrl_id}**: Score {score}/3 — missing: {', '.join(missing) if missing else 'details'}"
+                f"- **{ctrl_id}**: {detail if detail else 'Evidence documentation insufficient'}"
             )

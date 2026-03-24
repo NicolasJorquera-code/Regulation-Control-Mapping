@@ -12,6 +12,16 @@ from controlnexus.analysis.ingest import ingest_excel
 
 logger = logging.getLogger(__name__)
 
+# Default columns shown in the ingested-controls preview table.
+_PREVIEW_DEFAULT_COLS = [
+    "control_id",
+    "selected_level_2",
+    "who",
+    "when",
+    "frequency",
+    "where",
+]
+
 
 def render_upload_widget() -> None:
     """Render the file upload section and store ingested controls in session state."""
@@ -39,14 +49,16 @@ def render_upload_widget() -> None:
             st.session_state["controls"] = controls
             st.success(f"Ingested **{len(controls)}** control records from *{uploaded_file.name}*")
 
-            # Preview
+            # Preview — reusable data table
             with st.expander("Preview ingested controls", expanded=False):
-                for ctrl in controls[:5]:
-                    st.markdown(
-                        f"- **{ctrl.control_id}** | {ctrl.selected_level_2} | {ctrl.who} | {ctrl.when}"
-                    )
-                if len(controls) > 5:
-                    st.caption(f"... and {len(controls) - 5} more")
+                from controlnexus.ui.components.data_table import render_data_table
+
+                render_data_table(
+                    records=[c.to_export_dict() for c in controls],
+                    default_columns=_PREVIEW_DEFAULT_COLS,
+                    key="ingested_preview",
+                    export_filename="ingested_controls.csv",
+                )
         except Exception as e:
             st.error(f"Failed to parse Excel file: {e}")
             logger.exception("Ingest error")

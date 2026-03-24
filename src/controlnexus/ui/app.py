@@ -12,9 +12,26 @@ Launch:
 
 from __future__ import annotations
 
+import logging
+import sys
+
 import streamlit as st
 
 from controlnexus.ui.styles import get_masthead_html, load_custom_css
+
+# ---------------------------------------------------------------------------
+# Logging — route all controlnexus.* loggers to stderr so they appear in the
+# terminal where Streamlit was launched.
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(name)-40s  %(levelname)-8s  %(message)s",
+    stream=sys.stderr,
+)
+# Quiet noisy third-party loggers
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("chromadb").setLevel(logging.WARNING)
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 
 def main() -> None:
@@ -88,6 +105,14 @@ def _render_analysis_tab() -> None:
         from controlnexus.ui.renderers.gap_dashboard import render_gap_dashboard
 
         render_gap_dashboard(gap_report)
+
+    # Show remediation section if gaps have been accepted
+    if st.session_state.get("accepted_gaps") is not None:
+        st.markdown("---")
+
+        from controlnexus.ui.components.remediation_runner import render_remediation_runner
+
+        render_remediation_runner()
 
 
 def _render_playground_tab() -> None:
