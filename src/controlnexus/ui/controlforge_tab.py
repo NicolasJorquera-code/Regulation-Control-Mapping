@@ -239,7 +239,7 @@ def _render_taxonomy_table(config_dir: Path) -> None:
         for ct in control_types
     ]
     st.caption(f"{len(control_types)} control types defined")
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def _render_business_units(config_dir: Path) -> None:
@@ -416,7 +416,7 @@ def _render_run_section_subtab() -> None:
     run_btn = st.button(
         "Run Pipeline",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         disabled=len(selected_sections) == 0,
         key="cf_run_btn",
     )
@@ -550,11 +550,11 @@ def _display_pipeline_results(result: Any) -> None:
             {"Section": sid, "Controls Allocated": count}
             for sid, count in result.section_allocation.items()
         ]
-        st.dataframe(alloc_rows, use_container_width=True, hide_index=True)
+        st.dataframe(alloc_rows, width="stretch", hide_index=True)
 
     # Section breakdown
     with st.expander("Section Breakdown"):
-        st.dataframe(result.section_breakdown, use_container_width=True, hide_index=True)
+        st.dataframe(result.section_breakdown, width="stretch", hide_index=True)
 
     # Plan JSON
     with st.expander("Plan JSON (raw)"):
@@ -573,7 +573,7 @@ def _display_pipeline_results(result: Any) -> None:
                     data=excel_path.read_bytes(),
                     file_name=excel_path.name,
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
+                    width="stretch",
                 )
     with col_dl2:
         plan_path = Path(result.plan_path)
@@ -583,5 +583,5 @@ def _display_pipeline_results(result: Any) -> None:
                 data=plan_path.read_bytes(),
                 file_name=plan_path.name,
                 mime="application/json",
-                use_container_width=True,
+                width="stretch",
             )
