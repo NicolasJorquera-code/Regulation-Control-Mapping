@@ -19,7 +19,7 @@ import logging
 import re
 import time
 from collections import Counter
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -123,6 +123,7 @@ class PlanningResult:
     generated_controls: int
     excel_path: str | None
     llm_enabled: bool
+    control_records: list[Any] = field(default_factory=list, repr=False)
 
 
 class Orchestrator:
@@ -350,6 +351,7 @@ class Orchestrator:
             generated_controls=len(generated_records),
             excel_path=str(excel_path) if excel_path else None,
             llm_enabled=llm_enabled,
+            control_records=generated_records,
         )
 
     def _resolve_template_path(self) -> Path:
@@ -1009,5 +1011,10 @@ def build_control_id(hierarchy_id: str, control_type: str, sequence: int) -> str
 
 
 def planning_result_to_dict(result: PlanningResult) -> dict[str, Any]:
-    """Serialise a PlanningResult dataclass to a plain dict."""
-    return asdict(result)
+    """Serialise a PlanningResult dataclass to a plain dict.
+
+    Excludes ``control_records`` to keep the JSON payload lightweight.
+    """
+    d = asdict(result)
+    d.pop("control_records", None)
+    return d

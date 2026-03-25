@@ -1,10 +1,9 @@
 """ControlNexus Streamlit Dashboard.
 
-Main entry point for the four-tab web UI:
-  1. Analysis — upload controls Excel, run gap analysis, view dashboard
-  2. Playground — interactive agent testing environment
-  3. Evaluation — view evaluation reports for generated controls
-  4. ControlForge — configuration explorer and section runner
+Main entry point for the three-tab web UI:
+  1. ControlForge — configuration explorer and section runner
+  2. Analysis — upload controls Excel, run gap analysis, view dashboard
+  3. Playground — interactive agent testing environment
 
 Launch:
     streamlit run src/controlnexus/ui/app.py
@@ -47,27 +46,24 @@ def main() -> None:
 
     # Session state defaults
     if "active_tab" not in st.session_state:
-        st.session_state.active_tab = "Analysis"
+        st.session_state.active_tab = "ControlForge"
 
     # Masthead
     st.markdown(get_masthead_html(st.session_state.active_tab), unsafe_allow_html=True)
 
-    # Four main tabs
-    tab_analysis, tab_playground, tab_evaluation, tab_controlforge = st.tabs(
-        ["Analysis", "Playground", "Evaluation", "ControlForge"]
+    # Three main tabs
+    tab_controlforge, tab_analysis, tab_playground = st.tabs(
+        ["ControlForge", "Analysis", "Playground"]
     )
+
+    with tab_controlforge:
+        _render_controlforge_tab()
 
     with tab_analysis:
         _render_analysis_tab()
 
     with tab_playground:
         _render_playground_tab()
-
-    with tab_evaluation:
-        _render_evaluation_tab()
-
-    with tab_controlforge:
-        _render_controlforge_tab()
 
 
 # -- Tab Renderers -------------------------------------------------------------
@@ -138,58 +134,6 @@ def _render_controlforge_tab() -> None:
     from controlnexus.ui.controlforge_tab import render_controlforge
 
     render_controlforge()
-
-
-def _render_evaluation_tab() -> None:
-    """Evaluation tab: display eval report if available."""
-    st.markdown(
-        '<div class="report-title">Evaluation Dashboard</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="report-subtitle">'
-        "Quality scores for generated controls across 4 dimensions"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    eval_report = st.session_state.get("eval_report")
-
-    if eval_report is not None:
-        from controlnexus.ui.renderers.eval_dashboard import render_eval_dashboard
-
-        render_eval_dashboard(eval_report)
-    else:
-        st.info(
-            "No evaluation report available yet. "
-            "Run the remediation pipeline and evaluation harness to generate one, "
-            "or load one from a JSON file below."
-        )
-
-        _render_eval_loader()
-
-
-def _render_eval_loader() -> None:
-    """Allow loading an eval report from JSON."""
-    import json
-
-    from controlnexus.evaluation.models import EvalReport
-
-    uploaded = st.file_uploader(
-        "Upload Eval Report JSON",
-        type=["json"],
-        key="eval_json_upload",
-    )
-
-    if uploaded is not None:
-        try:
-            data = json.load(uploaded)
-            report = EvalReport.model_validate(data)
-            st.session_state["eval_report"] = report
-            st.success("Eval report loaded successfully!")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Failed to load eval report: {e}")
 
 
 if __name__ == "__main__":

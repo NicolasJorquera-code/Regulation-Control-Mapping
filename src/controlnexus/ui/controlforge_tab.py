@@ -562,6 +562,21 @@ def _display_pipeline_results(result: Any) -> None:
 
         st.json(planning_result_to_dict(result))
 
+    # Generated controls preview
+    if getattr(result, "control_records", None):
+        st.markdown("### Generated Controls")
+        from controlnexus.export.excel import EXPORT_COLUMNS
+        from controlnexus.ui.components.data_table import render_data_table
+
+        export_rows = [rec.to_export_dict() for rec in result.control_records]
+        render_data_table(
+            records=export_rows,
+            default_columns=["control_id", "leaf_name", "who", "what", "when", "why"],
+            all_columns=EXPORT_COLUMNS,
+            key="cf_pipeline_controls",
+            export_filename=f"{result.run_id}__controls.csv",
+        )
+
     # Download buttons
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:

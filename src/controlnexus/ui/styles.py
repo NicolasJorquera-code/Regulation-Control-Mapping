@@ -276,9 +276,9 @@ def load_custom_css() -> None:
     st.markdown(css, unsafe_allow_html=True)
 
 
-def get_masthead_html(active_tab: str = "Analysis") -> str:
+def get_masthead_html(active_tab: str = "ControlForge") -> str:
     """Generate the Carbon masthead header HTML."""
-    tabs = ["Analysis", "Playground", "Evaluation", "ControlForge"]
+    tabs = ["ControlForge", "Analysis", "Playground"]
     nav_items = []
     for tab in tabs:
         cls = "active" if tab == active_tab else ""
