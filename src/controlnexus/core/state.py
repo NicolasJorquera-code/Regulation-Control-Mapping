@@ -269,7 +269,6 @@ class PipelineState(BaseModel):
     gap_report: GapReport | None = None
     ingested_records: list[FinalControlRecord] = Field(default_factory=list)
     accepted_gaps: GapReport | None = None
-    eval_report: dict[str, Any] = Field(default_factory=dict)
     target_controls: int = 0
     target_source: str = ""
     llm_enabled: bool = False

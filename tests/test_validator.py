@@ -179,3 +179,45 @@ class TestBuildRetryAppendix:
     def test_word_count_high_message(self):
         text = build_retry_appendix(1, 3, ["WORD_COUNT_OUT_OF_RANGE"], 100)
         assert "reduce" in text.lower()
+
+
+# ── Custom Word Count Limits ─────────────────────────────────────────────────
+
+
+class TestCustomWordCountLimits:
+
+    def test_custom_min_words_passes(self):
+        narr = _make_narrative(full_description=" ".join(["word"] * 25))
+        spec = _make_spec()
+        result = validate(narr, spec, min_words=20, max_words=100)
+        assert result.passed
+
+    def test_custom_min_words_fails(self):
+        narr = _make_narrative(full_description=" ".join(["word"] * 15))
+        spec = _make_spec()
+        result = validate(narr, spec, min_words=20, max_words=100)
+        assert "WORD_COUNT_OUT_OF_RANGE" in result.failures
+
+    def test_custom_max_words_passes(self):
+        narr = _make_narrative(full_description=" ".join(["word"] * 90))
+        spec = _make_spec()
+        result = validate(narr, spec, min_words=20, max_words=100)
+        assert "WORD_COUNT_OUT_OF_RANGE" not in result.failures
+
+    def test_custom_max_words_fails(self):
+        narr = _make_narrative(full_description=" ".join(["word"] * 110))
+        spec = _make_spec()
+        result = validate(narr, spec, min_words=20, max_words=100)
+        assert "WORD_COUNT_OUT_OF_RANGE" in result.failures
+
+    def test_default_params_unchanged(self):
+        """Default call without custom params behaves the same as before."""
+        narr = _make_narrative(full_description=" ".join(["word"] * 40))
+        spec = _make_spec()
+        result = validate(narr, spec)
+        assert result.passed
+
+    def test_retry_appendix_uses_custom_limits(self):
+        text = build_retry_appendix(1, 3, ["WORD_COUNT_OUT_OF_RANGE"], 15, min_words=20, max_words=100)
+        assert "20" in text
+        assert "increase" in text.lower()

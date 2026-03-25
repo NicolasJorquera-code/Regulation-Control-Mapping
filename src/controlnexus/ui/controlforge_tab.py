@@ -571,7 +571,10 @@ def _display_pipeline_results(result: Any) -> None:
         export_rows = [rec.to_export_dict() for rec in result.control_records]
         render_data_table(
             records=export_rows,
-            default_columns=["control_id", "leaf_name", "who", "what", "when", "why"],
+            default_columns=[
+                "control_id", "business_unit_name", "selected_level_1",
+                "selected_level_2", "frequency", "full_description",
+            ],
             all_columns=EXPORT_COLUMNS,
             key="cf_pipeline_controls",
             export_filename=f"{result.run_id}__controls.csv",

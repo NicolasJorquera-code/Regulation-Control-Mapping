@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import pandas as pd
 
 import streamlit as st
 
@@ -51,13 +52,16 @@ def main() -> None:
     # Masthead
     st.markdown(get_masthead_html(st.session_state.active_tab), unsafe_allow_html=True)
 
-    # Three main tabs
-    tab_controlforge, tab_analysis, tab_playground = st.tabs(
-        ["ControlForge", "Analysis", "Playground"]
+    # Four main tabs
+    tab_controlforge, tab_modular, tab_analysis, tab_playground = st.tabs(
+        ["ControlForge", "ControlForge Modular", "Analysis", "Playground"]
     )
 
     with tab_controlforge:
         _render_controlforge_tab()
+
+    with tab_modular:
+        _render_modular_tab()
 
     with tab_analysis:
         _render_analysis_tab()
@@ -134,6 +138,13 @@ def _render_controlforge_tab() -> None:
     from controlnexus.ui.controlforge_tab import render_controlforge
 
     render_controlforge()
+
+
+def _render_modular_tab() -> None:
+    """ControlForge Modular tab: config-driven generation."""
+    from controlnexus.ui.modular_tab import render_modular_tab
+
+    render_modular_tab()
 
 
 if __name__ == "__main__":

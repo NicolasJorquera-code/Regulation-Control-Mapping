@@ -67,3 +67,4 @@ archive/
 
 # Jupyter
 .ipynb_checkpoints/
+output/

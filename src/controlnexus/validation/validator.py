@@ -29,15 +29,24 @@ MAX_WORDS = 80
 def validate(
     narrative: dict[str, Any],
     spec: dict[str, Any],
+    *,
+    min_words: int = MIN_WORDS,
+    max_words: int = MAX_WORDS,
 ) -> ValidationResult:
     """Run all 6 validation rules on a narrative against its locked spec.
+
+    Args:
+        narrative: The narrative dict with who/what/when/where/why/full_description.
+        spec: The locked spec dict.
+        min_words: Minimum word count for full_description (default 30).
+        max_words: Maximum word count for full_description (default 80).
 
     Rules:
         MULTIPLE_WHATS: More than 2 distinct action verbs in 'what'.
         VAGUE_WHEN: 'when' contains vague temporal terms.
         WHO_EQUALS_WHERE: 'who' and 'where' are substrings of each other.
         WHY_MISSING_RISK: 'why' lacks risk-related marker words.
-        WORD_COUNT_OUT_OF_RANGE: 'full_description' outside 30-80 words.
+        WORD_COUNT_OUT_OF_RANGE: 'full_description' outside min_words-max_words.
         SPEC_MISMATCH: 'who' or 'where' differs from locked spec values.
     """
     failures: list[str] = []
@@ -76,7 +85,7 @@ def validate(
         failures.append("WHY_MISSING_RISK")
 
     # Rule 5: WORD_COUNT_OUT_OF_RANGE
-    if word_count < MIN_WORDS or word_count > MAX_WORDS:
+    if word_count < min_words or word_count > max_words:
         failures.append("WORD_COUNT_OUT_OF_RANGE")
 
     # Rule 6: SPEC_MISMATCH
@@ -103,6 +112,9 @@ def build_retry_appendix(
     max_attempts: int,
     failures: list[str],
     word_count: int,
+    *,
+    min_words: int = MIN_WORDS,
+    max_words: int = MAX_WORDS,
 ) -> str:
     """Build failure-specific retry instructions for the NarrativeAgent.
 
@@ -127,10 +139,10 @@ def build_retry_appendix(
                 "(e.g., 'risk', 'prevent', 'mitigate', 'ensure compliance')."
             )
         elif code == "WORD_COUNT_OUT_OF_RANGE":
-            if word_count < MIN_WORDS:
-                lines.append(f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — increase to at least {MIN_WORDS}.")
+            if word_count < min_words:
+                lines.append(f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — increase to at least {min_words}.")
             else:
-                lines.append(f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — reduce to {MAX_WORDS} or fewer.")
+                lines.append(f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — reduce to {max_words} or fewer.")
         elif code == "SPEC_MISMATCH":
             lines.append("- SPEC_MISMATCH: The 'who' or 'where' field does not match the locked spec. Preserve them exactly.")
 
