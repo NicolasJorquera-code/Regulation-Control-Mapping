@@ -18,6 +18,7 @@ A standalone reference for developers working on the ControlForge tab in the Con
 10. [How to Run the App](#10-how-to-run-the-app)
 11. [Common Development Tasks](#11-common-development-tasks)
 12. [End-to-End Walkthrough](#12-end-to-end-walkthrough) (8 steps including pipeline execution)
+13. [Agent Deep Dive](#13-agent-deep-dive) (pipeline agents, inputs/outputs, diagrams)
 
 ---
 
@@ -892,3 +893,552 @@ Use the ControlForge tab to verify:
 - **Run Section:** run the pipeline for each section individually and verify controls match the section's registry vocabulary and affinity priorities
 
 If any section is missing registry data or has incomplete affinity mappings, that section will produce lower-quality or generic controls.
+
+---
+
+## 13. Agent Deep Dive
+
+This section provides an in-depth analysis of every agent used in the ControlForge pipeline. The orchestrator (`pipeline/orchestrator.py`) drives a **3-phase control-building process**, and Phases 2-3 are where agents operate. Two additional agents (AdversarialReviewer, DifferentiationAgent) exist for future quality-gate and deduplication workflows.
+
+### 13.1 Pipeline Overview — Where Agents Fit
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        ORCHESTRATOR PIPELINE                        │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Phase 1 (Sequential, No LLM)                                        │
+│  ┌────────────────────────────────────────────┐                      │
+│  │  For each assignment:                      │                      │
+│  │    • Extract section profile + registry    │                      │
+│  │    • Pre-compute deterministic defaults:   │                      │
+│  │      spec, narrative, enriched, evidence   │                      │
+│  └────────────────────────────────────────────┘                      │
+│                          │                                           │
+│                          ▼                                           │
+│  Phase 2 (Parallel Async, LLM) — if credentials present              │
+│  ┌────────────────────────────────────────────┐                      │
+│  │  For each assignment (bounded semaphore):  │                      │
+│  │    ┌──────────┐  ┌────────────────┐  ┌───────────┐               │
+│  │    │ SpecAgent│→ │ NarrativeAgent │→ │ Enricher  │               │
+│  │    │          │  │ (up to 3 tries)│  │   Agent   │               │
+│  │    └──────────┘  └────────────────┘  └───────────┘               │
+│  │         │              ▲     │             │                      │
+│  │         │              │     ▼             │                      │
+│  │         │         ┌──────────┐             │                      │
+│  │         │         │Validator │             │                      │
+│  │         │         │(6 rules) │             │                      │
+│  │         │         └──────────┘             │                      │
+│  └────────────────────────────────────────────┘                      │
+│                          │                                           │
+│                          ▼                                           │
+│  Phase 3 (Sequential, No LLM)                                        │
+│  ┌────────────────────────────────────────────┐                      │
+│  │  Merge LLM results with Phase 1 defaults   │                      │
+│  │  Assign CTRL-IDs, run final validation      │                      │
+│  │  Build FinalControlRecord objects           │                      │
+│  └────────────────────────────────────────────┘                      │
+│                          │                                           │
+│                          ▼                                           │
+│                    Excel / JSON Export                                │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Key points:**
+- If no LLM credentials are present, Phase 2 is skipped entirely and only Phase 1 deterministic defaults are used.
+- Each agent call is fully autonomous — it receives a JSON payload, calls the LLM once, and parses the JSON response.
+- All agents inherit from `BaseAgent` (in `agents/base.py`) which provides `call_llm()` and `parse_json()` helpers.
+
+---
+
+### 13.2 SpecAgent
+
+**Source:** `src/controlnexus/agents/spec.py`
+**Role:** Produces a **locked control specification** — the structured facts that all downstream agents must preserve.
+
+#### Flow Diagram
+
+```
+  ┌─────────────────────────┐
+  │     ORCHESTRATOR         │
+  │  (Phase 1 defaults +     │
+  │   assignment context)    │
+  └────────────┬────────────┘
+               │
+               ▼
+  ┌─────────────────────────┐         ┌──────────────────────────┐
+  │       SpecAgent          │────────▶│        LLM Call           │
+  │                          │         │  system: "You are         │
+  │  Builds user prompt from │         │   SpecAgent. Produce a    │
+  │  8 context categories    │         │   locked control spec..." │
+  │                          │◀────────│  Returns: JSON spec       │
+  └─────────────┬───────────┘         └──────────────────────────┘
+                │
+                ▼
+  ┌─────────────────────────┐
+  │    Locked Spec (dict)    │
+  │  → forwarded to          │
+  │    NarrativeAgent        │
+  └─────────────────────────┘
+```
+
+#### Input — What Gets Fed In
+
+The orchestrator calls `spec_agent.execute()` with **8 keyword arguments**:
+
+| Parameter | Type | Source | Description |
+|-----------|------|--------|-------------|
+| `leaf` | `dict` | Assignment | `{"hierarchy_id": "4.1.1.1", "name": "Develop procurement plan"}` |
+| `control_type` | `str` | Type distribution | e.g. `"Third Party Due Diligence"` |
+| `type_definition` | `str` | taxonomy.yaml | e.g. `"Assessment and monitoring of risks posed by vendors..."` |
+| `registry` | `dict` | section_N.yaml | Domain vocabulary: roles, systems, evidence_artifacts, event_triggers, regulatory_frameworks |
+| `placement_defs` | `dict` | placement_methods.yaml | Valid placements (Preventive, Detective, Contingency Planning) and their Level 2 types |
+| `method_defs` | `dict` | placement_methods.yaml | Valid methods (Automated, Manual, Automated with Manual Component) |
+| `taxonomy_constraints` | `dict` | Computed | `{"selected_level_1": "Preventive", "level_1_options": [...], "allowed_level_2_for_selected_level_1": [...]}` |
+| `diversity_context` | `dict` | Computed | `{"available_business_units": [{...}, ...], "suggested_business_unit": {...}}` |
+
+**Example user prompt (JSON sent to LLM):**
+```json
+{
+  "leaf": {"hierarchy_id": "4.1.1.1", "name": "Develop procurement plan"},
+  "control_type": "Third Party Due Diligence",
+  "control_type_definition": "Assessment and monitoring of risks posed by vendors...",
+  "domain_registry": {
+    "roles": ["Procurement Analyst", "Vendor Risk Analyst", "Contract Manager"],
+    "systems": ["Vendor Management Platform", "Third Party Risk Assessment Tool"],
+    "evidence_artifacts": ["Risk assessments with sign-off", "Contract approval logs"],
+    "event_triggers": ["New vendor engagement", "Annual risk reassessment"]
+  },
+  "taxonomy_constraints": {
+    "selected_level_1": "Preventive",
+    "level_1_options": ["Preventive", "Detective", "Contingency Planning"],
+    "allowed_level_2_for_selected_level_1": ["Authorization", "Third Party Due Diligence", ...]
+  },
+  "diversity_context": {
+    "available_business_units": [
+      {"business_unit_id": "BU-015", "name": "Third Party Risk Management", ...}
+    ],
+    "suggested_business_unit": {"business_unit_id": "BU-015", ...}
+  },
+  "constraints": [
+    "selected_level_1 must be one value from taxonomy_constraints.level_1_options",
+    "who must be one role from registry.roles",
+    "where_system must be one system from registry.systems",
+    "evidence must be audit-grade: artifact name + signer + retention system",
+    ...
+  ]
+}
+```
+
+#### Output — What Comes Back
+
+A flat JSON dict — the **locked spec**:
+
+```json
+{
+  "hierarchy_id": "4.1.1.1",
+  "leaf_name": "Develop procurement plan",
+  "selected_level_1": "Preventive",
+  "control_type": "Third Party Due Diligence",
+  "placement": "Preventive",
+  "method": "Manual",
+  "who": "Vendor Risk Analyst",
+  "what_action": "Completes vendor due diligence assessment",
+  "what_detail": "evaluating financial stability, regulatory compliance, and cybersecurity posture",
+  "when": "Upon initiation of new vendor engagement",
+  "where_system": "Third Party Risk Assessment Tool",
+  "why_risk": "Mitigates third-party operational, compliance, and reputational risks",
+  "evidence": "Vendor risk assessment scorecard with analyst sign-off and manager review, retained in Third Party Risk Assessment Tool",
+  "business_unit_id": "BU-015"
+}
+```
+
+#### Key Constraints Enforced
+- `who` must come from `registry.roles`
+- `where_system` must come from `registry.systems`
+- `evidence` must include: specific artifact name, signer role, retention system
+- `selected_level_1` and `control_type` must respect taxonomy_constraints
+- `business_unit_id` must be a valid BU from `diversity_context`
+
+---
+
+### 13.3 NarrativeAgent
+
+**Source:** `src/controlnexus/agents/narrative.py`
+**Role:** Converts a locked spec into **5W prose** — the human-readable control description with a 30-80 word `full_description`.
+
+#### Flow Diagram
+
+```
+  ┌─────────────────────────┐
+  │   Locked Spec (from      │
+  │   SpecAgent output)      │
+  └────────────┬────────────┘
+               │
+               ▼
+  ┌─────────────────────────┐         ┌──────────────────────────┐
+  │    NarrativeAgent        │────────▶│        LLM Call           │
+  │                          │         │  system: "You are         │
+  │  Injects: locked_spec,   │         │   NarrativeAgent.         │
+  │  standards, phrase bank, │         │   Convert the spec into   │
+  │  exemplars, regulatory   │         │   5W prose..."            │
+  │  context, retry appendix │◀────────│  Returns: JSON narrative  │
+  └─────────────┬───────────┘         └──────────────────────────┘
+                │
+                ▼
+  ┌─────────────────────────┐
+  │   Deterministic          │──── PASS ──▶ EnricherAgent
+  │   Validator (6 rules)    │
+  │                          │──── FAIL ──▶ Retry (up to 3x)
+  │                          │              with retry_appendix
+  └─────────────────────────┘
+```
+
+#### Input — What Gets Fed In
+
+| Parameter | Type | Source | Description |
+|-----------|------|--------|-------------|
+| `locked_spec` | `dict` | SpecAgent output | The full locked specification (see 13.2 output) |
+| `standards` | `dict` | standards.yaml → `five_w` | Definitions: `{"who": "Define accountable role...", "what": "Define specific action...", ...}` |
+| `phrase_bank_cfg` | `dict` | standards.yaml → `phrase_bank` | Preferred vocabulary: `{"action_verbs": ["reviews", "reconciles", ...], "timing_phrases": ["daily", ...]}` |
+| `exemplars` | `list[dict]` | section_N.yaml → `exemplars` | Example controls for this section showing ideal format and style |
+| `regulatory_context` | `list[str]` | section_N.yaml → `registry.regulatory_frameworks` | e.g. `["OCC Third-Party Risk Guidance", "FFIEC Outsourcing Guidance"]` |
+| `retry_appendix` | `str \| None` | Validator | Only on retry attempts 2-3. Contains failure-specific fix instructions |
+
+**Example retry_appendix (attempt 2 of 3):**
+```
+ATTEMPT 2/3. Previous failures:
+- WORD_COUNT_OUT_OF_RANGE: Word count was 25 — increase to at least 30.
+- VAGUE_WHEN: Your 'when' field contained a vague term. Replace with a specific frequency.
+```
+
+#### Output — What Comes Back
+
+```json
+{
+  "who": "Vendor Risk Analyst",
+  "what": "Completes vendor due diligence assessment",
+  "when": "Upon initiation of new vendor engagement",
+  "where": "Third Party Risk Assessment Tool",
+  "why": "Mitigates third-party operational, compliance, and reputational risks",
+  "full_description": "Upon initiation of a new vendor engagement, the Vendor Risk Analyst completes a comprehensive due diligence assessment in the Third Party Risk Assessment Tool, evaluating financial stability, regulatory compliance history, cybersecurity posture, and business continuity capabilities to mitigate third-party operational, compliance, and reputational risks."
+}
+```
+
+#### Retry Cycle
+
+The orchestrator runs a **validate-then-retry loop** (up to 3 attempts):
+
+```
+  Attempt 1 ──▶ NarrativeAgent ──▶ Validator ──▶ PASS? ──▶ Done
+                                       │
+                                    FAIL
+                                       │
+                              build_retry_appendix()
+                                       │
+  Attempt 2 ──▶ NarrativeAgent ──▶ Validator ──▶ PASS? ──▶ Done
+                (+ retry appendix)         │
+                                        FAIL
+                                           │
+  Attempt 3 ──▶ NarrativeAgent ──▶ Validator ──▶ Use best result regardless
+                (+ retry appendix)
+```
+
+---
+
+### 13.4 Validator (Deterministic — Not an Agent)
+
+**Source:** `src/controlnexus/validation/validator.py`
+**Role:** Pure-Python quality gate between NarrativeAgent and EnricherAgent. **No LLM calls.** Enforces 6 rules.
+
+#### Validation Rules
+
+| Rule | Code | What it Checks | Fail Condition |
+|------|------|----------------|----------------|
+| 1 | `MULTIPLE_WHATS` | Action verb count in `what` | > 2 distinct action verbs |
+| 2 | `VAGUE_WHEN` | Temporal specificity in `when` | Contains "periodic", "ad hoc", "as needed", etc. |
+| 3 | `WHO_EQUALS_WHERE` | Identity confusion | `who` and `where` are substrings of each other |
+| 4 | `WHY_MISSING_RISK` | Risk language in `why` | No risk markers ("risk", "prevent", "mitigate", "ensure", etc.) |
+| 5 | `WORD_COUNT_OUT_OF_RANGE` | Description length | `full_description` < 30 or > 80 words |
+| 6 | `SPEC_MISMATCH` | Locked spec fidelity | `who` or `where` differs from locked spec |
+
+#### Input / Output
+
+```
+Input:  validate(narrative={who, what, when, where, why, full_description},
+                 spec={who, where_system, ...})
+
+Output: ValidationResult(
+            passed=True/False,
+            failures=["VAGUE_WHEN", "WORD_COUNT_OUT_OF_RANGE"],
+            word_count=42
+        )
+```
+
+---
+
+### 13.5 EnricherAgent
+
+**Source:** `src/controlnexus/agents/enricher.py`
+**Role:** Refines validated control prose for clarity and assigns a **quality rating** (Strong → Weak).
+
+#### Flow Diagram
+
+```
+  ┌─────────────────────────┐
+  │  Validated Control +     │
+  │  Narrative + Spec +      │
+  │  Validation Result       │
+  └────────────┬────────────┘
+               │
+               ▼
+  ┌─────────────────────────┐         ┌──────────────────────────┐
+  │     EnricherAgent        │────────▶│        LLM Call           │
+  │                          │         │  system: "You are         │
+  │  Bundles full control    │         │   EnricherAgent. Refine   │
+  │  context + rating        │         │   prose and assign a      │
+  │  criteria + neighbors    │         │   quality rating..."      │
+  │                          │◀────────│  Returns: JSON enriched   │
+  └─────────────┬───────────┘         └──────────────────────────┘
+                │
+                ▼
+  ┌─────────────────────────┐
+  │  Enriched Output:        │
+  │  refined_full_description│
+  │  quality_rating          │
+  │  rationale               │
+  └─────────────────────────┘
+```
+
+#### Input — What Gets Fed In
+
+| Parameter | Type | Source | Description |
+|-----------|------|--------|-------------|
+| `validated_control` | `dict` | Orchestrator | Composite of control_id, hierarchy_id, leaf_name, control_type, placement, method, narrative (5W), validation result, and spec |
+| `rating_criteria_cfg` | `dict` | standards.yaml → `quality_ratings` | `{"allowed": ["Strong", "Effective", "Satisfactory", "Needs Improvement", "Weak"]}` |
+| `nearest_neighbors` | `list[dict]` | ChromaDB (future) | Similar controls from memory store for deduplication context (currently `[]`) |
+
+**Example `validated_control` payload:**
+```json
+{
+  "control_id": "CTRL-PENDING-4.1.1.1",
+  "hierarchy_id": "4.1.1.1",
+  "leaf_name": "Develop procurement plan",
+  "control_type": "Third Party Due Diligence",
+  "placement": "Preventive",
+  "method": "Manual",
+  "narrative": {
+    "who": "Vendor Risk Analyst",
+    "what": "Completes vendor due diligence assessment",
+    "when": "Upon initiation of new vendor engagement",
+    "where": "Third Party Risk Assessment Tool",
+    "why": "Mitigates third-party operational, compliance, and reputational risks",
+    "full_description": "Upon initiation of a new vendor engagement, the Vendor Risk Analyst completes a comprehensive due diligence assessment..."
+  },
+  "validation": {
+    "passed": true,
+    "failures": [],
+    "word_count": 45
+  },
+  "spec": { ... }
+}
+```
+
+#### Output — What Comes Back
+
+```json
+{
+  "refined_full_description": "Upon initiation of a new vendor engagement, the Vendor Risk Analyst completes a comprehensive due diligence assessment in the Third Party Risk Assessment Tool, evaluating financial stability, regulatory compliance, and cybersecurity posture to mitigate third-party operational and reputational risks.",
+  "quality_rating": "Effective",
+  "rationale": "Control clearly identifies the accountable role, specific action, trigger event, system, and risk mitigated. Evidence is specific and audit-grade."
+}
+```
+
+#### Quality Ratings
+
+| Rating | Meaning |
+|--------|---------|
+| **Strong** | Exceeds all standards; specific, audit-ready, no ambiguity |
+| **Effective** | Meets all standards; minor wording improvements possible |
+| **Satisfactory** | Adequate; some vagueness or generic language |
+| **Needs Improvement** | Multiple issues; would trigger adversarial review (future) |
+| **Weak** | Fails minimum quality bar; would trigger adversarial review (future) |
+
+---
+
+### 13.6 AdversarialReviewer (Future — Not Yet in Pipeline)
+
+**Source:** `src/controlnexus/agents/adversarial.py`
+**Role:** Red-teams a generated control by identifying weaknesses, vague language, missing risk coverage, or specification violations. Planned for the **quality gate** path when a control is rated "Weak" or "Needs Improvement" by the EnricherAgent.
+
+#### Flow Diagram (Planned)
+
+```
+  ┌─────────────────────────┐
+  │  Quality Gate: rating     │
+  │  = "Weak" or              │
+  │  "Needs Improvement"      │
+  └────────────┬────────────┘
+               │
+               ▼
+  ┌─────────────────────────┐         ┌──────────────────────────┐
+  │  AdversarialReviewer     │────────▶│        LLM Call           │
+  │                          │         │  system: "You are a       │
+  │  Sends: control fields,  │         │   senior internal audit   │
+  │  locked spec, standards  │         │   reviewer..."            │
+  │                          │◀────────│  Returns: weaknesses +    │
+  └─────────────┬───────────┘         │  rewrite_guidance         │
+                │                      └──────────────────────────┘
+                ▼
+  ┌─────────────────────────┐
+  │  Feed rewrite_guidance   │
+  │  back into NarrativeAgent│
+  │  for another cycle       │
+  └─────────────────────────┘
+```
+
+#### Input
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `control` | `dict` | The full 5W control fields + full_description |
+| `spec` | `dict` | The locked specification |
+| `standards` | `dict` | Standards config for reference |
+
+#### Output
+
+```json
+{
+  "weaknesses": [
+    {
+      "issue": "'what' field uses two action verbs creating ambiguity about the primary control activity",
+      "suggestion": "Use a single verb: 'validates' instead of 'reviews and validates'"
+    },
+    {
+      "issue": "'why' field does not reference a specific regulatory framework",
+      "suggestion": "Add reference to the applicable OCC guidance"
+    }
+  ],
+  "overall_assessment": "Needs Improvement",
+  "rewrite_guidance": "Simplify the WHAT to a single action verb. Add specific regulatory reference to the WHY. Ensure evidence field names the exact artifact."
+}
+```
+
+**Current state:** The agent class exists and is registered in `AGENT_REGISTRY`, but the orchestrator does not invoke it. The remediation graph has a `quality_check` routing function with a TODO comment for Phase 9+.
+
+---
+
+### 13.7 DifferentiationAgent (Future — Not Yet in Pipeline)
+
+**Source:** `src/controlnexus/agents/differentiator.py`
+**Role:** Rewrites a control flagged as **semantically duplicate** (via ChromaDB nearest-neighbor search) to be distinct while preserving locked spec constraints.
+
+#### Flow Diagram (Planned)
+
+```
+  ┌─────────────────────────┐
+  │  Dedup Check: cosine     │
+  │  similarity > threshold  │
+  └────────────┬────────────┘
+               │
+               ▼
+  ┌─────────────────────────┐         ┌──────────────────────────┐
+  │ DifferentiationAgent     │────────▶│        LLM Call           │
+  │                          │         │  system: "You are a       │
+  │  Sends: duplicate ctrl,  │         │   control documentation   │
+  │  existing ctrl text,     │         │   specialist..."          │
+  │  locked spec constraints │◀────────│  Rewrites WHAT and WHEN   │
+  └─────────────┬───────────┘         │  while preserving WHO,    │
+                │                      │  WHERE, WHY               │
+                ▼                      └──────────────────────────┘
+  ┌─────────────────────────┐
+  │  Differentiated control  │
+  │  (new what/when/desc)    │
+  └─────────────────────────┘
+```
+
+#### Input
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `control` | `dict` | The flagged duplicate control (5W + full_description) |
+| `existing_control` | `str` | The existing control's full_description it duplicates |
+| `spec` | `dict` | Locked specification constraints that must be preserved |
+
+#### Output
+
+```json
+{
+  "who": "Vendor Risk Analyst",
+  "what": "Conducts periodic risk reassessment of existing vendor relationships",
+  "when": "Quarterly",
+  "where": "Third Party Risk Assessment Tool",
+  "why": "Mitigates third-party operational, compliance, and reputational risks",
+  "full_description": "On a quarterly basis, the Vendor Risk Analyst conducts a risk reassessment of existing vendor relationships in the Third Party Risk Assessment Tool, reviewing performance metrics, compliance status, and risk tier changes to mitigate ongoing third-party operational and reputational risk exposure."
+}
+```
+
+**Deterministic fallback:** If no LLM is available, prepends `"Additionally, "` to the original description.
+
+**Current state:** Registered in `AGENT_REGISTRY`, available in the Playground for testing, but not invoked by the orchestrator or remediation graph.
+
+---
+
+### 13.8 Agent Summary Table
+
+| Agent | Status | LLM? | Calls per Control | Input Summary | Output Summary |
+|-------|--------|------|--------------------|---------------|----------------|
+| **SpecAgent** | Active | Yes | 1 | leaf + control_type + registry + taxonomy constraints + BU context | Locked spec (14 fields) |
+| **NarrativeAgent** | Active | Yes | 1-3 (retries) | locked_spec + standards + phrase_bank + exemplars + retry_appendix | 5W prose + full_description |
+| **Validator** | Active | No | 1-3 (per narrative) | narrative + spec | passed/failed + failure codes + word_count |
+| **EnricherAgent** | Active | Yes | 1 | validated_control + rating_criteria + nearest_neighbors | refined_description + quality_rating + rationale |
+| **AdversarialReviewer** | Future | Yes | 0 (planned: 1) | control + spec + standards | weaknesses + rewrite_guidance |
+| **DifferentiationAgent** | Future | 0 (planned: 1) | Yes | duplicate_control + existing_control + spec | Rewritten 5W control |
+
+### 13.9 End-to-End Agent Data Flow Example
+
+For a single control assignment (`hierarchy_id: 4.1.1.1`, `control_type: Third Party Due Diligence`, `BU-015`):
+
+```
+  ORCHESTRATOR Phase 1
+  │
+  │  Deterministic defaults computed:
+  │    who = "Procurement Analyst"      (from registry.roles[0])
+  │    where = "Vendor Management Platform"  (from registry.systems[0])
+  │    when = "New vendor engagement"    (from registry.event_triggers[0])
+  │    evidence = "Risk assessments with sign-off with Procurement Analyst
+  │               sign-off, retained in Vendor Management Platform"
+  │
+  ▼
+  SPECAGENT (Phase 2)
+  │
+  │  LLM picks contextually-best values:
+  │    who = "Vendor Risk Analyst"       (registry.roles[1] — better fit)
+  │    where = "Third Party Risk Assessment Tool"  (registry.systems[1])
+  │    business_unit_id = "BU-015"       (confirmed suggested BU)
+  │    evidence = "Vendor risk assessment scorecard with analyst sign-off
+  │               and manager review, retained in Third Party Risk
+  │               Assessment Tool"       (audit-grade, 3-part evidence)
+  │
+  ▼
+  NARRATIVEAGENT (Phase 2)
+  │
+  │  Attempt 1: generates 5W prose
+  │  Validator: PASS (42 words, no failures)
+  │
+  ▼
+  ENRICHERAGENT (Phase 2)
+  │
+  │  Refines prose slightly, assigns quality_rating = "Effective"
+  │
+  ▼
+  ORCHESTRATOR Phase 3
+  │
+  │  Merges LLM results over Phase 1 defaults
+  │  Assigns control_id = "CTRL-0401-THR-001"
+  │  Runs final validation
+  │  Writes FinalControlRecord → Excel row
+  │
+  ▼
+  OUTPUT: 19-column Excel row
+```
