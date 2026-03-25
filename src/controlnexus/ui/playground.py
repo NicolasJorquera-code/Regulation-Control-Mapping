@@ -211,6 +211,11 @@ def render_playground() -> None:
         st.session_state["_playground_last_agent"] = selected_agent
         st.session_state.pop("playground_last_result", None)
 
+    # Handle "Reset to Sample" — must clear BEFORE the widget is instantiated
+    reset_key = f"_playground_reset_{selected_agent}"
+    if st.session_state.pop(reset_key, False):
+        st.session_state.pop(f"playground_input_json_{selected_agent}", None)
+
     st.markdown("---")
 
     # Input data — always derive fresh default from selected agent
@@ -229,12 +234,12 @@ def render_playground() -> None:
 
     col_gen, col_run = st.columns(2)
     with col_gen:
-        if st.button("Reset to Sample", use_container_width=True):
-            st.session_state[f"playground_input_json_{selected_agent}"] = default_json
+        if st.button("Reset to Sample", width="stretch"):
+            st.session_state[reset_key] = True
             st.rerun()
 
     with col_run:
-        run_agent = st.button("Run Agent", type="primary", use_container_width=True)
+        run_agent = st.button("Run Agent", type="primary", width="stretch")
 
     st.markdown("---")
 
@@ -321,5 +326,5 @@ def _display_result(result: dict) -> None:
         data=json.dumps(result, indent=2),
         file_name="agent_result.json",
         mime="application/json",
-        use_container_width=True,
+        width="stretch",
     )

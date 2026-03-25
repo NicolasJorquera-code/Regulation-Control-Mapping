@@ -271,66 +271,6 @@ def load_custom_css() -> None:
     footer {{visibility: hidden;}}
     header {{visibility: hidden;}}
 
-    /* === Dark Mode (Carbon Gray 100) === */
-    @media (prefers-color-scheme: dark) {{
-        html, body, [class*="css"] {{
-            color: #f4f4f4;
-            background-color: #161616;
-        }}
-        .report-title {{
-            color: #f4f4f4;
-        }}
-        .report-subtitle {{
-            color: #a8a8a8;
-            border-bottom-color: #393939;
-        }}
-        .carbon-tile {{
-            background-color: #262626;
-            border-color: #393939;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }}
-        .carbon-tile:hover {{
-            background-color: #353535;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-        }}
-        .metric-label {{
-            color: #a8a8a8;
-        }}
-        .score-card .score-label {{
-            color: #a8a8a8;
-        }}
-        .upload-section {{
-            background-color: #262626;
-            border-color: #393939;
-        }}
-        div[data-testid="stExpander"] {{
-            background-color: #262626;
-            border-bottom-color: #393939;
-        }}
-        div[data-testid="stExpander"] summary {{
-            color: #f4f4f4;
-        }}
-        .stTextArea textarea {{
-            background-color: #262626 !important;
-            color: #f4f4f4 !important;
-            border-color: #393939 !important;
-        }}
-        .tag-gray {{
-            background-color: #525252;
-            color: #f4f4f4;
-        }}
-        .playground-output {{
-            background-color: #0d0d0d;
-        }}
-        .affinity-low {{
-            background-color: #393939;
-            color: #a8a8a8;
-        }}
-        .affinity-none {{
-            background-color: #262626;
-            color: #525252;
-        }}
-    }}
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)

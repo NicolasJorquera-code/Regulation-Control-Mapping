@@ -47,7 +47,7 @@ def render_analysis_runner() -> None:
     if not config_dir.exists():
         config_dir = Path(__file__).resolve().parents[4] / "config"
 
-    run_btn = st.button("Run Gap Analysis", type="primary", use_container_width=True)
+    run_btn = st.button("Run Gap Analysis", type="primary", width="stretch")
 
     if run_btn:
         status = st.status("Running gap analysis...", expanded=True)
