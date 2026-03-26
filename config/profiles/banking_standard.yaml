@@ -1,0 +1,1678 @@
+name: "banking-standard"
+description: "Full banking config — 25 control types, 17 business units, 13 APQC process areas. Equivalent to the current ControlNexus default setup."
+
+# ── Control Types ─────────────────────────────────────────────────────────────
+
+control_types:
+  - name: Reconciliation
+    definition: "Comparison of features, transactions, activities, or data to validate the accuracy, completeness, or appropriateness of the target outputs. This should include discrete steps for investigating and resolving any discrepancies that are identified."
+    code: REC
+    min_frequency_tier: Monthly
+    placement_categories: [Detective]
+
+  - name: Authorization
+    definition: "Review and validation of documentation, transaction information, or other details to determine whether they are appropriate, complete, or accurate before allowing a process or activity to continue."
+    code: AUT
+    min_frequency_tier: Quarterly
+    placement_categories: [Preventive]
+
+  - name: Verification and Validation
+    definition: "Examining information (e.g., documentation, transaction details) to validate the accuracy, appropriateness, or completeness of information or the completion of required actions."
+    code: VNV
+    min_frequency_tier: Quarterly
+    placement_categories: [Detective]
+
+  - name: Exception Reporting
+    definition: "Creation of reports and alerts to identify risk limit breaches, system capacity constraints or breakdowns, ageing items, outstanding requests or activities that need to be closed out or resolved."
+    code: EXR
+    min_frequency_tier: Monthly
+    placement_categories: [Detective]
+
+  - name: Segregation of Duties
+    definition: "Organize or assign activities, responsibilities, or tasks within a process such that no individual or group is able to complete the process on their own thereby limiting the potential for manipulating the outputs or outcomes of the process."
+    code: SOD
+    min_frequency_tier: Quarterly
+    placement_categories: [Preventive]
+
+  - name: "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+    definition: "Review, approval, and management of data, documentation, and assigned activities to validate completeness, accuracy, and appropriateness of information and outputs, and securing alternative methods to capture and restore access to missing or lost data."
+    code: DOC
+    placement_categories: [Preventive]
+
+  - name: Internal and External Audits
+    definition: "Testing and review of internal controls or processes to assess effectiveness or determine alignment with regulatory requirements."
+    code: AUD
+    placement_categories: [Detective]
+
+  - name: Automated Rules
+    definition: "Implementation of pre-defined rules into systems or applications to control or restrict the execution of actions (e.g., the types of data required, the types of actions permitted)."
+    code: ARL
+    min_frequency_tier: Monthly
+    placement_categories: [Preventive]
+
+  - name: Risk Escalation Processes
+    definition: "Establishing mechanisms for reporting and alerting relevant stakeholders to violations, breaches, or transgressions of risk limits, operational thresholds, or internal employee misconduct, including via the use of whistleblower hotlines."
+    code: REP
+    min_frequency_tier: Quarterly
+    placement_categories: [Detective]
+
+  - name: Training and Awareness Programs
+    definition: "Development and implementation of mechanisms to formally transfer knowledge such as training courses or online self-learning modules to assess the level of desired knowledge, skills, or competence attained. Any training program must have a formal, standardized curriculum, must include tracked attendance, and must include an escalation protocol for instances of non-attendance."
+    code: TRN
+    placement_categories: [Preventive]
+
+  - name: System and Application Restrictions
+    definition: "Restrict, control, or manage the access of users to enterprise devices, intranet portals, software, or internal or external networks based on their level of access credentials or user privileges to prevent unauthorized access or changes to enterprise applications or hardware."
+    code: SAR
+    placement_categories: [Preventive]
+
+  - name: Data Security and Protection
+    definition: "Securely storing, maintaining, and safeguarding data to prevent the disclosure, destruction, corruption, or unauthorized access of enterprise or client data including use of encryption, alternative data servers, and firewalls."
+    code: DSP
+    placement_categories: [Preventive]
+
+  - name: Client Due Diligence and Transaction Monitoring
+    definition: "Performing validation of client identity and documentation during onboarding, reviewing client transactions and activities for suspicious behaviors or anomalies, and periodically updating client risk profiles to refresh level of risk-based monitoring."
+    placement_categories: [Preventive]
+
+  - name: Surveillance
+    definition: "Monitoring, scanning, or observing behaviors, activities, or other data signals subject to ongoing change and modification and usually performed on a real-time basis."
+    placement_categories: [Detective]
+
+  - name: Physical Safeguards
+    definition: "Implementing physical tools, infrastructure, or devices that are used to safeguard and protect physical assets including buildings, property, equipment, or documents."
+    placement_categories: [Preventive]
+
+  - name: Business Continuity Planning and Awareness
+    definition: "Development and maintenance of business protocols and processes to be deployed in the event of an outage or crisis including identification of critical functions or stakeholders needed for discharging and sustaining business continuity activities during an active crisis."
+    placement_categories: [Contingency Planning]
+
+  - name: Crisis Management
+    definition: "Implementation of business contingency plan and activation of response and communication strategy to provide messaging to stakeholders as well as monitoring and reporting on status of crisis management plan progress and milestones."
+    placement_categories: [Contingency Planning]
+
+  - name: Technology Disaster Recovery
+    definition: "Development and maintenance of technology recovery plan to identify key systems and technology requirements needed to sustain business activities during a crisis and interventions to restore access to and preserve key technology systems."
+    placement_categories: [Contingency Planning]
+
+  - name: Staffing and Resourcing Adequacy
+    definition: "Conducting a staffing and skills assessment or other similar resourcing assessment to determine the required levels of employee and operational capacity to execute business functions and activities across the enterprise."
+    placement_categories: [Preventive]
+
+  - name: Internal Compliance Monitoring
+    definition: "Monitoring the release of material, non-public information from the enterprise and monitoring trading activity to identify illegal or prohibited transactions based on enterprise trading policies and practices."
+    placement_categories: [Preventive]
+
+  - name: Talent Management Practices
+    definition: "Managing staff and resources to ensure appropriate alignment with business objectives, such as background checks, mandatory vacations, and registrations checks."
+    placement_categories: [Preventive]
+
+  - name: Risk and Compliance Assessments
+    definition: "Conduct Business Unit and enterprise-wide assessments to identify inherent risks associated with business processes, measure effectiveness of controls, determine residual risk ratings, and identify additional risk mitigation activities to be undertaken in response to residual risks and identified issues."
+    placement_categories: [Preventive]
+
+  - name: Risk Limit Setting
+    definition: "Setting risk limits and risk tolerance thresholds to govern enterprise risk appetite, enterprise and employee trading, and client activities, and establish system of alerts to notify relevant stakeholders of limit breaches."
+    placement_categories: [Preventive]
+
+  - name: System Change Management
+    definition: "Perform software testing to validate the behavior of newly implemented or updated systems, assess the technical performance of hardware components, test the effectiveness and functionality of new products, and understand effects of system updates on existing infrastructure."
+    placement_categories: [Preventive]
+
+  - name: Third Party Due Diligence
+    definition: "Perform due diligence on third-party vendors to understand risk exposures of outsourcing key business services and activities and assess the strength of the vendor control environment to understand vendor risk profile and suitability for engagement."
+    code: THR
+    placement_categories: [Preventive]
+
+# ── Business Units ────────────────────────────────────────────────────────────
+
+business_units:
+  - id: "BU-001"
+    name: Retail Banking
+    description: "Provides consumer deposit accounts, personal loans, mortgages, credit cards, and branch-based financial services to individual customers and small businesses."
+    primary_sections: ["5", "3.0", "6.0"]
+    key_control_types:
+      - Authorization
+      - Client Due Diligence and Transaction Monitoring
+      - Segregation of Duties
+      - Exception Reporting
+      - Training and Awareness Programs
+    regulatory_exposure:
+      - "Regulation E (Electronic Fund Transfers)"
+      - "Regulation Z (Truth in Lending)"
+      - "Regulation CC (Funds Availability)"
+      - "BSA/AML"
+      - "UDAAP"
+      - "Community Reinvestment Act"
+
+  - id: "BU-002"
+    name: Commercial Banking
+    description: "Delivers lending, treasury management, and deposit solutions to mid-market and large corporate clients."
+    primary_sections: ["5", "2.0", "3.0"]
+    key_control_types:
+      - Authorization
+      - Client Due Diligence and Transaction Monitoring
+      - Verification and Validation
+      - Risk Limit Setting
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+    regulatory_exposure:
+      - "OCC Lending Standards"
+      - "BSA/AML"
+      - "Interagency CRE Guidance"
+      - "Leveraged Lending Guidance"
+      - "CECL (Credit Loss Accounting)"
+
+  - id: "BU-003"
+    name: Corporate and Investment Banking
+    description: "Provides capital markets advisory, underwriting, syndicated lending, mergers and acquisitions advisory, and structured finance solutions."
+    primary_sections: ["2.0", "3.0", "5"]
+    key_control_types:
+      - Authorization
+      - Segregation of Duties
+      - Internal Compliance Monitoring
+      - Risk Limit Setting
+      - Surveillance
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+    regulatory_exposure:
+      - "SEC Regulations"
+      - "FINRA Rules"
+      - "Volcker Rule"
+      - "Dodd-Frank Act"
+      - "BSA/AML"
+
+  - id: "BU-004"
+    name: Wealth Management and Private Banking
+    description: "Delivers investment advisory, portfolio management, trust and estate services, financial planning, and private banking solutions."
+    primary_sections: ["5", "3.0", "6.0"]
+    key_control_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Authorization
+      - Surveillance
+      - Verification and Validation
+      - Risk Limit Setting
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+    regulatory_exposure:
+      - "SEC Investment Advisers Act"
+      - "FINRA Suitability and Best Interest Rules"
+      - "BSA/AML"
+      - "Regulation Best Interest"
+      - "ERISA (where applicable)"
+
+  - id: "BU-005"
+    name: Asset Management
+    description: "Manages pooled investment vehicles, institutional separate accounts, and fund administration services."
+    primary_sections: ["2.0", "5", "9"]
+    key_control_types:
+      - Reconciliation
+      - Verification and Validation
+      - Risk Limit Setting
+      - Surveillance
+      - Internal Compliance Monitoring
+      - Automated Rules
+    regulatory_exposure:
+      - "SEC Investment Company Act"
+      - "SEC Investment Advisers Act"
+      - "ERISA"
+      - "GIPS Standards"
+      - "BSA/AML"
+
+  - id: "BU-006"
+    name: Treasury and Capital Markets
+    description: "Manages the enterprise balance sheet, liquidity positioning, interest rate risk, funding strategies, and proprietary investment portfolio."
+    primary_sections: ["9", "11.0", "5"]
+    key_control_types:
+      - Risk Limit Setting
+      - Reconciliation
+      - Authorization
+      - Exception Reporting
+      - Automated Rules
+      - Segregation of Duties
+    regulatory_exposure:
+      - "Basel III Liquidity Requirements (LCR/NSFR)"
+      - "Regulation YY (Enhanced Prudential Standards)"
+      - "FHLB Collateral Requirements"
+      - "SOX Section 404"
+      - "Volcker Rule"
+
+  - id: "BU-007"
+    name: Operations
+    description: "Executes transaction processing, payment settlement, account servicing, trade operations, and back-office support functions."
+    primary_sections: ["5", "9", "8"]
+    key_control_types:
+      - Reconciliation
+      - Authorization
+      - Verification and Validation
+      - Exception Reporting
+      - Segregation of Duties
+      - Automated Rules
+    regulatory_exposure:
+      - "Regulation CC (Funds Availability)"
+      - "Regulation E (Electronic Fund Transfers)"
+      - "UCC Article 4A (Funds Transfers)"
+      - "NACHA Operating Rules"
+      - "OCC Heightened Standards"
+
+  - id: "BU-008"
+    name: Risk Management
+    description: "Provides independent identification, measurement, monitoring, and reporting of credit, market, operational, liquidity, and model risk."
+    primary_sections: ["11.0", "9", "1.0"]
+    key_control_types:
+      - Risk and Compliance Assessments
+      - Risk Limit Setting
+      - Risk Escalation Processes
+      - Exception Reporting
+      - Verification and Validation
+      - Internal and External Audits
+    regulatory_exposure:
+      - "OCC Heightened Standards"
+      - "Regulation YY (Enhanced Prudential Standards)"
+      - "Basel III Capital and Liquidity Frameworks"
+      - "SR 11-7 (Model Risk Management)"
+      - "CCAR/DFAST Stress Testing"
+
+  - id: "BU-009"
+    name: Compliance
+    description: "Establishes and maintains the enterprise compliance management program, including regulatory change management, compliance testing, BSA/AML program administration."
+    primary_sections: ["11.0", "12.0", "7.0"]
+    key_control_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Surveillance
+      - Internal Compliance Monitoring
+      - Risk and Compliance Assessments
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+    regulatory_exposure:
+      - "BSA/AML"
+      - "OFAC Sanctions"
+      - "UDAAP"
+      - "Fair Lending Laws"
+      - "FINRA Rules (where applicable)"
+      - "SEC Regulations (where applicable)"
+
+  - id: "BU-010"
+    name: Internal Audit
+    description: "Provides independent and objective assurance over the effectiveness of governance, risk management, and internal controls."
+    primary_sections: ["11.0", "13.0", "9"]
+    key_control_types:
+      - Internal and External Audits
+      - Risk and Compliance Assessments
+      - Verification and Validation
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      - Risk Escalation Processes
+    regulatory_exposure:
+      - "IIA Standards"
+      - "SOX Section 404"
+      - "OCC Heightened Standards"
+      - "Federal Reserve SR Letters"
+      - "FDICIA"
+
+  - id: "BU-011"
+    name: Finance and Accounting
+    description: "Manages financial reporting, general ledger accounting, regulatory capital reporting, tax compliance, budgeting and forecasting."
+    primary_sections: ["9", "11.0", "1.0"]
+    key_control_types:
+      - Reconciliation
+      - Authorization
+      - Verification and Validation
+      - Segregation of Duties
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      - Internal and External Audits
+    regulatory_exposure:
+      - "SOX Section 404"
+      - "GAAP/IFRS"
+      - "SEC Reporting Requirements"
+      - "FDICIA"
+      - "Basel III Capital Reporting"
+      - "Call Report/FR Y-9C"
+
+  - id: "BU-012"
+    name: Information Technology
+    description: "Delivers enterprise technology infrastructure, application development and support, cybersecurity, identity and access management."
+    primary_sections: ["8", "11.0", "13.0"]
+    key_control_types:
+      - System and Application Restrictions
+      - Data Security and Protection
+      - System Change Management
+      - Authorization
+      - Segregation of Duties
+      - Technology Disaster Recovery
+    regulatory_exposure:
+      - "SOX Section 404 (ITGCs)"
+      - "FFIEC IT Examination Handbook"
+      - "NIST Cybersecurity Framework"
+      - "GLBA Safeguards Rule"
+      - "PCI DSS (where applicable)"
+      - "ISO 27001/27002"
+
+  - id: "BU-013"
+    name: Human Resources
+    description: "Manages talent acquisition, employee relations, compensation and benefits administration, workforce planning, and performance management."
+    primary_sections: ["7.0", "11.0", "13.0"]
+    key_control_types:
+      - Talent Management Practices
+      - Staffing and Resourcing Adequacy
+      - Training and Awareness Programs
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      - Authorization
+      - Data Security and Protection
+    regulatory_exposure:
+      - "EEO/OFCCP Requirements"
+      - "FLSA"
+      - "ERISA"
+      - "FINRA Registration Requirements (where applicable)"
+      - "State Employment Laws"
+
+  - id: "BU-014"
+    name: Legal
+    description: "Provides legal advisory services, manages litigation and regulatory enforcement matters, oversees contract management."
+    primary_sections: ["11.0", "12.0", "1.0"]
+    key_control_types:
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      - Authorization
+      - Risk Escalation Processes
+      - Verification and Validation
+      - Internal Compliance Monitoring
+    regulatory_exposure:
+      - "Attorney-Client Privilege Obligations"
+      - "SEC Disclosure Requirements"
+      - "Consent Order and MRA Compliance"
+      - "Dodd-Frank Act"
+      - "State Banking Laws"
+
+  - id: "BU-015"
+    name: Third Party Risk Management
+    description: "Oversees the enterprise vendor management lifecycle including due diligence, onboarding, ongoing monitoring, and offboarding."
+    primary_sections: ["4.0", "11.0", "12.0"]
+    key_control_types:
+      - Third Party Due Diligence
+      - Risk and Compliance Assessments
+      - Verification and Validation
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      - Risk Escalation Processes
+      - Authorization
+    regulatory_exposure:
+      - "OCC Third Party Risk Management Guidance"
+      - "Federal Reserve SR 13-19"
+      - "FFIEC Outsourcing Guidance"
+      - "GLBA Safeguards Rule"
+      - "BSA/AML (vendor screening)"
+
+  - id: "BU-016"
+    name: Business Continuity and Corporate Security
+    description: "Develops, maintains, and tests enterprise business continuity plans, crisis management protocols, workplace safety programs, and physical security measures."
+    primary_sections: ["11.0", "8", "10.0"]
+    key_control_types:
+      - Business Continuity Planning and Awareness
+      - Crisis Management
+      - Technology Disaster Recovery
+      - Physical Safeguards
+      - Risk Escalation Processes
+      - Training and Awareness Programs
+    regulatory_exposure:
+      - "FFIEC Business Continuity Handbook"
+      - "OCC Heightened Standards"
+      - "Regulation YY (Recovery and Resolution Planning)"
+      - "Interagency Paper on Sound Practices for Operational Resilience"
+      - "OSHA Requirements"
+
+  - id: "BU-017"
+    name: Mortgage Banking
+    description: "Originates, underwrites, closes, services, and sells residential mortgage loans."
+    primary_sections: ["2.0", "5", "6.0"]
+    key_control_types:
+      - Authorization
+      - Verification and Validation
+      - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      - Reconciliation
+      - Client Due Diligence and Transaction Monitoring
+      - Segregation of Duties
+    regulatory_exposure:
+      - "RESPA/TILA (TRID)"
+      - "HMDA"
+      - "Fair Lending Laws"
+      - "CFPB Servicing Rules"
+      - "GSE Seller/Servicer Guidelines"
+      - "BSA/AML"
+
+# ── Placements & Methods ─────────────────────────────────────────────────────
+
+placements:
+  - name: Preventive
+  - name: Detective
+  - name: Contingency Planning
+
+methods:
+  - name: Automated
+  - name: Manual
+  - name: Automated with Manual Component
+
+# ── Frequency Tiers ───────────────────────────────────────────────────────────
+
+frequency_tiers:
+  - label: Daily
+    rank: 1
+    keywords: [daily, every day, each day, per day, day-end, day end, end of day, eod]
+  - label: Weekly
+    rank: 2
+    keywords: [weekly, every week, each week, per week, biweekly, bi-weekly, fortnight]
+  - label: Monthly
+    rank: 3
+    keywords: [monthly, every month, each month, per month, month-end, month end, eom, semi-monthly, semimonthly]
+  - label: Quarterly
+    rank: 4
+    keywords: [quarterly, every quarter, each quarter, per quarter, qtr, quarter-end, quarter end]
+  - label: Semi-Annual
+    rank: 5
+    keywords: [semi-annual, semi annual, semiannual, bi-annual, biannual, twice a year]
+  - label: Annual
+    rank: 6
+    keywords: [annual, annually, yearly, once a year, each year, per year]
+
+# ── Narrative Constraints ─────────────────────────────────────────────────────
+
+narrative:
+  fields:
+    - name: who
+      definition: "Define accountable role performing the control."
+    - name: what
+      definition: "Define specific action and control objective."
+    - name: when
+      definition: "Define trigger, frequency, and timing."
+    - name: where
+      definition: "Define system/location/process where control executes."
+    - name: why
+      definition: "Define risk prevented or detected and impact."
+    - name: full_description
+      definition: "Prose narrative incorporating all fields."
+  word_count_min: 30
+  word_count_max: 80
+
+quality_ratings:
+  - Strong
+  - Effective
+  - Satisfactory
+  - Needs Improvement
+
+# ── Process Areas (13 APQC Sections) ─────────────────────────────────────────
+
+process_areas:
+  # ── Section 1.0: Vision and Strategy ──
+  - id: "1.0"
+    name: "Vision and Strategy"
+    domain: vision_and_strategy
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 3
+      control_density: 2
+      multiplier: 1.8
+      rationale: "Strategic planning and governance processes carry risk related to misalignment of enterprise objectives with risk appetite, regulatory expectations, and market conditions. Control density is lower but failures have outsized downstream impact across all business lines."
+    affinity:
+      HIGH:
+        - Risk Limit Setting
+        - Risk and Compliance Assessments
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Authorization
+      MEDIUM:
+        - Risk Escalation Processes
+        - Verification and Validation
+        - Staffing and Resourcing Adequacy
+        - Internal and External Audits
+      LOW:
+        - Segregation of Duties
+        - Training and Awareness Programs
+        - Exception Reporting
+        - Automated Rules
+      NONE:
+        - Reconciliation
+        - System and Application Restrictions
+        - Data Security and Protection
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Internal Compliance Monitoring
+        - Talent Management Practices
+        - System Change Management
+        - Third Party Due Diligence
+    registry:
+      roles:
+        - Chief Executive Officer
+        - Chief Operating Officer
+        - Chief Financial Officer
+        - Chief Risk Officer
+        - Chief Strategy Officer
+        - Head of Corporate Development
+        - Strategic Planning Analyst
+        - Board of Directors
+        - Board Committee Chairs
+      systems:
+        - Enterprise Performance Management Platform
+        - Board Portal and Governance Platform
+        - Strategic Planning and Forecasting Tool
+      data_objects:
+        - strategic plan documents
+        - risk appetite statements
+        - board meeting minutes and resolutions
+        - capital allocation plans
+        - enterprise performance scorecards
+      evidence_artifacts:
+        - board-approved strategic plan with sign-off
+        - risk appetite framework approval documentation
+        - capital plan review and approval log
+        - strategic initiative prioritization matrix with governance sign-off
+      event_triggers:
+        - at each annual strategic planning cycle
+        - at each quarterly board of directors meeting
+        - on material change to enterprise risk appetite or tolerance
+        - on significant merger/acquisition/divestiture decision
+        - at each annual capital planning and stress testing cycle
+      regulatory_frameworks:
+        - "OCC Heightened Standards (Governance)"
+        - "Regulation YY (Enhanced Prudential Standards)"
+        - "CCAR/DFAST Capital Planning"
+        - "SEC Corporate Governance Requirements"
+        - "Federal Reserve SR Letters (Board Effectiveness)"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to execution of any strategic initiative requiring capital expenditure exceeding the materiality threshold, the Chief Strategy Officer presents the initiative business case, risk assessment, and projected ROI to the Board Risk Committee for review and formal approval, ensuring alignment with the board-approved risk appetite statement and strategic plan."
+        word_count: 50
+        quality_rating: Strong
+
+  # ── Section 2.0: Product Development and Management ──
+  - id: "2.0"
+    name: "Product Development and Management"
+    domain: product_development_and_management
+    risk_profile:
+      inherent_risk: 4
+      regulatory_intensity: 4
+      control_density: 3
+      multiplier: 2.4
+      rationale: "New product development and ongoing product management in banking carries significant regulatory, consumer protection, and operational risk."
+    affinity:
+      HIGH:
+        - Authorization
+        - Verification and Validation
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Risk and Compliance Assessments
+      MEDIUM:
+        - Risk Escalation Processes
+        - Segregation of Duties
+        - Internal and External Audits
+        - System Change Management
+        - Third Party Due Diligence
+        - Automated Rules
+      LOW:
+        - Client Due Diligence and Transaction Monitoring
+        - Training and Awareness Programs
+        - Risk Limit Setting
+        - Exception Reporting
+      NONE:
+        - Reconciliation
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Staffing and Resourcing Adequacy
+        - Internal Compliance Monitoring
+        - Talent Management Practices
+        - System and Application Restrictions
+        - Data Security and Protection
+    registry:
+      roles:
+        - Product Manager
+        - Product Development Analyst
+        - Product Owner
+        - Head of Product Management
+        - New Product Approval Committee Member
+        - Pricing Analyst
+        - Product Compliance Officer
+        - Product Risk Officer
+      systems:
+        - Product Lifecycle Management Platform
+        - Product Pricing and Profitability System
+        - New Product Approval Workflow Tool
+        - Regulatory Change Management System
+      data_objects:
+        - new product proposal documents
+        - product risk assessments
+        - product approval committee meeting minutes
+        - product pricing models and fee schedules
+        - product disclosure and terms documentation
+        - post-launch monitoring reports
+      evidence_artifacts:
+        - new product approval committee sign-off with risk and compliance attestation
+        - product risk assessment documentation with residual risk rating
+        - regulatory impact analysis with compliance officer approval
+        - post-launch product review report with issue tracking
+      event_triggers:
+        - on submission of new product or material product change proposal
+        - at each new product approval committee review cycle
+        - on regulatory change impacting existing product features or disclosures
+        - at each annual product review and rationalization cycle
+        - on identification of product-related consumer complaint trend
+      regulatory_frameworks:
+        - "OCC New Product Risk Management Guidance"
+        - "UDAAP"
+        - "Regulation Z (Truth in Lending)"
+        - "Regulation DD (Truth in Savings)"
+        - "Fair Lending Laws"
+        - "CFPB Supervisory Guidance"
+        - "SEC Regulation Best Interest (where applicable)"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to launch of any new product or material modification to an existing product, the Product Manager submits the completed new product proposal including risk assessment, compliance review, and operational readiness certification to the New Product Approval Committee for multi-disciplinary review and formal approval, ensuring all risk, legal, compliance, and operational requirements have been satisfied."
+        word_count: 52
+        quality_rating: Strong
+
+  # ── Section 3.0: Marketing and Sales ──
+  - id: "3.0"
+    name: "Marketing and Sales"
+    domain: marketing_and_sales
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 4
+      control_density: 3
+      multiplier: 2.2
+      rationale: "Marketing and sales activities carry elevated regulatory risk due to consumer protection, fair lending, advertising standards, and suitability requirements."
+    affinity:
+      HIGH:
+        - Authorization
+        - Verification and Validation
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Client Due Diligence and Transaction Monitoring
+      MEDIUM:
+        - Internal Compliance Monitoring
+        - Training and Awareness Programs
+        - Risk Escalation Processes
+        - Automated Rules
+      LOW:
+        - Segregation of Duties
+        - Exception Reporting
+        - Risk and Compliance Assessments
+        - Internal and External Audits
+      NONE:
+        - Reconciliation
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Staffing and Resourcing Adequacy
+        - Talent Management Practices
+        - Risk Limit Setting
+        - System and Application Restrictions
+        - Data Security and Protection
+        - System Change Management
+        - Third Party Due Diligence
+    registry:
+      roles:
+        - Marketing Manager
+        - Marketing Compliance Reviewer
+        - Sales Manager
+        - Relationship Manager
+        - Business Development Officer
+        - Channel Strategy Manager
+        - Head of Marketing
+        - Fair Lending Officer
+      systems:
+        - Marketing Campaign Management Platform
+        - Customer Relationship Management System
+        - Marketing Content Approval Workflow Tool
+        - Sales Pipeline and Tracking System
+        - Digital Marketing and Analytics Platform
+      data_objects:
+        - marketing materials and disclosures
+        - campaign performance reports
+        - sales activity and pipeline records
+        - customer suitability assessments
+        - marketing compliance review logs
+        - advertising and promotional content
+      evidence_artifacts:
+        - marketing material compliance review and approval log
+        - campaign launch authorization with legal and compliance sign-off
+        - suitability assessment documentation for advisory product sales
+        - fair lending analysis of marketing distribution and targeting
+      event_triggers:
+        - on submission of new marketing material or campaign for approval
+        - on launch of new sales initiative or incentive program
+        - at each quarterly marketing compliance review cycle
+        - on detection of customer complaint trend related to sales practices
+        - at each annual fair lending marketing review
+      regulatory_frameworks:
+        - "UDAAP"
+        - "Fair Lending Laws (ECOA, Fair Housing Act)"
+        - "Regulation Z (Advertising Requirements)"
+        - "Regulation DD (Advertising Requirements)"
+        - "FINRA Advertising Rules (where applicable)"
+        - "SEC Marketing Rule (where applicable)"
+        - "CAN-SPAM Act"
+        - "TCPA"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to external distribution, the Marketing Manager submits all marketing materials including advertisements, email campaigns, and product disclosures to the Marketing Compliance Reviewer through the content approval workflow tool for review against regulatory disclosure requirements, fair lending standards, and UDAAP guidelines, and the material cannot be published until compliance approval is recorded in the system."
+        word_count: 53
+        quality_rating: Strong
+
+  # ── Section 4.0: Sourcing and Procurement ──
+  - id: "4.0"
+    name: "Sourcing and Procurement"
+    domain: sourcing_and_procurement
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 4
+      control_density: 3
+      multiplier: 2.3
+      rationale: "Sourcing and procurement, particularly third-party vendor engagements, carries significant regulatory, operational, and concentration risk."
+    affinity:
+      HIGH:
+        - Third Party Due Diligence
+        - Authorization
+        - Verification and Validation
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      MEDIUM:
+        - Risk and Compliance Assessments
+        - Risk Escalation Processes
+        - Segregation of Duties
+        - Automated Rules
+        - Exception Reporting
+      LOW:
+        - Reconciliation
+        - Internal and External Audits
+        - Training and Awareness Programs
+        - Data Security and Protection
+        - Risk Limit Setting
+      NONE:
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Staffing and Resourcing Adequacy
+        - Internal Compliance Monitoring
+        - Talent Management Practices
+        - System and Application Restrictions
+        - System Change Management
+    registry:
+      roles:
+        - Procurement Analyst
+        - Procurement Manager
+        - Vendor Risk Analyst
+        - Third Party Risk Manager
+        - Contract Manager
+        - Sourcing Specialist
+        - Head of Procurement
+        - Vendor Governance Committee Member
+      systems:
+        - Vendor Management Platform
+        - Procurement and Requisition System
+        - Contract Lifecycle Management Platform
+        - Third Party Risk Assessment Tool
+        - Accounts Payable System
+      data_objects:
+        - vendor due diligence questionnaires and responses
+        - vendor risk assessment scorecards
+        - contracts and service level agreements
+        - purchase orders and requisitions
+        - vendor performance monitoring reports
+        - fourth-party and subcontractor disclosures
+        - SOC 1/SOC 2 reports from vendors
+      evidence_artifacts:
+        - vendor risk assessment with risk tier classification and sign-off
+        - contract approval log with legal, compliance, and business owner signatures
+        - vendor due diligence completion certificate with supporting documentation
+        - vendor performance review report with issue remediation tracking
+        - annual vendor recertification and risk re-rating documentation
+      event_triggers:
+        - on new vendor engagement or contract initiation
+        - at each annual vendor risk reassessment cycle
+        - on material vendor contract renewal or amendment
+        - on vendor performance breach or SLA failure
+        - on identification of critical or high-risk vendor concentration
+        - on vendor offboarding or contract termination
+      regulatory_frameworks:
+        - "OCC Third Party Risk Management Guidance (OCC 2023-17)"
+        - "Federal Reserve SR 13-19"
+        - "FFIEC Outsourcing Guidance"
+        - "GLBA Safeguards Rule"
+        - "BSA/AML (vendor screening)"
+        - "OFAC Sanctions Screening"
+    exemplars:
+      - control_type: Third Party Due Diligence
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to contract execution, the Vendor Risk Analyst completes the third-party risk assessment in the vendor management platform, including financial viability review, information security questionnaire evaluation, SOC report review, and regulatory compliance screening, and the Third Party Risk Manager validates the risk tier classification and provides formal approval before the vendor is onboarded."
+        word_count: 52
+        quality_rating: Strong
+
+  # ── Section 5: Banking Operations ──
+  - id: "5"
+    name: "Banking Operations"
+    domain: banking_operations
+    risk_profile:
+      inherent_risk: 4
+      regulatory_intensity: 4
+      control_density: 4
+      multiplier: 2.7
+      rationale: "Customer-facing operational processes carry execution, settlement, and regulatory risk requiring dense preventive and detective controls."
+    affinity:
+      HIGH:
+        - Authorization
+        - Verification and Validation
+        - Exception Reporting
+        - Segregation of Duties
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      MEDIUM:
+        - Reconciliation
+        - Automated Rules
+        - Risk Escalation Processes
+        - System and Application Restrictions
+      LOW:
+        - Internal and External Audits
+        - Training and Awareness Programs
+        - Data Security and Protection
+      NONE:
+        - Surveillance
+        - Physical Safeguards
+        - Client Due Diligence and Transaction Monitoring
+    registry:
+      roles:
+        - Operations Analyst
+        - Operations Specialist
+        - Payment Processing Analyst
+        - Wire Transfer Specialist
+        - Account Services Representative
+        - Operations Team Lead
+        - Operations Manager
+        - Branch Operations Manager
+        - Head of Banking Operations
+      systems:
+        - Core Banking Platform
+        - Payment Processing and Settlement System
+        - Wire Transfer Platform
+        - ACH Processing System
+        - Workflow and Case Management Tool
+        - Customer Relationship Management System
+        - Document Management System
+      data_objects:
+        - transaction records
+        - payment instructions and settlement files
+        - wire transfer requests
+        - ACH batch files
+        - account maintenance requests
+        - service exception and override logs
+        - nostro and suspense account entries
+      evidence_artifacts:
+        - dual-authorization approval log for high-value transactions
+        - daily transaction balancing and settlement report
+        - exception and override resolution documentation with sign-off
+        - payment rejection and return investigation log
+        - account maintenance request with supervisory approval
+      event_triggers:
+        - on receipt of payment instruction or wire transfer request
+        - at each daily transaction processing and settlement cycle
+        - on detection of transaction exception or processing error
+        - at each month-end nostro and suspense account clearance
+        - on customer account maintenance or servicing request
+        - at each quarterly operations quality assurance review
+      regulatory_frameworks:
+        - "Regulation CC (Funds Availability)"
+        - "Regulation E (Electronic Fund Transfers)"
+        - "UCC Article 4A (Funds Transfers)"
+        - "NACHA Operating Rules"
+        - "OCC Heightened Standards (where applicable)"
+        - "Internal Operational Risk Policy"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to release, the Wire Transfer Specialist prepares the outgoing wire instruction in the wire transfer platform, and a second Operations Team Lead independently verifies the beneficiary details, amount, and purpose code against the originating request documentation before providing dual-authorization approval, ensuring no single individual can initiate and release a wire transfer."
+        word_count: 52
+        quality_rating: Strong
+
+  # ── Section 6.0: Customer Service ──
+  - id: "6.0"
+    name: "Customer Service"
+    domain: customer_service
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 4
+      control_density: 3
+      multiplier: 2.2
+      rationale: "Customer service operations carry regulatory risk related to consumer protection, complaint management, fair treatment, and data privacy."
+    affinity:
+      HIGH:
+        - Verification and Validation
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Exception Reporting
+        - Authorization
+      MEDIUM:
+        - Client Due Diligence and Transaction Monitoring
+        - Risk Escalation Processes
+        - Training and Awareness Programs
+        - Automated Rules
+      LOW:
+        - Segregation of Duties
+        - Surveillance
+        - Internal and External Audits
+        - Risk and Compliance Assessments
+        - Data Security and Protection
+      NONE:
+        - Reconciliation
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Staffing and Resourcing Adequacy
+        - Internal Compliance Monitoring
+        - Talent Management Practices
+        - Risk Limit Setting
+        - System and Application Restrictions
+        - System Change Management
+        - Third Party Due Diligence
+    registry:
+      roles:
+        - Customer Service Representative
+        - Senior Customer Service Representative
+        - Customer Service Team Lead
+        - Complaint Management Specialist
+        - Customer Service Manager
+        - Customer Experience Manager
+        - Head of Customer Service
+        - Complaint Resolution Officer
+      systems:
+        - Customer Relationship Management System
+        - Complaint Management and Tracking Platform
+        - Interactive Voice Response System
+        - Quality Assurance and Call Recording Platform
+        - Case Management and Ticketing System
+        - Knowledge Management System
+      data_objects:
+        - customer interaction records and call logs
+        - complaint case files
+        - complaint categorization and root cause data
+        - customer satisfaction survey results
+        - quality assurance review scorecards
+        - service level performance metrics
+        - "regulatory complaint submissions (CFPB, OCC)"
+      evidence_artifacts:
+        - complaint resolution documentation with customer notification and sign-off
+        - quality assurance review scorecard with supervisor assessment
+        - complaint trend analysis and root cause report
+        - regulatory complaint response filing confirmation
+        - escalation log for unresolved or high-severity complaints
+      event_triggers:
+        - on receipt of customer complaint or dispute
+        - on identification of complaint aging beyond SLA threshold
+        - on receipt of regulatory complaint from CFPB or OCC
+        - at each monthly complaint trend analysis review
+        - at each quarterly quality assurance calibration cycle
+        - on detection of systemic complaint pattern or root cause theme
+      regulatory_frameworks:
+        - "UDAAP"
+        - "CFPB Complaint Management Expectations"
+        - "Regulation E (Error Resolution)"
+        - "Regulation Z (Billing Dispute Resolution)"
+        - "Fair Lending Laws"
+        - "OCC Consumer Compliance Examination Procedures"
+        - "ADA Accessibility Requirements"
+    exemplars:
+      - control_type: Exception Reporting
+        placement: Detective
+        method: Automated with Manual Component
+        full_description: "Daily, the complaint management platform generates an aging report identifying all open customer complaints exceeding the defined SLA threshold, and the Complaint Management Specialist reviews each aged item, documents the reason for delay and remediation plan, and escalates complaints exceeding the secondary threshold to the Customer Service Manager for intervention and resolution tracking."
+        word_count: 51
+        quality_rating: Strong
+
+  # ── Section 7.0: Human Capital Management ──
+  - id: "7.0"
+    name: "Human Capital Management"
+    domain: human_capital_management
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 3
+      control_density: 3
+      multiplier: 2.0
+      rationale: "Human capital management processes carry risk related to workforce competency, regulatory registration and licensing requirements, employee misconduct, and organizational capacity."
+    affinity:
+      HIGH:
+        - Talent Management Practices
+        - Staffing and Resourcing Adequacy
+        - Training and Awareness Programs
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      MEDIUM:
+        - Authorization
+        - Verification and Validation
+        - Segregation of Duties
+        - Risk Escalation Processes
+      LOW:
+        - Data Security and Protection
+        - System and Application Restrictions
+        - Internal and External Audits
+        - Exception Reporting
+        - Automated Rules
+      NONE:
+        - Reconciliation
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Internal Compliance Monitoring
+        - Risk and Compliance Assessments
+        - Risk Limit Setting
+        - System Change Management
+        - Third Party Due Diligence
+    registry:
+      roles:
+        - HR Business Partner
+        - Talent Acquisition Specialist
+        - Compensation and Benefits Analyst
+        - Employee Relations Specialist
+        - Learning and Development Manager
+        - Workforce Planning Analyst
+        - HR Compliance Officer
+        - Head of Human Resources
+        - Chief Human Resources Officer
+      systems:
+        - Human Capital Management Platform
+        - Learning Management System
+        - Applicant Tracking System
+        - Payroll and Benefits Administration System
+        - Performance Management Platform
+        - Employee Relations Case Management Tool
+      data_objects:
+        - employee personnel records
+        - background check and screening results
+        - training completion and certification records
+        - performance review documentation
+        - compensation and benefits data
+        - employee relations investigation files
+        - "registration and licensing records (FINRA, NMLS)"
+        - mandatory vacation compliance records
+      evidence_artifacts:
+        - background check completion certificate with adjudication decision
+        - training completion report with non-attendance escalation log
+        - mandatory vacation compliance attestation
+        - FINRA/NMLS registration verification documentation
+        - annual staffing assessment report with capacity gap analysis
+      event_triggers:
+        - on new hire onboarding initiation
+        - on employee role change or promotion requiring updated registration
+        - at each annual performance review cycle
+        - on detection of training non-completion by escalation deadline
+        - at each annual staffing and resourcing adequacy assessment
+        - on employee separation or termination
+        - on receipt of employee relations complaint or misconduct allegation
+      regulatory_frameworks:
+        - "EEO/OFCCP Requirements"
+        - "FLSA"
+        - "ERISA"
+        - "FINRA Registration Requirements"
+        - "NMLS Licensing Requirements"
+        - "State Employment Laws"
+        - "OSHA Workplace Safety Standards"
+    exemplars:
+      - control_type: Talent Management Practices
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to granting system access and assignment of job responsibilities, the Talent Acquisition Specialist confirms that the new hire background check has been completed and adjudicated as satisfactory in the applicant tracking system, and that all required regulatory registrations and licenses have been verified as active, before the HR Business Partner authorizes the onboarding process to proceed."
+        word_count: 53
+        quality_rating: Strong
+
+  # ── Section 8: Information Technology ──
+  - id: "8"
+    name: "Information Technology"
+    domain: information_technology
+    risk_profile:
+      inherent_risk: 4
+      regulatory_intensity: 4
+      control_density: 5
+      multiplier: 2.8
+      rationale: "IT General Controls (ITGCs) underpin the reliability of financially significant applications and automated controls. High control density spans access management, change management, computer operations, and data security."
+    affinity:
+      HIGH:
+        - System and Application Restrictions
+        - Data Security and Protection
+        - Verification and Validation
+        - Authorization
+        - Segregation of Duties
+      MEDIUM:
+        - Automated Rules
+        - Exception Reporting
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Internal and External Audits
+      LOW:
+        - Reconciliation
+        - Training and Awareness Programs
+        - Risk Escalation Processes
+      NONE:
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+    registry:
+      roles:
+        - IT Administrator
+        - Systems Administrator
+        - Security Engineer
+        - Identity and Access Management Analyst
+        - Database Administrator
+        - Change Manager
+        - IT Risk Analyst
+        - IT Audit Liaison
+        - Infrastructure Operations Manager
+        - Chief Information Security Officer
+      systems:
+        - Identity and Access Management Platform
+        - Privileged Access Management Tool
+        - Security Information and Event Management System
+        - IT Service Management Platform
+        - Configuration Management Database
+        - Endpoint Detection and Response Platform
+        - Source Code Repository
+        - Deployment and Release Management Tool
+      data_objects:
+        - access provisioning and deprovisioning records
+        - privileged account activity logs
+        - change request and approval records
+        - system configuration baselines
+        - firewall and network access rules
+        - vulnerability scan results
+        - batch job schedules and completion logs
+      evidence_artifacts:
+        - user access review completion with manager sign-off
+        - change advisory board meeting minutes and approval log
+        - privileged access session recording or log extract
+        - vulnerability remediation tracking report
+        - SOC 1 / SOC 2 report review and gap assessment
+      event_triggers:
+        - on user provisioning or deprovisioning request
+        - on privileged access elevation or modification
+        - on change request submission to production environment
+        - at each quarterly user access recertification cycle
+        - on detection of critical or high-severity vulnerability
+        - at each annual IT risk assessment cycle
+      regulatory_frameworks:
+        - "SOX Section 404 (ITGCs)"
+        - "FFIEC IT Examination Handbook"
+        - "NIST Cybersecurity Framework"
+        - "ISO 27001 / 27002"
+        - "GLBA Safeguards Rule"
+        - "PCI DSS (where applicable)"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Upon receipt of an access provisioning request, the Identity and Access Management Analyst verifies that the request includes documented manager approval and a valid business justification in the IT Service Management Platform, and confirms that the requested role does not create a segregation-of-duties conflict using the IAM platform's role-conflict detection module, before granting access to the target application."
+        word_count: 56
+        quality_rating: Strong
+
+  # ── Section 9: Financial Accounting ──
+  - id: "9"
+    name: "Financial Accounting"
+    domain: financial_accounting
+    risk_profile:
+      inherent_risk: 4
+      regulatory_intensity: 5
+      control_density: 4
+      multiplier: 2.9
+      rationale: "SOX 404 core area with high control density around reconciliations, journal processing, and financial close activities."
+    affinity:
+      HIGH:
+        - Reconciliation
+        - Authorization
+        - Verification and Validation
+        - Exception Reporting
+        - Segregation of Duties
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+      MEDIUM:
+        - Internal and External Audits
+        - Automated Rules
+        - Risk Escalation Processes
+        - Training and Awareness Programs
+      LOW:
+        - System and Application Restrictions
+        - Data Security and Protection
+      NONE:
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+    registry:
+      roles:
+        - Staff Accountant
+        - Senior Accountant
+        - GL Accountant
+        - Accounting Manager
+        - Assistant Controller
+        - Controller
+      systems:
+        - General Ledger System
+        - Sub-Ledger System
+        - Financial Consolidation Platform
+      data_objects:
+        - journal entries
+        - GL postings
+        - trial balance
+      evidence_artifacts:
+        - GL account reconciliation with sign-off
+        - journal entry approval log
+      event_triggers:
+        - at each month-end close
+        - at each quarter-end reporting cycle
+      regulatory_frameworks:
+        - "SOX Section 404"
+        - "GAAP/IFRS"
+    exemplars:
+      - control_type: Reconciliation
+        placement: Detective
+        method: Automated with Manual Component
+        full_description: "Daily, by 10:00 AM on the following business day, the Operations Team Lead reconciles deposit transaction totals between the core banking system and the general ledger using the GL reconciliation module to identify and resolve discrepancies in deposit posting that could result in inaccurate financial reporting."
+        word_count: 48
+        quality_rating: Strong
+
+  # ── Section 10.0: Asset Management ──
+  - id: "10.0"
+    name: "Asset Management"
+    domain: asset_management
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 2
+      control_density: 2
+      multiplier: 1.6
+      rationale: "Physical asset acquisition, construction, and management carries risk related to capital expenditure governance, facility safety, environmental compliance, and asset lifecycle management."
+    affinity:
+      HIGH:
+        - Authorization
+        - Physical Safeguards
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Verification and Validation
+      MEDIUM:
+        - Reconciliation
+        - Segregation of Duties
+        - Third Party Due Diligence
+        - Exception Reporting
+      LOW:
+        - Risk Escalation Processes
+        - Internal and External Audits
+        - Training and Awareness Programs
+        - Automated Rules
+        - Risk and Compliance Assessments
+      NONE:
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Staffing and Resourcing Adequacy
+        - Internal Compliance Monitoring
+        - Talent Management Practices
+        - Risk Limit Setting
+        - System and Application Restrictions
+        - Data Security and Protection
+        - System Change Management
+    registry:
+      roles:
+        - Facilities Manager
+        - Real Estate Manager
+        - Capital Projects Manager
+        - Property Accountant
+        - Corporate Real Estate Director
+        - Physical Security Manager
+        - Environmental Health and Safety Officer
+        - Head of Corporate Services
+      systems:
+        - Fixed Asset Management System
+        - Facilities Management Platform
+        - Capital Expenditure Approval Workflow Tool
+        - Real Estate Portfolio Management System
+        - Building Management and Access Control System
+      data_objects:
+        - fixed asset register and depreciation schedules
+        - capital expenditure requests and approvals
+        - lease agreements and property records
+        - facility inspection and maintenance records
+        - construction project documentation
+        - environmental and safety compliance records
+      evidence_artifacts:
+        - capital expenditure approval with delegated authority sign-off
+        - fixed asset physical inventory reconciliation report
+        - facility safety inspection completion certificate
+        - lease agreement execution with legal review documentation
+        - construction project acceptance and sign-off documentation
+      event_triggers:
+        - on capital expenditure request exceeding approval threshold
+        - at each annual fixed asset physical inventory and reconciliation
+        - on new lease execution or material lease modification
+        - on completion of construction or facility improvement project
+        - at each periodic facility safety and environmental inspection
+        - on asset disposal or retirement
+      regulatory_frameworks:
+        - "GAAP/IFRS (Asset Accounting and Impairment)"
+        - "ASC 842 (Lease Accounting)"
+        - "OSHA Workplace Safety Standards"
+        - "Environmental Compliance (EPA, State)"
+        - "ADA Accessibility Requirements"
+        - "Local Building Codes and Zoning"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to commitment of funds, the Capital Projects Manager submits the capital expenditure request with business justification, vendor bids, and projected ROI through the capital expenditure approval workflow tool, and the Corporate Real Estate Director reviews and approves requests within delegated authority limits, with requests exceeding threshold escalated to the CFO for final authorization."
+        word_count: 52
+        quality_rating: Strong
+
+  # ── Section 11.0: Enterprise Risk, Compliance, Remediation and Resiliency ──
+  - id: "11.0"
+    name: "Enterprise Risk, Compliance, Remediation and Resiliency"
+    domain: enterprise_risk_compliance_remediation_and_resiliency
+    risk_profile:
+      inherent_risk: 5
+      regulatory_intensity: 5
+      control_density: 5
+      multiplier: 3.0
+      rationale: "Enterprise risk management, compliance, remediation, and resiliency functions represent the highest regulatory intensity and control density. Failures directly result in enforcement actions, consent orders, MRAs, and systemic control environment degradation."
+    affinity:
+      HIGH:
+        - Risk and Compliance Assessments
+        - Risk Limit Setting
+        - Risk Escalation Processes
+        - Internal and External Audits
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Verification and Validation
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+      MEDIUM:
+        - Authorization
+        - Exception Reporting
+        - Segregation of Duties
+        - Surveillance
+        - Internal Compliance Monitoring
+        - Training and Awareness Programs
+        - Automated Rules
+      LOW:
+        - Reconciliation
+        - Client Due Diligence and Transaction Monitoring
+        - Staffing and Resourcing Adequacy
+        - Third Party Due Diligence
+        - Talent Management Practices
+      NONE:
+        - Physical Safeguards
+        - System and Application Restrictions
+        - Data Security and Protection
+        - System Change Management
+    registry:
+      roles:
+        - Chief Risk Officer
+        - Chief Compliance Officer
+        - Enterprise Risk Manager
+        - Operational Risk Manager
+        - Credit Risk Manager
+        - Market Risk Manager
+        - Liquidity Risk Manager
+        - Model Risk Manager
+        - Compliance Testing Analyst
+        - Regulatory Relations Manager
+        - Remediation Program Manager
+        - Issues Management Analyst
+        - Business Continuity Manager
+        - Crisis Management Coordinator
+        - Resiliency Program Manager
+      systems:
+        - Governance Risk and Compliance Platform
+        - Issues and Action Tracking System
+        - Risk Appetite and Limit Monitoring Dashboard
+        - Compliance Testing and Monitoring Platform
+        - Regulatory Change Management System
+        - Business Continuity Planning Platform
+        - Crisis Communication and Incident Management Tool
+        - Model Inventory and Validation Platform
+        - Regulatory Examination Management System
+      data_objects:
+        - enterprise risk assessment reports
+        - risk appetite statements and limit utilization data
+        - compliance testing results and findings
+        - "regulatory examination findings (MRAs, MRIAs, consent orders)"
+        - issues and action plans with remediation milestones
+        - business continuity plans and test results
+        - crisis management playbooks and activation logs
+        - model validation reports and inventory
+        - regulatory change impact assessments
+        - key risk indicators and key control indicators
+      evidence_artifacts:
+        - enterprise risk assessment report with risk committee approval
+        - risk appetite limit breach notification and remediation log
+        - compliance testing report with findings and management response
+        - regulatory examination response with action plan and milestone tracking
+        - issue remediation closure documentation with validation testing
+        - business continuity plan test results with gap remediation documentation
+        - crisis management exercise after-action report
+        - model validation report with challenge findings and disposition
+      event_triggers:
+        - at each quarterly enterprise risk committee review cycle
+        - on identification of risk limit breach or threshold exceedance
+        - on receipt of regulatory examination finding or enforcement action
+        - at each annual enterprise risk assessment cycle
+        - on identification of new or emerging risk requiring assessment
+        - at each annual business continuity plan testing cycle
+        - on activation of crisis management protocol
+        - on issue remediation target date approaching or exceeded
+        - at each annual compliance testing plan execution cycle
+        - on material regulatory change requiring impact assessment
+      regulatory_frameworks:
+        - "OCC Heightened Standards"
+        - "Regulation YY (Enhanced Prudential Standards)"
+        - "Basel III Capital and Liquidity Frameworks"
+        - "CCAR/DFAST Stress Testing"
+        - "SR 11-7 (Model Risk Management)"
+        - "BSA/AML Program Requirements"
+        - "OFAC Sanctions Compliance"
+        - "FFIEC Business Continuity Handbook"
+        - "Interagency Paper on Sound Practices for Operational Resilience"
+        - "SOX Section 404"
+        - "FDICIA"
+    exemplars:
+      - control_type: Risk and Compliance Assessments
+        placement: Detective
+        method: Manual
+        full_description: "Quarterly, the Enterprise Risk Manager conducts a comprehensive risk assessment across all business units using the governance risk and compliance platform, evaluating inherent risk ratings, control effectiveness scores, and residual risk determinations, and presents the consolidated enterprise risk report to the Risk Committee for review, challenge, and approval of any required risk mitigation action plans."
+        word_count: 52
+        quality_rating: Strong
+
+  # ── Section 12.0: External Relationship Management ──
+  - id: "12.0"
+    name: "External Relationship Management"
+    domain: external_relationship_management
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 4
+      control_density: 3
+      multiplier: 2.2
+      rationale: "Management of external relationships with regulators, government entities, industry bodies, and counterparties carries risk related to regulatory standing, information disclosure, and reputational exposure."
+    affinity:
+      HIGH:
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Authorization
+        - Verification and Validation
+        - Risk Escalation Processes
+      MEDIUM:
+        - Third Party Due Diligence
+        - Internal Compliance Monitoring
+        - Risk and Compliance Assessments
+        - Training and Awareness Programs
+      LOW:
+        - Segregation of Duties
+        - Exception Reporting
+        - Internal and External Audits
+        - Automated Rules
+      NONE:
+        - Reconciliation
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Staffing and Resourcing Adequacy
+        - Talent Management Practices
+        - Risk Limit Setting
+        - System and Application Restrictions
+        - Data Security and Protection
+        - System Change Management
+    registry:
+      roles:
+        - Regulatory Relations Manager
+        - Government Affairs Manager
+        - External Affairs Director
+        - Regulatory Examination Coordinator
+        - Industry Association Liaison
+        - Community Relations Manager
+        - Head of Regulatory Affairs
+        - Corporate Communications Manager
+      systems:
+        - Regulatory Examination Management System
+        - Regulatory Filing and Submission Platform
+        - Government Affairs Tracking System
+        - External Communications Approval Workflow Tool
+        - Stakeholder Relationship Management Platform
+      data_objects:
+        - regulatory examination schedules and correspondence
+        - regulatory filing submissions and confirmations
+        - government affairs activity logs
+        - external communication drafts and approvals
+        - industry association membership and participation records
+        - community reinvestment activity documentation
+      evidence_artifacts:
+        - regulatory examination response package with executive sign-off
+        - regulatory filing submission confirmation with completeness checklist
+        - external communication approval log with legal and compliance review
+        - government affairs activity report with disclosure compliance
+        - community reinvestment reporting documentation
+      event_triggers:
+        - on receipt of regulatory examination notification or information request
+        - at each regulatory filing submission deadline
+        - on scheduling of regulator meeting or examination entrance conference
+        - at each annual Community Reinvestment Act reporting cycle
+        - on material external communication requiring legal and compliance review
+        - on engagement with new external counterparty or industry body
+      regulatory_frameworks:
+        - "OCC Examination Process Requirements"
+        - "Federal Reserve Supervisory Process"
+        - "SEC Disclosure Requirements"
+        - "Community Reinvestment Act"
+        - "Lobbying Disclosure Act"
+        - "FOIA and Public Records Requirements"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "Prior to submission, the Regulatory Relations Manager reviews all regulatory examination response packages for completeness and accuracy, and obtains formal sign-off from the relevant business line executive, Chief Risk Officer, and General Counsel before transmitting the response to the examining regulatory agency, ensuring all commitments and representations are authorized at the appropriate governance level."
+        word_count: 51
+        quality_rating: Strong
+
+  # ── Section 13.0: Business Capability Development ──
+  - id: "13.0"
+    name: "Business Capability Development"
+    domain: business_capability_development
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 3
+      control_density: 3
+      multiplier: 2.0
+      rationale: "Business capability development encompasses enterprise program management, process improvement, data governance, and organizational transformation initiatives."
+    affinity:
+      HIGH:
+        - "Documentation, Data, and Activity Completeness and Appropriateness Checks"
+        - Verification and Validation
+        - Authorization
+        - Staffing and Resourcing Adequacy
+      MEDIUM:
+        - System Change Management
+        - Training and Awareness Programs
+        - Risk and Compliance Assessments
+        - Risk Escalation Processes
+        - Segregation of Duties
+      LOW:
+        - Exception Reporting
+        - Internal and External Audits
+        - Automated Rules
+        - Data Security and Protection
+        - Third Party Due Diligence
+      NONE:
+        - Reconciliation
+        - Client Due Diligence and Transaction Monitoring
+        - Surveillance
+        - Physical Safeguards
+        - Business Continuity Planning and Awareness
+        - Crisis Management
+        - Technology Disaster Recovery
+        - Internal Compliance Monitoring
+        - Talent Management Practices
+        - Risk Limit Setting
+        - System and Application Restrictions
+    registry:
+      roles:
+        - Program Manager
+        - Project Manager
+        - Business Analyst
+        - Process Improvement Manager
+        - Data Governance Manager
+        - Enterprise Architect
+        - Transformation Lead
+        - Change Management Specialist
+        - Head of Enterprise Program Management
+        - Chief Data Officer
+      systems:
+        - Enterprise Project and Portfolio Management Platform
+        - Business Process Management Tool
+        - Data Governance and Data Quality Platform
+        - Enterprise Architecture Repository
+        - Requirements Management and Traceability Tool
+        - Change Management Tracking System
+      data_objects:
+        - program and project charters
+        - business requirements documents
+        - process maps and standard operating procedures
+        - data quality scorecards and lineage documentation
+        - enterprise architecture models and roadmaps
+        - change impact assessments
+        - transformation milestone and status reports
+        - capability maturity assessment results
+      evidence_artifacts:
+        - project charter with executive sponsor approval and funding authorization
+        - business requirements sign-off with stakeholder attestation
+        - process improvement implementation documentation with before/after metrics
+        - data governance policy approval with data steward assignment log
+        - transformation program milestone review with steering committee sign-off
+        - capability maturity assessment report with gap remediation plan
+      event_triggers:
+        - on initiation of new enterprise program or transformation initiative
+        - at each program steering committee review cycle
+        - on completion of project phase gate requiring stakeholder approval
+        - at each annual enterprise capability maturity assessment
+        - on identification of data quality issue requiring remediation
+        - on material change to enterprise architecture or operating model
+        - at each quarterly enterprise project portfolio review
+      regulatory_frameworks:
+        - "OCC Heightened Standards (Governance and Change Management)"
+        - "BCBS 239 (Risk Data Aggregation and Reporting)"
+        - "Federal Reserve SR Letters (Operational Effectiveness)"
+        - "SOX Section 404 (Process and Control Documentation)"
+        - "FFIEC IT Examination Handbook (where technology-related)"
+    exemplars:
+      - control_type: Authorization
+        placement: Preventive
+        method: Manual
+        full_description: "At each phase gate, the Program Manager submits the completed deliverables, updated risk register, and resource forecast to the Program Steering Committee through the enterprise project portfolio management platform for review and formal gate approval, and the program cannot advance to the next phase until steering committee authorization is recorded in the system with documented acceptance criteria confirmation."
+        word_count: 54
+        quality_rating: Strong

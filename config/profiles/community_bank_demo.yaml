@@ -1,0 +1,102 @@
+name: "community-bank-demo"
+description: "Minimal config for a small community bank"
+
+control_types:
+  - name: Authorization
+    definition: "Review and validation of documentation, transaction information, or other details to determine whether they are appropriate, complete, or accurate before allowing a process or activity to continue."
+    code: AUT
+    min_frequency_tier: Quarterly
+    placement_categories: [Preventive]
+
+  - name: Reconciliation
+    definition: "Comparison of features, transactions, activities, or data to validate the accuracy, completeness, or appropriateness of the target outputs."
+    code: REC
+    min_frequency_tier: Monthly
+    placement_categories: [Detective]
+
+  - name: Exception Reporting
+    definition: "Creation of reports and alerts to identify risk limit breaches, system capacity constraints or breakdowns, ageing items, outstanding requests or activities that need to be closed out or resolved."
+    code: EXR
+    min_frequency_tier: Monthly
+    placement_categories: [Detective]
+
+business_units:
+  - id: "BU-001"
+    name: "Retail Banking"
+    description: "Consumer deposits, personal loans, and branch-based financial services."
+    primary_sections: ["1.0", "2.0"]
+    key_control_types: ["Authorization", "Reconciliation"]
+    regulatory_exposure: ["SOX", "OCC"]
+
+  - id: "BU-002"
+    name: "Operations"
+    description: "Transaction processing, payment settlement, and back-office support."
+    primary_sections: ["2.0"]
+    key_control_types: ["Reconciliation", "Exception Reporting"]
+
+process_areas:
+  - id: "1.0"
+    name: "Lending Operations"
+    domain: "lending_operations"
+    risk_profile:
+      inherent_risk: 3
+      regulatory_intensity: 3
+      control_density: 2
+      multiplier: 1.8
+      rationale: "Lending carries credit and compliance risk."
+    affinity:
+      HIGH: ["Authorization"]
+      MEDIUM: ["Reconciliation"]
+      LOW: ["Exception Reporting"]
+    registry:
+      roles:
+        - Loan Officer
+        - Credit Analyst
+        - Branch Manager
+      systems:
+        - Loan Origination System
+        - Core Banking Platform
+      data_objects:
+        - loan applications
+        - credit reports
+      evidence_artifacts:
+        - loan approval documentation
+        - credit committee meeting minutes
+      event_triggers:
+        - on loan application submission
+        - at each monthly portfolio review
+      regulatory_frameworks:
+        - OCC Lending Standards
+        - Regulation Z
+
+  - id: "2.0"
+    name: "Settlement and Clearing"
+    domain: "settlement_and_clearing"
+    risk_profile:
+      inherent_risk: 4
+      regulatory_intensity: 4
+      control_density: 3
+      multiplier: 2.4
+      rationale: "Settlement processes carry execution and reconciliation risk."
+    affinity:
+      HIGH: ["Reconciliation", "Exception Reporting"]
+      MEDIUM: ["Authorization"]
+    registry:
+      roles:
+        - Settlement Analyst
+        - Operations Manager
+      systems:
+        - Payment Processing System
+        - General Ledger System
+      data_objects:
+        - settlement instructions
+        - payment records
+      evidence_artifacts:
+        - daily settlement reconciliation report
+        - exception resolution log
+      event_triggers:
+        - at each daily settlement cycle
+        - on detection of settlement exception
+      regulatory_frameworks:
+        - Regulation CC
+        - NACHA Operating Rules

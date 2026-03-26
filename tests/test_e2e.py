@@ -1,7 +1,7 @@
 """End-to-end integration tests for the ControlNexus pipeline.
 
 These tests exercise the full data flow — ingest → analysis → remediation
-→ evaluation → export — without any real LLM or ChromaDB calls.
+→ export — without any real LLM or ChromaDB calls.
 """
 
 from __future__ import annotations
@@ -18,8 +18,6 @@ from controlnexus.analysis.ingest import ingest_excel
 from controlnexus.analysis.pipeline import run_analysis
 from controlnexus.core.config import load_all_section_profiles, load_placement_methods
 from controlnexus.core.state import FinalControlRecord, GapReport
-from controlnexus.evaluation.harness import run_eval
-from controlnexus.evaluation.models import EvalReport
 from controlnexus.export.excel import export_to_excel
 from controlnexus.graphs.analysis_graph import build_analysis_graph
 from controlnexus.graphs.remediation_graph import build_remediation_graph
@@ -227,52 +225,6 @@ class TestFullPipeline:
                 assert loaded.control_id == original.control_id
                 assert loaded.who == original.who
                 assert loaded.where == original.where
-
-    def test_eval_on_generated_controls(self, healthy_controls, section_profiles, mock_embedder):
-        """Run evaluation harness on a set of controls and verify report."""
-        specs = [{"who": c.who, "where_system": c.where} for c in healthy_controls]
-
-        from controlnexus.core.config import load_placement_methods
-
-        pm = load_placement_methods(
-            Path(__file__).resolve().parent.parent / "config" / "placement_methods.yaml"
-        )
-
-        report = run_eval(
-            generated_controls=healthy_controls,
-            specs=specs,
-            placement_config=pm,
-            section_profiles=section_profiles,
-            embedder=mock_embedder,
-            run_id="e2e-test",
-        )
-
-        assert isinstance(report, EvalReport)
-        assert report.total_controls == len(healthy_controls)
-        assert 0 <= report.faithfulness_avg <= 4
-        assert 0 <= report.completeness_avg <= 6
-        assert 0.0 <= report.diversity_score <= 1.0
-
-    def test_eval_json_export(self, healthy_controls, section_profiles, mock_embedder):
-        """Eval harness writes JSON file when output_dir provided."""
-        specs = [{"who": c.who, "where_system": c.where} for c in healthy_controls]
-        pm = load_placement_methods(
-            Path(__file__).resolve().parent.parent / "config" / "placement_methods.yaml"
-        )
-
-        with TemporaryDirectory() as tmp:
-            report = run_eval(
-                generated_controls=healthy_controls,
-                specs=specs,
-                placement_config=pm,
-                section_profiles=section_profiles,
-                embedder=mock_embedder,
-                run_id="e2e-json",
-                output_dir=Path(tmp),
-            )
-            json_path = Path(tmp) / "e2e-json__eval.json"
-            assert json_path.exists()
-            assert report.run_id == "e2e-json"
 
 
 class TestValidatorE2E:

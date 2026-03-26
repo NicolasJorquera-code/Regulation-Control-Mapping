@@ -135,10 +135,17 @@ _RESIZE_JS = """
 
     // --- Phase 1 : snapshot auto-layout widths, then lock them -----------
     //  table-layout:auto sized columns to content.  We read those widths,
-    //  switch to fixed, and apply them so resize drags work predictably.
+    //  set an explicit total table width, then switch to fixed layout.
+    //  This ensures resizing one column doesn't redistribute space among
+    //  siblings (which caused the cursor-jump bug).
+    var totalW = 0;
     ths.forEach(function(th) {
-        th.style.width = th.offsetWidth + 'px';
+        var w = th.offsetWidth;
+        th.style.width = w + 'px';
+        totalW += w;
     });
+    table.style.width = totalW + 'px';
+    table.style.minWidth = totalW + 'px';
     table.style.tableLayout = 'fixed';
 
     // --- Phase 2 : wire up each resize handle ----------------------------
@@ -150,8 +157,9 @@ _RESIZE_JS = """
             e.preventDefault();
             e.stopPropagation();
 
-            var startX  = e.clientX;
-            var startW  = th.offsetWidth;
+            var startX      = e.clientX;
+            var startW      = th.offsetWidth;
+            var startTableW = table.offsetWidth;
 
             handle.classList.add('active');
             document.body.classList.add('no-select');
@@ -166,8 +174,14 @@ _RESIZE_JS = """
             function onMove(ev) {
                 var newW = startW + (ev.clientX - startX);
                 if (newW < 50) newW = 50;      // min column width
+                var actualDelta = newW - startW;
                 th.style.width = newW + 'px';
-                th.style.minWidth = newW + 'px';
+                // Grow/shrink the table by the same delta so sibling
+                // columns keep their width and the handle stays under
+                // the cursor.
+                var newTableW = startTableW + actualDelta;
+                table.style.width = newTableW + 'px';
+                table.style.minWidth = newTableW + 'px';
             }
 
             function onUp() {
