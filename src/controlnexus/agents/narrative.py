@@ -68,6 +68,4 @@ class NarrativeAgent(BaseAgent):
             raise
         except Exception as exc:
             logger.exception("NarrativeAgent run failed: %s", hierarchy_id)
-            raise AgentExecutionException(
-                f"NarrativeAgent failed for {hierarchy_id}"
-            ) from exc
+            raise AgentExecutionException(f"NarrativeAgent failed for {hierarchy_id}") from exc

@@ -188,7 +188,9 @@ class Orchestrator:
         else:
             self._emit("Resolving input template", verbose=verbose, progress_callback=progress_callback)
             template_path = self._resolve_template_path()
-            self._emit(f"Loading APQC hierarchy from {template_path}", verbose=verbose, progress_callback=progress_callback)
+            self._emit(
+                f"Loading APQC hierarchy from {template_path}", verbose=verbose, progress_callback=progress_callback
+            )
             all_nodes = load_apqc_hierarchy(template_path)
             self._emit(f"Loaded hierarchy nodes={len(all_nodes)}", verbose=verbose, progress_callback=progress_callback)
 
@@ -433,15 +435,12 @@ class Orchestrator:
         else:
             normalized_weights = dict(weights)
 
-        raw = {
-            key: (value / total_weight) * target
-            for key, value in normalized_weights.items()
-        }
+        raw = {key: (value / total_weight) * target for key, value in normalized_weights.items()}
         result = {key: int(value) for key, value in raw.items()}
         allocated = sum(result.values())
         remainder = target - allocated
         if remainder > 0:
-            order = sorted(raw.keys(), key=lambda k: (raw[k] - int(raw[k])), reverse=True)
+            order = sorted(raw.keys(), key=lambda k: raw[k] - int(raw[k]), reverse=True)
             for key in order[:remainder]:
                 result[key] += 1
         return result
@@ -563,7 +562,9 @@ class Orchestrator:
         client = build_client_from_env(timeout_seconds=self.run_config.transport.timeout_seconds)
         use_llm = client is not None
         if use_llm:
-            self._emit("LLM credentials detected: using API generation", verbose=verbose, progress_callback=progress_callback)
+            self._emit(
+                "LLM credentials detected: using API generation", verbose=verbose, progress_callback=progress_callback
+            )
         else:
             self._emit(
                 "No LLM credentials detected: using baseline defaults (set ICA_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY in .env)",
@@ -611,10 +612,30 @@ class Orchestrator:
             business_unit = business_unit_map.get(business_unit_id)
             sequence_by_type[control_type] += 1
 
-            role = profile.registry.roles[(sequence_by_type[control_type] - 1) % len(profile.registry.roles)] if profile and profile.registry.roles else "Control Owner"
-            system = profile.registry.systems[(sequence_by_type[control_type] - 1) % len(profile.registry.systems)] if profile and profile.registry.systems else "Enterprise System"
-            trigger = profile.registry.event_triggers[(sequence_by_type[control_type] - 1) % len(profile.registry.event_triggers)] if profile and profile.registry.event_triggers else "monthly"
-            evidence_artifact = profile.registry.evidence_artifacts[(sequence_by_type[control_type] - 1) % len(profile.registry.evidence_artifacts)] if profile and profile.registry.evidence_artifacts else "control evidence log"
+            role = (
+                profile.registry.roles[(sequence_by_type[control_type] - 1) % len(profile.registry.roles)]
+                if profile and profile.registry.roles
+                else "Control Owner"
+            )
+            system = (
+                profile.registry.systems[(sequence_by_type[control_type] - 1) % len(profile.registry.systems)]
+                if profile and profile.registry.systems
+                else "Enterprise System"
+            )
+            trigger = (
+                profile.registry.event_triggers[
+                    (sequence_by_type[control_type] - 1) % len(profile.registry.event_triggers)
+                ]
+                if profile and profile.registry.event_triggers
+                else "monthly"
+            )
+            evidence_artifact = (
+                profile.registry.evidence_artifacts[
+                    (sequence_by_type[control_type] - 1) % len(profile.registry.evidence_artifacts)
+                ]
+                if profile and profile.registry.evidence_artifacts
+                else "control evidence log"
+            )
             evidence = f"{evidence_artifact} with {role} sign-off, retained in {system}"
             rationale = profile.risk_profile.rationale if profile else "Operational and compliance risk mitigation"
 
@@ -666,29 +687,31 @@ class Orchestrator:
                 "rationale": "Baseline output (no LLM)",
             }
 
-            prepared.append({
-                "assignment": assignment,
-                "hierarchy_id": hierarchy_id,
-                "section_id": section_id,
-                "profile": profile,
-                "control_type": control_type,
-                "business_unit_id": business_unit_id,
-                "business_unit": business_unit,
-                "role": role,
-                "system": system,
-                "trigger": trigger,
-                "evidence": evidence,
-                "rationale": rationale,
-                "placement": placement,
-                "method": method,
-                "what_text": what_text,
-                "full_description": full_description,
-                "taxonomy_constraints": taxonomy_constraints,
-                "spec": spec,
-                "narrative": narrative,
-                "enriched": enriched,
-                "llm_result": None,
-            })
+            prepared.append(
+                {
+                    "assignment": assignment,
+                    "hierarchy_id": hierarchy_id,
+                    "section_id": section_id,
+                    "profile": profile,
+                    "control_type": control_type,
+                    "business_unit_id": business_unit_id,
+                    "business_unit": business_unit,
+                    "role": role,
+                    "system": system,
+                    "trigger": trigger,
+                    "evidence": evidence,
+                    "rationale": rationale,
+                    "placement": placement,
+                    "method": method,
+                    "what_text": what_text,
+                    "full_description": full_description,
+                    "taxonomy_constraints": taxonomy_constraints,
+                    "spec": spec,
+                    "narrative": narrative,
+                    "enriched": enriched,
+                    "llm_result": None,
+                }
+            )
 
         # ── Phase 2: LLM enrichment (parallel async) ─────────────────────────
         if use_llm and spec_agent and narrative_agent and enricher_agent:
@@ -747,7 +770,9 @@ class Orchestrator:
                     control_type=control_type,
                     selected_level_1=spec.get("selected_level_1", "Unspecified"),
                     selected_level_2=control_type,
-                    business_unit_id=business_unit_id if business_unit_id != "BU-UNSPECIFIED" else (business_unit.business_unit_id if business_unit else "BU-UNSPECIFIED"),
+                    business_unit_id=business_unit_id
+                    if business_unit_id != "BU-UNSPECIFIED"
+                    else (business_unit.business_unit_id if business_unit else "BU-UNSPECIFIED"),
                     business_unit_name=business_unit.name if business_unit else "Unspecified",
                     placement=spec.get("placement", item["placement"]),
                     method=spec.get("method", item["method"]),
@@ -757,7 +782,9 @@ class Orchestrator:
                     frequency=_derive_frequency_from_when(narrative.get("when", item["trigger"])),
                     where=narrative.get("where", item["system"]),
                     why=narrative.get("why", item["rationale"]),
-                    full_description=enriched.get("refined_full_description", narrative.get("full_description", item["full_description"])),
+                    full_description=enriched.get(
+                        "refined_full_description", narrative.get("full_description", item["full_description"])
+                    ),
                     quality_rating=enriched.get("quality_rating", "Satisfactory"),
                     validator_passed=validation_result.passed,
                     validator_retries=0,
@@ -765,7 +792,11 @@ class Orchestrator:
                     evidence=spec.get("evidence", item["evidence"]),
                 )
             )
-            if verbose and progress_callback and (len(records) == 1 or len(records) % 25 == 0 or len(records) == len(prepared)):
+            if (
+                verbose
+                and progress_callback
+                and (len(records) == 1 or len(records) % 25 == 0 or len(records) == len(prepared))
+            ):
                 progress_callback(f"[controlforge] Progress: finalized {len(records)}/{len(prepared)} controls")
 
         if use_llm and client:
@@ -911,8 +942,12 @@ class Orchestrator:
 
     @staticmethod
     def _build_taxonomy_constraint_config(placement_methods_cfg: dict[str, Any]) -> dict[str, Any]:
-        control_taxonomy = placement_methods_cfg.get("control_taxonomy", {}) if isinstance(placement_methods_cfg, dict) else {}
-        level_2_by_level_1 = control_taxonomy.get("level_2_by_level_1", {}) if isinstance(control_taxonomy, dict) else {}
+        control_taxonomy = (
+            placement_methods_cfg.get("control_taxonomy", {}) if isinstance(placement_methods_cfg, dict) else {}
+        )
+        level_2_by_level_1 = (
+            control_taxonomy.get("level_2_by_level_1", {}) if isinstance(control_taxonomy, dict) else {}
+        )
         cleaned_map: dict[str, list[str]] = {}
         for level_1, level_2_values in level_2_by_level_1.items():
             if not isinstance(level_1, str) or not isinstance(level_2_values, list):

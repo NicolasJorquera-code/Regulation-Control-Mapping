@@ -32,13 +32,13 @@ class StreamlitEventListener:
         msg = event.message
 
         if et == EventType.PIPELINE_STARTED:
-            self._status.write(f"\U0001F680 Pipeline started: {msg}")
+            self._status.write(f"\U0001f680 Pipeline started: {msg}")
         elif et == EventType.CONTROL_STARTED:
             idx = event.data.get("index", "?")
             total = event.data.get("total", "?")
-            self._status.write(f"\n\U0001F4CB Control {idx}/{total}: {msg}")
+            self._status.write(f"\n\U0001f4cb Control {idx}/{total}: {msg}")
         elif et == EventType.AGENT_STARTED:
-            self._status.write(f"\u23F3 {msg} started")
+            self._status.write(f"\u23f3 {msg} started")
         elif et == EventType.AGENT_COMPLETED:
             self._status.write(f"\u2713 {msg}")
         elif et == EventType.AGENT_FAILED:
@@ -48,13 +48,13 @@ class StreamlitEventListener:
         elif et == EventType.VALIDATION_FAILED:
             self._status.write(f"\u2717 {msg}")
         elif et == EventType.AGENT_RETRY:
-            self._status.write(f"\u27F3 {msg}")
+            self._status.write(f"\u27f3 {msg}")
         elif et == EventType.TOOL_CALLED:
-            self._status.write(f"\U0001F527 {msg}")
+            self._status.write(f"\U0001f527 {msg}")
         elif et == EventType.TOOL_COMPLETED:
             pass  # tool completion is included in agent completed message
         elif et == EventType.CONTROL_COMPLETED:
-            self._status.write(f"\u2714\uFE0F {msg}")
+            self._status.write(f"\u2714\ufe0f {msg}")
         elif et == EventType.PIPELINE_COMPLETED:
             self._status.update(label=f"\u2705 {msg}", state="complete", expanded=True)
 
@@ -162,20 +162,26 @@ def render_modular_tab() -> None:
 
     with st.expander("Config Details", expanded=False):
         st.markdown("**Control Types:**")
-        type_data = [{"Name": ct.name, "Code": ct.code or "(auto)", "Min Frequency": ct.min_frequency_tier or "—"}
-                     for ct in config.control_types]
+        type_data = [
+            {"Name": ct.name, "Code": ct.code or "(auto)", "Min Frequency": ct.min_frequency_tier or "—"}
+            for ct in config.control_types
+        ]
         st.dataframe(pd.DataFrame(type_data), width="stretch", hide_index=True)
 
         if config.business_units:
             st.markdown("**Business Units:**")
-            bu_data = [{"ID": bu.id, "Name": bu.name, "Key Types": ", ".join(bu.key_control_types[:3])}
-                       for bu in config.business_units]
+            bu_data = [
+                {"ID": bu.id, "Name": bu.name, "Key Types": ", ".join(bu.key_control_types[:3])}
+                for bu in config.business_units
+            ]
             st.dataframe(pd.DataFrame(bu_data), width="stretch", hide_index=True)
 
         if config.process_areas:
             st.markdown("**Process Areas:**")
-            pa_data = [{"ID": pa.id, "Name": pa.name, "Risk Multiplier": pa.risk_profile.multiplier}
-                       for pa in config.process_areas]
+            pa_data = [
+                {"ID": pa.id, "Name": pa.name, "Risk Multiplier": pa.risk_profile.multiplier}
+                for pa in config.process_areas
+            ]
             st.dataframe(pd.DataFrame(pa_data), width="stretch", hide_index=True)
 
     # ── Generation settings ───────────────────────────────────────────────
@@ -208,7 +214,9 @@ def render_modular_tab() -> None:
     distribution_config: dict[str, Any] | None = None
 
     with st.expander("Customize Distribution", expanded=False):
-        st.caption("Adjust relative weights for control type and section emphasis. Leave defaults for even/risk-weighted distribution.")
+        st.caption(
+            "Adjust relative weights for control type and section emphasis. Leave defaults for even/risk-weighted distribution."
+        )
 
         type_names = [ct.name for ct in config.control_types]
         type_weights: dict[str, float] = {}
@@ -232,7 +240,8 @@ def render_modular_tab() -> None:
                 with s_cols[i % len(s_cols)]:
                     w = st.slider(
                         f"{pa.id}: {pa.name[:20]}",
-                        0.0, 10.0,
+                        0.0,
+                        10.0,
                         float(pa.risk_profile.multiplier),
                         0.5,
                         key=f"sw_{pa.id}",
@@ -278,7 +287,9 @@ def render_modular_tab() -> None:
         records = payload.get("final_records", [])
         st.session_state["modular_result"] = payload
 
-        st.success(f"Generated **{payload.get('total_controls', 0)}** controls for **{payload.get('config_name', '')}**")
+        st.success(
+            f"Generated **{payload.get('total_controls', 0)}** controls for **{payload.get('config_name', '')}**"
+        )
 
         # Show tool usage summary if any tools were called
         tool_log = result.get("tool_calls_log", [])
@@ -303,17 +314,33 @@ def render_modular_tab() -> None:
 
             # All available columns for the toggler
             all_cols = [
-                "control_id", "hierarchy_id", "leaf_name", "selected_level_1",
-                "selected_level_2", "business_unit_id", "business_unit_name",
-                "who", "what", "when", "frequency", "where", "why",
-                "full_description", "quality_rating", "evidence",
+                "control_id",
+                "hierarchy_id",
+                "leaf_name",
+                "selected_level_1",
+                "selected_level_2",
+                "business_unit_id",
+                "business_unit_name",
+                "who",
+                "what",
+                "when",
+                "frequency",
+                "where",
+                "why",
+                "full_description",
+                "quality_rating",
+                "evidence",
             ]
 
             render_data_table(
                 records=records,
                 default_columns=[
-                    "control_id", "business_unit_name", "selected_level_1",
-                    "selected_level_2", "frequency", "full_description",
+                    "control_id",
+                    "business_unit_name",
+                    "selected_level_1",
+                    "selected_level_2",
+                    "frequency",
+                    "full_description",
                 ],
                 all_columns=all_cols,
                 key="modular_controls",

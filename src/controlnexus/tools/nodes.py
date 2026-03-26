@@ -76,10 +76,12 @@ def tool_node(state: dict[str, Any]) -> dict[str, Any]:
             args = raw_args
 
         result = execute_tool_call(tool_name, args)
-        new_messages.append({
-            "role": "tool",
-            "tool_call_id": call.get("id", ""),
-            "content": json.dumps(result),
-        })
+        new_messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": call.get("id", ""),
+                "content": json.dumps(result),
+            }
+        )
 
     return {"messages": new_messages}

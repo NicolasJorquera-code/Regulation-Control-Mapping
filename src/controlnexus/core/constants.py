@@ -33,8 +33,15 @@ FREQUENCY_ORDERED_RULES: list[tuple[str, tuple[str, ...]]] = [
     (
         "Monthly",
         (
-            "monthly", "every month", "each month", "per month",
-            "month-end", "month end", "eom", "semi-monthly", "semimonthly",
+            "monthly",
+            "every month",
+            "each month",
+            "per month",
+            "month-end",
+            "month end",
+            "eom",
+            "semi-monthly",
+            "semimonthly",
         ),
     ),
     ("Quarterly", ("quarterly", "every quarter", "each quarter", "per quarter", "qtr", "quarter-end", "quarter end")),

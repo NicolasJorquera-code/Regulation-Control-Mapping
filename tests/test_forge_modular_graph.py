@@ -16,7 +16,6 @@ from controlnexus.graphs.forge_modular_graph import (
     after_validate,
     build_forge_graph,
     enrich_node,
-    has_more,
     merge_node,
     narrative_node,
     reset_llm_cache,
@@ -53,7 +52,6 @@ BANKING_STANDARD = PROFILES_DIR / "banking_standard.yaml"
 
 
 class TestAssignmentMatrix:
-
     def test_produces_correct_count(self):
         config = load_domain_config(COMMUNITY_BANK)
         assignments = build_assignment_matrix(config, target_count=10)
@@ -90,7 +88,6 @@ class TestAssignmentMatrix:
 
 
 class TestDeterministicBuilders:
-
     @pytest.fixture()
     def config(self) -> DomainConfig:
         return load_domain_config(COMMUNITY_BANK)
@@ -114,9 +111,20 @@ class TestDeterministicBuilders:
         spec = build_deterministic_spec(assignment, config)
         narr = build_deterministic_narrative(spec, config)
         enriched = build_deterministic_enriched(spec, narr, config)
-        for key in ("control_id", "hierarchy_id", "control_type", "who", "what",
-                     "when", "frequency", "where", "why", "full_description",
-                     "quality_rating", "evidence"):
+        for key in (
+            "control_id",
+            "hierarchy_id",
+            "control_type",
+            "who",
+            "what",
+            "when",
+            "frequency",
+            "where",
+            "why",
+            "full_description",
+            "quality_rating",
+            "evidence",
+        ):
             assert key in enriched, f"Missing key: {key}"
 
 
@@ -124,7 +132,6 @@ class TestDeterministicBuilders:
 
 
 class TestForgeGraph:
-
     def test_graph_compiles(self):
         graph = build_forge_graph()
         compiled = graph.compile()
@@ -132,30 +139,36 @@ class TestForgeGraph:
 
     def test_graph_produces_correct_count(self):
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 5,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 5,
+            }
+        )
         payload = result["plan_payload"]
         assert payload["total_controls"] == 5
         assert len(payload["final_records"]) == 5
 
     def test_graph_assigns_control_ids(self):
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 3,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 3,
+            }
+        )
         for record in result["plan_payload"]["final_records"]:
             assert record["control_id"].startswith("CTRL-")
             assert len(record["control_id"]) > 10
 
     def test_graph_uses_config_type_codes(self):
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 6,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 6,
+            }
+        )
         config = load_domain_config(COMMUNITY_BANK)
         codes = set(config.type_code_map().values())
         for record in result["plan_payload"]["final_records"]:
@@ -166,19 +179,23 @@ class TestForgeGraph:
 
     def test_graph_loops_all_assignments(self):
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 4,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 4,
+            }
+        )
         assert result["current_idx"] == 4
         assert len(result["plan_payload"]["final_records"]) == 4
 
     def test_graph_with_banking_standard(self):
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(BANKING_STANDARD),
-            "target_count": 25,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(BANKING_STANDARD),
+                "target_count": 25,
+            }
+        )
         payload = result["plan_payload"]
         assert payload["total_controls"] == 25
         assert payload["config_name"] == "banking-standard"
@@ -196,17 +213,19 @@ class TestForgeGraph:
 
     def test_graph_custom_distribution(self):
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 9,
-            "distribution_config": {
-                "type_weights": {
-                    "Authorization": 5.0,
-                    "Reconciliation": 1.0,
-                    "Exception Reporting": 1.0,
-                }
-            },
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 9,
+                "distribution_config": {
+                    "type_weights": {
+                        "Authorization": 5.0,
+                        "Reconciliation": 1.0,
+                        "Exception Reporting": 1.0,
+                    }
+                },
+            }
+        )
         records = result["plan_payload"]["final_records"]
         auth_count = sum(1 for r in records if r["control_type"] == "Authorization")
         assert auth_count >= 4  # should dominate distribution
@@ -216,21 +235,33 @@ class TestForgeGraph:
 
 
 class TestGraphTopology:
-
     def test_graph_has_8_nodes(self):
         graph = build_forge_graph()
         compiled = graph.compile()
         node_names = set(compiled.get_graph().nodes.keys())
-        expected = {"__start__", "__end__", "init", "select", "spec", "narrative", "validate", "enrich", "merge", "finalize"}
+        expected = {
+            "__start__",
+            "__end__",
+            "init",
+            "select",
+            "spec",
+            "narrative",
+            "validate",
+            "enrich",
+            "merge",
+            "finalize",
+        }
         assert expected.issubset(node_names), f"Missing nodes: {expected - node_names}"
 
     def test_deterministic_path_same_output(self):
         """Split nodes produce identical output to the old generate_node path."""
         graph = build_forge_graph().compile()
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 5,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 5,
+            }
+        )
         payload = result["plan_payload"]
         assert payload["total_controls"] == 5
         # Verify records have all expected fields
@@ -244,11 +275,13 @@ class TestGraphTopology:
         """llm_enabled=True in input propagates through state."""
         graph = build_forge_graph().compile()
         # _get_agent returns None → falls back to deterministic
-        result = graph.invoke({
-            "config_path": str(COMMUNITY_BANK),
-            "target_count": 1,
-            "llm_enabled": True,
-        })
+        result = graph.invoke(
+            {
+                "config_path": str(COMMUNITY_BANK),
+                "target_count": 1,
+                "llm_enabled": True,
+            }
+        )
         # Even with llm_enabled=True, generates successfully (fallback)
         assert result["plan_payload"]["total_controls"] == 1
 
@@ -316,6 +349,7 @@ def _mock_agent(name: str = "TestAgent") -> MagicMock:
     agent.call_llm_with_tools = AsyncMock()
     # parse_json delegates to the real static method for realistic behavior
     from controlnexus.agents.base import BaseAgent
+
     agent.parse_json = BaseAgent.parse_json
     # _extract_text_from_openai_style is an instance method used by graph nodes
     agent._extract_text_from_openai_style = BaseAgent._extract_text_from_openai_style.__get__(agent)
@@ -323,7 +357,6 @@ def _mock_agent(name: str = "TestAgent") -> MagicMock:
 
 
 class TestLLMNodes:
-
     def setup_method(self):
         reset_llm_cache()
 
@@ -472,7 +505,6 @@ class TestLLMNodes:
 
 
 class TestValidationRetryLoop:
-
     def test_validate_passes_deterministic(self):
         state = _make_state(llm_enabled=False)
         result = validate_node(state)
@@ -539,7 +571,6 @@ class TestValidationRetryLoop:
 
 
 class TestPromptTemplates:
-
     @pytest.fixture()
     def config(self) -> DomainConfig:
         return load_domain_config(COMMUNITY_BANK)
@@ -628,8 +659,11 @@ class TestEventEmission:
     def test_validate_node_emits_validation_failed(self):
         state = _make_state(llm_enabled=True, retry_count=0)
         state["current_narrative"] = {
-            "who": "Manager", "what": "Reviews and monitors and validates and audits transactions",
-            "when": "as needed", "where": "System", "why": "because",
+            "who": "Manager",
+            "what": "Reviews and monitors and validates and audits transactions",
+            "when": "as needed",
+            "where": "System",
+            "why": "because",
             "full_description": "short",
         }
         validate_node(state)
@@ -651,14 +685,26 @@ class TestEventEmission:
         agent = _mock_agent("SpecAgent")
         mock_get_agent.return_value = agent
 
-        spec_response = {"hierarchy_id": "1.0.1.1", "leaf_name": "Test",
-                         "selected_level_1": "Preventive", "control_type": "Authorization",
-                         "placement": "Preventive", "method": "Manual",
-                         "who": "Manager", "what_action": "reviews", "what_detail": "detail",
-                         "when": "monthly", "where_system": "System", "why_risk": "risk",
-                         "evidence": "log", "business_unit_id": "BU-RB"}
+        spec_response = {
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
+        }
         agent.call_llm_with_tools.return_value = {
-            "role": "assistant", "content": json.dumps(spec_response), "_tool_calls_count": 0,
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 0,
         }
 
         state = _make_state(llm_enabled=True)
@@ -684,14 +730,26 @@ class TestEventEmission:
         agent = _mock_agent("SpecAgent")
         mock_get_agent.return_value = agent
 
-        spec_response = {"hierarchy_id": "1.0.1.1", "leaf_name": "Test",
-                         "selected_level_1": "Preventive", "control_type": "Authorization",
-                         "placement": "Preventive", "method": "Manual",
-                         "who": "Manager", "what_action": "reviews", "what_detail": "detail",
-                         "when": "monthly", "where_system": "System", "why_risk": "risk",
-                         "evidence": "log", "business_unit_id": "BU-RB"}
+        spec_response = {
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
+        }
         agent.call_llm_with_tools.return_value = {
-            "role": "assistant", "content": json.dumps(spec_response), "_tool_calls_count": 0,
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 0,
         }
 
         state = _make_state(llm_enabled=True)
@@ -769,7 +827,7 @@ class TestSlimPromptBuilders:
         assert payload["leaf"]["hierarchy_id"]
 
     def test_slim_narrative_system_shorter_than_fat(self, config):
-        fat = build_narrative_system_prompt(config)
+        _fat = build_narrative_system_prompt(config)
         slim = build_slim_narrative_system_prompt(config)
         # Slim is actually longer because of tool instructions, but shouldn't have exemplars
         assert "exemplar_lookup" in slim
@@ -812,12 +870,20 @@ class TestDualModeNodes:
         mock_get_agent.return_value = agent
 
         spec_response = {
-            "hierarchy_id": "1.0.1.1", "leaf_name": "Test",
-            "selected_level_1": "Preventive", "control_type": "Authorization",
-            "placement": "Preventive", "method": "Manual",
-            "who": "Manager", "what_action": "reviews", "what_detail": "detail",
-            "when": "monthly", "where_system": "System", "why_risk": "risk",
-            "evidence": "log", "business_unit_id": "BU-RB",
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
         }
         agent.call_llm_with_tools.return_value = {
             "role": "assistant",
@@ -845,12 +911,20 @@ class TestDualModeNodes:
         mock_get_agent.return_value = agent
 
         spec_response = {
-            "hierarchy_id": "1.0.1.1", "leaf_name": "Test",
-            "selected_level_1": "Preventive", "control_type": "Authorization",
-            "placement": "Preventive", "method": "Manual",
-            "who": "Manager", "what_action": "reviews", "what_detail": "detail",
-            "when": "monthly", "where_system": "System", "why_risk": "risk",
-            "evidence": "log", "business_unit_id": "BU-RB",
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
         }
         agent.call_llm_with_tools.return_value = {
             "role": "assistant",
@@ -876,8 +950,10 @@ class TestDualModeNodes:
         mock_get_agent.return_value = agent
 
         narr_response = {
-            "who": "Manager", "what": "reviews transactions",
-            "when": "monthly", "where": "Core Banking",
+            "who": "Manager",
+            "what": "reviews transactions",
+            "when": "monthly",
+            "where": "Core Banking",
             "why": "to mitigate risk",
             "full_description": " ".join(["word"] * 40),
         }
@@ -906,8 +982,10 @@ class TestDualModeNodes:
         mock_get_agent.return_value = agent
 
         narr_response = {
-            "who": "Manager", "what": "reviews transactions",
-            "when": "monthly", "where": "Core Banking",
+            "who": "Manager",
+            "what": "reviews transactions",
+            "when": "monthly",
+            "where": "Core Banking",
             "why": "to mitigate risk",
             "full_description": " ".join(["word"] * 40),
         }
@@ -937,12 +1015,20 @@ class TestDualModeNodes:
         mock_get_agent.return_value = agent
 
         spec_response = {
-            "hierarchy_id": "1.0.1.1", "leaf_name": "Test",
-            "selected_level_1": "Preventive", "control_type": "Authorization",
-            "placement": "Preventive", "method": "Manual",
-            "who": "Manager", "what_action": "reviews", "what_detail": "detail",
-            "when": "monthly", "where_system": "System", "why_risk": "risk",
-            "evidence": "log", "business_unit_id": "BU-RB",
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
         }
         agent.call_llm_with_tools.return_value = {
             "role": "assistant",

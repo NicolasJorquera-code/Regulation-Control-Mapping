@@ -22,15 +22,11 @@ def render_controlforge() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="report-subtitle">'
-        "Configuration Explorer &amp; Section Runner"
-        "</div>",
+        '<div class="report-subtitle">Configuration Explorer &amp; Section Runner</div>',
         unsafe_allow_html=True,
     )
 
-    sub_profiles, sub_config, sub_run = st.tabs(
-        ["Section Profiles", "Global Config", "Run Section"]
-    )
+    sub_profiles, sub_config, sub_run = st.tabs(["Section Profiles", "Global Config", "Run Section"])
 
     with sub_profiles:
         _render_section_profiles_subtab()
@@ -160,9 +156,7 @@ def _render_affinity_matrix(profile: Any) -> None:
     for bucket_name, items, css_class in bucket_config:
         if not items:
             continue
-        badges_html = " ".join(
-            f'<span class="carbon-tag {css_class}">{item}</span>' for item in items
-        )
+        badges_html = " ".join(f'<span class="carbon-tag {css_class}">{item}</span>' for item in items)
         st.markdown(f"**{bucket_name}** ({len(items)})")
         st.markdown(badges_html, unsafe_allow_html=True)
 
@@ -234,10 +228,7 @@ def _render_taxonomy_table(config_dir: Path) -> None:
         return
 
     control_types = catalog_data.get("control_types", [])
-    rows = [
-        {"Control Type": ct["control_type"], "Definition": ct["definition"]}
-        for ct in control_types
-    ]
+    rows = [{"Control Type": ct["control_type"], "Definition": ct["definition"]} for ct in control_types]
     st.caption(f"{len(control_types)} control types defined")
     st.dataframe(rows, width="stretch", hide_index=True)
 
@@ -262,15 +253,9 @@ def _render_business_units(config_dir: Path) -> None:
     for bu in bus:
         with st.expander(f"{bu['business_unit_id']} \u2014 {bu['name']}"):
             st.markdown(f"**Description:** {bu['description']}")
-            st.markdown(
-                f"**Primary Sections:** {', '.join(bu.get('primary_sections', []))}"
-            )
-            st.markdown(
-                f"**Key Control Types:** {', '.join(bu.get('key_control_types', []))}"
-            )
-            st.markdown(
-                f"**Regulatory Exposure:** {', '.join(bu.get('regulatory_exposure', []))}"
-            )
+            st.markdown(f"**Primary Sections:** {', '.join(bu.get('primary_sections', []))}")
+            st.markdown(f"**Key Control Types:** {', '.join(bu.get('key_control_types', []))}")
+            st.markdown(f"**Regulatory Exposure:** {', '.join(bu.get('regulatory_exposure', []))}")
 
 
 def _render_placement_methods_tree(config_dir: Path) -> None:
@@ -278,9 +263,7 @@ def _render_placement_methods_tree(config_dir: Path) -> None:
     st.markdown("### Placement & Method Taxonomy")
 
     try:
-        pm_data = _get_cached_placement_methods(
-            str(config_dir / "placement_methods.yaml")
-        )
+        pm_data = _get_cached_placement_methods(str(config_dir / "placement_methods.yaml"))
     except Exception as e:
         st.error(f"Failed to load placement methods: {e}")
         return
@@ -324,9 +307,7 @@ def _render_standards(config_dir: Path) -> None:
     if phrase_bank:
         st.markdown("**Phrase Bank:**")
         for category, phrases in phrase_bank.items():
-            with st.expander(
-                f"{category.replace('_', ' ').title()} ({len(phrases)})"
-            ):
+            with st.expander(f"{category.replace('_', ' ').title()} ({len(phrases)})"):
                 st.markdown(", ".join(phrases))
 
     # Quality ratings
@@ -546,10 +527,7 @@ def _display_pipeline_results(result: Any) -> None:
 
     # Section allocation
     with st.expander("Section Allocation"):
-        alloc_rows = [
-            {"Section": sid, "Controls Allocated": count}
-            for sid, count in result.section_allocation.items()
-        ]
+        alloc_rows = [{"Section": sid, "Controls Allocated": count} for sid, count in result.section_allocation.items()]
         st.dataframe(alloc_rows, width="stretch", hide_index=True)
 
     # Section breakdown
@@ -572,8 +550,12 @@ def _display_pipeline_results(result: Any) -> None:
         render_data_table(
             records=export_rows,
             default_columns=[
-                "control_id", "business_unit_name", "selected_level_1",
-                "selected_level_2", "frequency", "full_description",
+                "control_id",
+                "business_unit_name",
+                "selected_level_1",
+                "selected_level_2",
+                "frequency",
+                "full_description",
             ],
             all_columns=EXPORT_COLUMNS,
             key="cf_pipeline_controls",

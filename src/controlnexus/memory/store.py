@@ -79,13 +79,15 @@ class ControlMemory:
 
             ids.append(ctrl_id)
             documents.append(doc)
-            metadatas.append({
-                "section_id": section_id,
-                "control_type": rec.get("selected_level_2", "") or rec.get("control_type", ""),
-                "business_unit_id": rec.get("business_unit_id", ""),
-                "run_id": run_id,
-                "hierarchy_id": hierarchy_id,
-            })
+            metadatas.append(
+                {
+                    "section_id": section_id,
+                    "control_type": rec.get("selected_level_2", "") or rec.get("control_type", ""),
+                    "business_unit_id": rec.get("business_unit_id", ""),
+                    "run_id": run_id,
+                    "hierarchy_id": hierarchy_id,
+                }
+            )
 
         if not documents:
             return 0
@@ -141,12 +143,14 @@ class ControlMemory:
             for i, doc_id in enumerate(results["ids"][0]):
                 # ChromaDB returns cosine distance; similarity = 1 - distance
                 distance = results["distances"][0][i] if results["distances"] else 0
-                matches.append({
-                    "id": doc_id,
-                    "document": results["documents"][0][i] if results["documents"] else "",
-                    "score": round(1 - distance, 4),
-                    "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-                })
+                matches.append(
+                    {
+                        "id": doc_id,
+                        "document": results["documents"][0][i] if results["documents"] else "",
+                        "score": round(1 - distance, 4),
+                        "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
+                    }
+                )
 
         return matches
 

@@ -135,7 +135,11 @@ class BaseAgent(ABC):
         elapsed = time.monotonic() - t0
         logger.info(
             "LLM call #%d completed (%s, %.3fs, %d+%d tokens)",
-            call_number, self.name, elapsed, prompt_tokens, completion_tokens,
+            call_number,
+            self.name,
+            elapsed,
+            prompt_tokens,
+            completion_tokens,
         )
         return self._extract_text_from_openai_style(response_json)
 
@@ -182,7 +186,10 @@ class BaseAgent(ABC):
 
             logger.info(
                 "LLM round %d started (%s, call #%d, tools offered: %d)",
-                round_idx + 1, self.name, call_number, len(tools),
+                round_idx + 1,
+                self.name,
+                call_number,
+                len(tools),
             )
             t0 = time.monotonic()
 
@@ -201,7 +208,9 @@ class BaseAgent(ABC):
             elapsed = time.monotonic() - t0
             logger.info(
                 "LLM round %d completed (%s, %.3fs)",
-                round_idx + 1, self.name, elapsed,
+                round_idx + 1,
+                self.name,
+                elapsed,
             )
 
             assistant_msg = response_json.get("choices", [{}])[0].get("message", {})
@@ -211,8 +220,7 @@ class BaseAgent(ABC):
             if not tool_calls:
                 if round_idx == 0 and total_tool_calls == 0:
                     logger.info(
-                        "Provider returned content without tool calls (%s) — "
-                        "tools not supported or not needed",
+                        "Provider returned content without tool calls (%s) — tools not supported or not needed",
                         self.name,
                     )
                 assistant_msg["_tool_calls_count"] = total_tool_calls
@@ -227,14 +235,19 @@ class BaseAgent(ABC):
                 total_tool_calls += 1
                 logger.info(
                     "Tool executed: %s(%s) round %d (%s)",
-                    tool_name, list(arguments.keys()), round_idx + 1, self.name,
+                    tool_name,
+                    list(arguments.keys()),
+                    round_idx + 1,
+                    self.name,
                 )
                 result = tool_executor(tool_name, arguments)
-                current_messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.get("id", ""),
-                    "content": json.dumps(result),
-                })
+                current_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.get("id", ""),
+                        "content": json.dumps(result),
+                    }
+                )
 
             # After first round of tool calls, relax to "auto" so the LLM
             # can produce the final content response.
@@ -262,6 +275,4 @@ class BaseAgent(ABC):
                 return json.loads(candidate)
             except json.JSONDecodeError as exc:
                 logger.error("JSON parse failure: %s", candidate[:300])
-                raise ValidationException(
-                    f"Failed to parse JSON from LLM response: {candidate[:200]}"
-                ) from exc
+                raise ValidationException(f"Failed to parse JSON from LLM response: {candidate[:200]}") from exc

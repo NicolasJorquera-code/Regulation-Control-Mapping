@@ -71,10 +71,12 @@ class TestBaseAgent:
 
     async def test_call_llm_tracks_tokens(self):
         mock_client = AsyncMock()
-        mock_client.chat_completion = AsyncMock(return_value={
-            "choices": [{"message": {"content": '{"result": true}'}}],
-            "usage": {"prompt_tokens": 100, "completion_tokens": 50},
-        })
+        mock_client.chat_completion = AsyncMock(
+            return_value={
+                "choices": [{"message": {"content": '{"result": true}'}}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+            }
+        )
         ctx = AgentContext(client=mock_client)
         agent = _DummyAgent(ctx)
 
@@ -109,10 +111,18 @@ class TestExtractText:
     def test_list_content_blocks(self):
         ctx = AgentContext()
         agent = _DummyAgent(ctx)
-        payload = {"choices": [{"message": {"content": [
-            {"text": "part1"},
-            {"type": "output_text", "text": "part2"},
-        ]}}]}
+        payload = {
+            "choices": [
+                {
+                    "message": {
+                        "content": [
+                            {"text": "part1"},
+                            {"type": "output_text", "text": "part2"},
+                        ]
+                    }
+                }
+            ]
+        }
         assert "part1" in agent._extract_text_from_openai_style(payload)
         assert "part2" in agent._extract_text_from_openai_style(payload)
 
@@ -130,10 +140,12 @@ class TestExtractText:
 @pytest.fixture
 def mock_context():
     mock_client = AsyncMock()
-    mock_client.chat_completion = AsyncMock(return_value={
-        "choices": [{"message": {"content": '{"placeholder": true}'}}],
-        "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-    })
+    mock_client.chat_completion = AsyncMock(
+        return_value={
+            "choices": [{"message": {"content": '{"placeholder": true}'}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+        }
+    )
     return AgentContext(client=mock_client, model="test-model")
 
 

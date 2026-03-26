@@ -41,8 +41,11 @@ def _make_profile() -> SectionProfile:
         section_id="4.0",
         domain="test",
         risk_profile=RiskProfile(
-            inherent_risk=3, regulatory_intensity=3, control_density=3,
-            multiplier=1.0, rationale="test",
+            inherent_risk=3,
+            regulatory_intensity=3,
+            control_density=3,
+            multiplier=1.0,
+            rationale="test",
         ),
         registry=DomainRegistry(
             roles=["Senior Accountant"],

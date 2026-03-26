@@ -22,64 +22,66 @@ logger = logging.getLogger(__name__)
 # Gap-report → flat rows
 # ---------------------------------------------------------------------------
 
+
 def _gap_report_to_rows(gap_report: GapReport) -> list[dict[str, Any]]:
     """Flatten a GapReport into selectable rows with a ``gap_type`` column."""
     rows: list[dict[str, Any]] = []
 
     for gap in gap_report.regulatory_gaps:
-        rows.append({
-            "selected": True,
-            "gap_type": "regulatory",
-            "detail": f"{gap.framework} — {gap.required_theme}",
-            "severity": gap.severity,
-            "framework": gap.framework,
-            "required_theme": gap.required_theme,
-            "current_coverage": gap.current_coverage,
-        })
+        rows.append(
+            {
+                "selected": True,
+                "gap_type": "regulatory",
+                "detail": f"{gap.framework} — {gap.required_theme}",
+                "severity": gap.severity,
+                "framework": gap.framework,
+                "required_theme": gap.required_theme,
+                "current_coverage": gap.current_coverage,
+            }
+        )
 
     for gap in gap_report.balance_gaps:
         if gap.direction == "under":
-            rows.append({
-                "selected": True,
-                "gap_type": "balance",
-                "detail": (
-                    f"{gap.control_type} under-represented "
-                    f"({gap.actual_pct:.1f}% vs {gap.expected_pct:.1f}%)"
-                ),
-                "severity": "medium",
-                "control_type": gap.control_type,
-                "expected_pct": gap.expected_pct,
-                "actual_pct": gap.actual_pct,
-            })
+            rows.append(
+                {
+                    "selected": True,
+                    "gap_type": "balance",
+                    "detail": (
+                        f"{gap.control_type} under-represented ({gap.actual_pct:.1f}% vs {gap.expected_pct:.1f}%)"
+                    ),
+                    "severity": "medium",
+                    "control_type": gap.control_type,
+                    "expected_pct": gap.expected_pct,
+                    "actual_pct": gap.actual_pct,
+                }
+            )
 
     for issue in gap_report.frequency_issues:
-        rows.append({
-            "selected": True,
-            "gap_type": "frequency",
-            "detail": (
-                f"{issue.control_id}: "
-                f"{issue.actual_frequency} → {issue.expected_frequency}"
-            ),
-            "severity": "low",
-            "control_id": issue.control_id,
-            "hierarchy_id": issue.hierarchy_id,
-            "expected_frequency": issue.expected_frequency,
-            "actual_frequency": issue.actual_frequency,
-        })
+        rows.append(
+            {
+                "selected": True,
+                "gap_type": "frequency",
+                "detail": (f"{issue.control_id}: {issue.actual_frequency} → {issue.expected_frequency}"),
+                "severity": "low",
+                "control_id": issue.control_id,
+                "hierarchy_id": issue.hierarchy_id,
+                "expected_frequency": issue.expected_frequency,
+                "actual_frequency": issue.actual_frequency,
+            }
+        )
 
     for issue in gap_report.evidence_issues:
-        rows.append({
-            "selected": True,
-            "gap_type": "evidence",
-            "detail": (
-                f"{issue.control_id}: "
-                f"{issue.issue or 'Insufficient evidence'}"
-            ),
-            "severity": "low",
-            "control_id": issue.control_id,
-            "hierarchy_id": issue.hierarchy_id,
-            "issue": issue.issue,
-        })
+        rows.append(
+            {
+                "selected": True,
+                "gap_type": "evidence",
+                "detail": (f"{issue.control_id}: {issue.issue or 'Insufficient evidence'}"),
+                "severity": "low",
+                "control_id": issue.control_id,
+                "hierarchy_id": issue.hierarchy_id,
+                "issue": issue.issue,
+            }
+        )
 
     return rows
 
@@ -87,6 +89,7 @@ def _gap_report_to_rows(gap_report: GapReport) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Selected rows → planner-ready gap_report dict
 # ---------------------------------------------------------------------------
+
 
 def _rows_to_gap_dict(selected_rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Convert selected flat rows back into the dict shape expected by ``plan_assignments``."""
@@ -100,32 +103,40 @@ def _rows_to_gap_dict(selected_rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in selected_rows:
         gt = row.get("gap_type", "")
         if gt == "regulatory":
-            gap_dict["regulatory_gaps"].append({
-                "framework": row.get("framework", ""),
-                "required_theme": row.get("required_theme", ""),
-                "current_coverage": row.get("current_coverage", 0),
-                "severity": row.get("severity", "medium"),
-            })
+            gap_dict["regulatory_gaps"].append(
+                {
+                    "framework": row.get("framework", ""),
+                    "required_theme": row.get("required_theme", ""),
+                    "current_coverage": row.get("current_coverage", 0),
+                    "severity": row.get("severity", "medium"),
+                }
+            )
         elif gt == "balance":
-            gap_dict["balance_gaps"].append({
-                "control_type": row.get("control_type", ""),
-                "expected_pct": row.get("expected_pct", 0),
-                "actual_pct": row.get("actual_pct", 0),
-                "direction": "under",
-            })
+            gap_dict["balance_gaps"].append(
+                {
+                    "control_type": row.get("control_type", ""),
+                    "expected_pct": row.get("expected_pct", 0),
+                    "actual_pct": row.get("actual_pct", 0),
+                    "direction": "under",
+                }
+            )
         elif gt == "frequency":
-            gap_dict["frequency_issues"].append({
-                "control_id": row.get("control_id", ""),
-                "hierarchy_id": row.get("hierarchy_id", ""),
-                "expected_frequency": row.get("expected_frequency", ""),
-                "actual_frequency": row.get("actual_frequency", ""),
-            })
+            gap_dict["frequency_issues"].append(
+                {
+                    "control_id": row.get("control_id", ""),
+                    "hierarchy_id": row.get("hierarchy_id", ""),
+                    "expected_frequency": row.get("expected_frequency", ""),
+                    "actual_frequency": row.get("actual_frequency", ""),
+                }
+            )
         elif gt == "evidence":
-            gap_dict["evidence_issues"].append({
-                "control_id": row.get("control_id", ""),
-                "hierarchy_id": row.get("hierarchy_id", ""),
-                "issue": row.get("issue", ""),
-            })
+            gap_dict["evidence_issues"].append(
+                {
+                    "control_id": row.get("control_id", ""),
+                    "hierarchy_id": row.get("hierarchy_id", ""),
+                    "issue": row.get("issue", ""),
+                }
+            )
 
     return gap_dict
 
@@ -133,6 +144,7 @@ def _rows_to_gap_dict(selected_rows: list[dict[str, Any]]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Build a single remediation record from one assignment
 # ---------------------------------------------------------------------------
+
 
 def _build_record(assignment: dict[str, Any], index: int) -> dict[str, Any]:
     """Convert a single planner assignment into a remediation control record.
@@ -291,6 +303,7 @@ def _build_record(assignment: dict[str, Any], index: int) -> dict[str, Any]:
 # Run remediation — processes each assignment directly
 # ---------------------------------------------------------------------------
 
+
 def _run_remediation(
     selected_rows: list[dict[str, Any]],
     section_profiles: dict,
@@ -316,10 +329,7 @@ def _run_remediation(
         gap_source = assignment.get("gap_source", "unknown")
         detail = assignment.get("framework") or assignment.get("control_id") or f"#{i + 1}"
         if status:
-            status.write(
-                f"Processing assignment {i + 1}/{len(assignments)} "
-                f"({gap_source}: {detail})…"
-            )
+            status.write(f"Processing assignment {i + 1}/{len(assignments)} ({gap_source}: {detail})…")
         record = _build_record(assignment, i)
         generated.append(record)
 
@@ -335,6 +345,7 @@ def _run_remediation(
 # Public renderer
 # ---------------------------------------------------------------------------
 
+
 def render_remediation_runner() -> None:
     """Render the remediation section: gap selection → generate → results table."""
 
@@ -348,9 +359,7 @@ def render_remediation_runner() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="report-subtitle">'
-        "Select gaps to remediate, then generate controls"
-        "</div>",
+        '<div class="report-subtitle">Select gaps to remediate, then generate controls</div>',
         unsafe_allow_html=True,
     )
 
@@ -361,10 +370,7 @@ def render_remediation_runner() -> None:
         return
 
     st.markdown("#### Select Gaps")
-    st.caption(
-        "Toggle the **Selected** checkbox to include or exclude individual "
-        "gaps from remediation."
-    )
+    st.caption("Toggle the **Selected** checkbox to include or exclude individual gaps from remediation.")
 
     # Use st.data_editor for interactive selection
     edited_rows = st.data_editor(
@@ -477,21 +483,23 @@ def _render_excel_download(results: list[dict[str, Any]]) -> None:
         records: list[FinalControlRecord] = []
         for i, rec in enumerate(results):
             try:
-                records.append(FinalControlRecord(
-                    control_id=rec.get("control_id", f"REM-{i + 1:04d}"),
-                    hierarchy_id=rec.get("hierarchy_id", ""),
-                    leaf_name=rec.get("leaf_name", ""),
-                    control_type=rec.get("control_type", ""),
-                    who=rec.get("who", ""),
-                    what=rec.get("what", ""),
-                    when=rec.get("when", ""),
-                    frequency=rec.get("frequency", "Other"),
-                    where=rec.get("where", ""),
-                    why=rec.get("why", ""),
-                    full_description=rec.get("full_description", ""),
-                    quality_rating=rec.get("quality_rating", "Satisfactory"),
-                    evidence=rec.get("evidence", ""),
-                ))
+                records.append(
+                    FinalControlRecord(
+                        control_id=rec.get("control_id", f"REM-{i + 1:04d}"),
+                        hierarchy_id=rec.get("hierarchy_id", ""),
+                        leaf_name=rec.get("leaf_name", ""),
+                        control_type=rec.get("control_type", ""),
+                        who=rec.get("who", ""),
+                        what=rec.get("what", ""),
+                        when=rec.get("when", ""),
+                        frequency=rec.get("frequency", "Other"),
+                        where=rec.get("where", ""),
+                        why=rec.get("why", ""),
+                        full_description=rec.get("full_description", ""),
+                        quality_rating=rec.get("quality_rating", "Satisfactory"),
+                        evidence=rec.get("evidence", ""),
+                    )
+                )
             except Exception:
                 continue
 

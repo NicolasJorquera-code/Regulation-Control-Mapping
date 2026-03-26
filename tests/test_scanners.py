@@ -21,6 +21,7 @@ from controlnexus.core.state import FinalControlRecord
 
 # -- Helpers -------------------------------------------------------------------
 
+
 def _make_control(**overrides) -> FinalControlRecord:
     base = {
         "control_id": "CTRL-0401-REC-001",
@@ -53,15 +54,19 @@ def _make_profile(
         section_id=section_id,
         domain="test",
         risk_profile=RiskProfile(
-            inherent_risk=3, regulatory_intensity=3, control_density=3,
-            multiplier=1.0, rationale="test",
+            inherent_risk=3,
+            regulatory_intensity=3,
+            control_density=3,
+            multiplier=1.0,
+            rationale="test",
         ),
         registry=DomainRegistry(
             roles=["Senior Accountant"],
             systems=["GL System"],
             regulatory_frameworks=frameworks or ["SOX Compliance", "OCC Guidelines"],
         ),
-        affinity=affinity or AffinityMatrix(
+        affinity=affinity
+        or AffinityMatrix(
             HIGH=["Reconciliation"],
             MEDIUM=["Authorization"],
             LOW=["Training and Awareness Programs"],
@@ -132,54 +137,66 @@ class TestEcosystemBalanceAnalysis:
 
 class TestFrequencyCoherenceScan:
     def test_monthly_reconciliation_passes(self):
-        controls = [_make_control(
-            selected_level_2="Reconciliation",
-            when="Monthly, by the 5th business day",
-        )]
+        controls = [
+            _make_control(
+                selected_level_2="Reconciliation",
+                when="Monthly, by the 5th business day",
+            )
+        ]
         issues = frequency_coherence_scan(controls)
         assert len(issues) == 0
 
     def test_annual_reconciliation_fails(self):
-        controls = [_make_control(
-            selected_level_2="Reconciliation",
-            when="Annually during the year-end close",
-        )]
+        controls = [
+            _make_control(
+                selected_level_2="Reconciliation",
+                when="Annually during the year-end close",
+            )
+        ]
         issues = frequency_coherence_scan(controls)
         assert len(issues) == 1
         assert issues[0].expected_frequency == "Monthly"
         assert issues[0].actual_frequency == "Annual"
 
     def test_quarterly_authorization_passes(self):
-        controls = [_make_control(
-            selected_level_2="Authorization",
-            when="Quarterly review cycle",
-        )]
+        controls = [
+            _make_control(
+                selected_level_2="Authorization",
+                when="Quarterly review cycle",
+            )
+        ]
         issues = frequency_coherence_scan(controls)
         assert len(issues) == 0
 
     def test_annual_authorization_fails(self):
-        controls = [_make_control(
-            selected_level_2="Authorization",
-            when="Annual review",
-        )]
+        controls = [
+            _make_control(
+                selected_level_2="Authorization",
+                when="Annual review",
+            )
+        ]
         issues = frequency_coherence_scan(controls)
         assert len(issues) == 1
 
     def test_other_frequency_not_flagged(self):
         # "Other" frequency is not checked
-        controls = [_make_control(
-            selected_level_2="Reconciliation",
-            when="On vendor engagement",
-        )]
+        controls = [
+            _make_control(
+                selected_level_2="Reconciliation",
+                when="On vendor engagement",
+            )
+        ]
         issues = frequency_coherence_scan(controls)
         assert len(issues) == 0
 
 
 class TestEvidenceSufficiencyScan:
     def test_strong_evidence_passes(self):
-        controls = [_make_control(
-            evidence="GL reconciliation report with Senior Accountant sign-off, retained in the financial close platform",
-        )]
+        controls = [
+            _make_control(
+                evidence="GL reconciliation report with Senior Accountant sign-off, retained in the financial close platform",
+            )
+        ]
         issues = evidence_sufficiency_scan(controls)
         assert len(issues) == 0
 
@@ -204,9 +221,7 @@ class TestScoreEvidence:
         assert missing == []
 
     def test_missing_signer(self):
-        score, missing = _score_evidence(
-            "Reconciliation report retained in the GL platform"
-        )
+        score, missing = _score_evidence("Reconciliation report retained in the GL platform")
         assert score == 2
         assert "signer/approver" in missing
 

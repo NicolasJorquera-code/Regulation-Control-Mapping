@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
@@ -211,16 +210,28 @@ class DomainConfig(BaseModel):
                 label="Monthly",
                 rank=3,
                 keywords=[
-                    "monthly", "every month", "each month", "per month",
-                    "month-end", "month end", "eom", "semi-monthly", "semimonthly",
+                    "monthly",
+                    "every month",
+                    "each month",
+                    "per month",
+                    "month-end",
+                    "month end",
+                    "eom",
+                    "semi-monthly",
+                    "semimonthly",
                 ],
             ),
             FrequencyTier(
                 label="Quarterly",
                 rank=4,
                 keywords=[
-                    "quarterly", "every quarter", "each quarter", "per quarter",
-                    "qtr", "quarter-end", "quarter end",
+                    "quarterly",
+                    "every quarter",
+                    "each quarter",
+                    "per quarter",
+                    "qtr",
+                    "quarter-end",
+                    "quarter end",
                 ],
             ),
             FrequencyTier(
@@ -265,22 +276,16 @@ class DomainConfig(BaseModel):
                 if pc not in known_placements:
                     errors.append(f"Control type '{ct.name}' references unknown placement: '{pc}'")
             if ct.min_frequency_tier and ct.min_frequency_tier not in known_freq_tiers:
-                errors.append(
-                    f"Control type '{ct.name}' references unknown frequency tier: '{ct.min_frequency_tier}'"
-                )
+                errors.append(f"Control type '{ct.name}' references unknown frequency tier: '{ct.min_frequency_tier}'")
 
         for pa in self.process_areas:
             for level in ("HIGH", "MEDIUM", "LOW", "NONE"):
                 for type_name in getattr(pa.affinity, level, []):
                     if type_name not in known_types:
-                        errors.append(
-                            f"Section '{pa.id}' affinity {level} references unknown type: '{type_name}'"
-                        )
+                        errors.append(f"Section '{pa.id}' affinity {level} references unknown type: '{type_name}'")
 
         if errors:
-            raise ValueError(
-                "DomainConfig cross-reference errors:\n  - " + "\n  - ".join(errors)
-            )
+            raise ValueError("DomainConfig cross-reference errors:\n  - " + "\n  - ".join(errors))
         return self
 
     # ── Computed properties ───────────────────────────────────────────────
@@ -317,8 +322,7 @@ class DomainConfig(BaseModel):
         return {
             ct.name
             for ct in self.control_types
-            if ct.min_frequency_tier
-            and (self.frequency_tier_rank(ct.min_frequency_tier) or 999) <= threshold_rank
+            if ct.min_frequency_tier and (self.frequency_tier_rank(ct.min_frequency_tier) or 999) <= threshold_rank
         }
 
     def section_ids(self) -> list[str]:

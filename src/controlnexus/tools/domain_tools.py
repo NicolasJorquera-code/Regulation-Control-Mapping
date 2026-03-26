@@ -73,10 +73,7 @@ def dc_regulatory_lookup(
         }
 
     frameworks = pa.registry.regulatory_frameworks
-    matching = [
-        f for f in frameworks
-        if framework.lower() in f.lower() or f.lower() in framework.lower()
-    ]
+    matching = [f for f in frameworks if framework.lower() in f.lower() or f.lower() in framework.lower()]
 
     applicable_types = list(pa.affinity.HIGH) + list(pa.affinity.MEDIUM)
 
@@ -143,16 +140,10 @@ def dc_frequency_lookup(
 
     if ct_cfg and ct_cfg.min_frequency_tier:
         expected = ct_cfg.min_frequency_tier
-        reasoning = (
-            f"'{control_type}' controls should operate at "
-            f"{expected.lower()} or higher frequency."
-        )
+        reasoning = f"'{control_type}' controls should operate at {expected.lower()} or higher frequency."
     else:
         expected = "Other"
-        reasoning = (
-            f"No specific frequency expectation for '{control_type}' "
-            f"— trigger-driven is acceptable."
-        )
+        reasoning = f"No specific frequency expectation for '{control_type}' — trigger-driven is acceptable."
 
     return {
         "control_type": control_type,
@@ -214,10 +205,7 @@ def dc_method_lookup(
 ) -> dict[str, Any]:
     """Look up all control methods and their definitions."""
     return {
-        "methods": [
-            {"name": m.name, "description": m.description}
-            for m in config.methods
-        ],
+        "methods": [{"name": m.name, "description": m.description} for m in config.methods],
     }
 
 

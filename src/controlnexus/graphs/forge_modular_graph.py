@@ -65,11 +65,17 @@ _ENRICH_TOOLS = [TAXONOMY_VALIDATOR_SCHEMA, FREQUENCY_LOOKUP_SCHEMA, MEMORY_RETR
 
 # Slim-prompt mode (OpenAI): includes lookup tools that replace inline data
 _SLIM_SPEC_TOOLS = [
-    TAXONOMY_VALIDATOR_SCHEMA, HIERARCHY_SEARCH_SCHEMA, REGULATORY_LOOKUP_SCHEMA,
-    PLACEMENT_LOOKUP_SCHEMA, METHOD_LOOKUP_SCHEMA, EVIDENCE_RULES_LOOKUP_SCHEMA,
+    TAXONOMY_VALIDATOR_SCHEMA,
+    HIERARCHY_SEARCH_SCHEMA,
+    REGULATORY_LOOKUP_SCHEMA,
+    PLACEMENT_LOOKUP_SCHEMA,
+    METHOD_LOOKUP_SCHEMA,
+    EVIDENCE_RULES_LOOKUP_SCHEMA,
 ]
 _SLIM_NARRATIVE_TOOLS = [
-    FREQUENCY_LOOKUP_SCHEMA, REGULATORY_LOOKUP_SCHEMA, EXEMPLAR_LOOKUP_SCHEMA,
+    FREQUENCY_LOOKUP_SCHEMA,
+    REGULATORY_LOOKUP_SCHEMA,
+    EXEMPLAR_LOOKUP_SCHEMA,
 ]
 _SLIM_ENRICH_TOOLS = _ENRICH_TOOLS  # enricher prompts are already minimal
 
@@ -115,6 +121,7 @@ def _emitting_tool_executor(
     log: list[dict[str, Any]],
 ) -> Callable[[str, dict[str, Any]], dict[str, Any]]:
     """Wrap a tool executor to emit TOOL_CALLED / TOOL_COMPLETED events."""
+
     def wrapper(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         _emit(EventType.TOOL_CALLED, f"{tool_name}({json.dumps(arguments, default=str)[:120]})", tool=tool_name)
         t0 = time.monotonic()
@@ -123,6 +130,7 @@ def _emitting_tool_executor(
         log.append({"tool": tool_name, "args": arguments, "elapsed": round(elapsed, 3)})
         _emit(EventType.TOOL_COMPLETED, f"{tool_name} ({elapsed:.2f}s)", tool=tool_name, elapsed=elapsed)
         return result
+
     return wrapper
 
 
@@ -191,8 +199,12 @@ def init_node(state: ForgeState) -> dict[str, Any]:
     assignments = build_assignment_matrix(domain_config, target, dist_cfg)
     logger.info("init_node: built %d assignments for target_count=%d", len(assignments), target)
 
-    _emit(EventType.PIPELINE_STARTED, f"{domain_config.name}, target={target}",
-          config_name=domain_config.name, target=target)
+    _emit(
+        EventType.PIPELINE_STARTED,
+        f"{domain_config.name}, target={target}",
+        config_name=domain_config.name,
+        target=target,
+    )
 
     # Detect provider from transport client
     client = _get_client()
@@ -214,17 +226,17 @@ def select_node(state: ForgeState) -> dict[str, Any]:
     idx = state.get("current_idx", 0)
     assignments = state.get("assignments", [])
     if idx >= len(assignments):
-        raise IndexError(
-            f"select_node: current_idx={idx} is out of range for "
-            f"{len(assignments)} assignments"
-        )
+        raise IndexError(f"select_node: current_idx={idx} is out of range for {len(assignments)} assignments")
     assignment = assignments[idx]
     ctrl_type = assignment.get("control_type", "")
     section = assignment.get("section_id", "")
     _emit(
         EventType.CONTROL_STARTED,
         f"{ctrl_type} in {section}",
-        index=idx + 1, total=len(assignments), control_type=ctrl_type, section=section,
+        index=idx + 1,
+        total=len(assignments),
+        control_type=ctrl_type,
+        section=section,
     )
     return {
         "current_assignment": assignment,
@@ -336,22 +348,36 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        response = _run_async(agent.call_llm_with_tools(
-            messages, tools, emitting_executor, tool_choice=tool_choice,
-        ))
+        response = _run_async(
+            agent.call_llm_with_tools(
+                messages,
+                tools,
+                emitting_executor,
+                tool_choice=tool_choice,
+            )
+        )
         n_tools = response.get("_tool_calls_count", 0)
         text = agent._extract_text_from_openai_style({"choices": [{"message": response}]})
         result = agent.parse_json(text)
 
         elapsed = time.monotonic() - t0
-        _emit(EventType.AGENT_COMPLETED, f"SpecAgent ({elapsed:.1f}s, {n_tools} tool calls)",
-              agent="SpecAgent", elapsed=elapsed, tool_calls=n_tools)
+        _emit(
+            EventType.AGENT_COMPLETED,
+            f"SpecAgent ({elapsed:.1f}s, {n_tools} tool calls)",
+            agent="SpecAgent",
+            elapsed=elapsed,
+            tool_calls=n_tools,
+        )
         return {"current_spec": result, "tool_calls_log": tool_log}
     except Exception:
         logger.warning("spec_node LLM failed — falling back to deterministic", exc_info=True)
         elapsed = time.monotonic() - t0
-        _emit(EventType.AGENT_FAILED, f"SpecAgent failed ({elapsed:.1f}s) — deterministic fallback",
-              agent="SpecAgent", elapsed=elapsed)
+        _emit(
+            EventType.AGENT_FAILED,
+            f"SpecAgent failed ({elapsed:.1f}s) — deterministic fallback",
+            agent="SpecAgent",
+            elapsed=elapsed,
+        )
         return {"current_spec": build_deterministic_spec(assignment, config), "tool_calls_log": tool_log}
 
 
@@ -394,22 +420,36 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        response = _run_async(agent.call_llm_with_tools(
-            messages, tools, emitting_executor, tool_choice=tool_choice,
-        ))
+        response = _run_async(
+            agent.call_llm_with_tools(
+                messages,
+                tools,
+                emitting_executor,
+                tool_choice=tool_choice,
+            )
+        )
         n_tools = response.get("_tool_calls_count", 0)
         text = agent._extract_text_from_openai_style({"choices": [{"message": response}]})
         result = agent.parse_json(text)
 
         elapsed = time.monotonic() - t0
-        _emit(EventType.AGENT_COMPLETED, f"NarrativeAgent ({elapsed:.1f}s, {n_tools} tool calls)",
-              agent="NarrativeAgent", elapsed=elapsed, tool_calls=n_tools)
+        _emit(
+            EventType.AGENT_COMPLETED,
+            f"NarrativeAgent ({elapsed:.1f}s, {n_tools} tool calls)",
+            agent="NarrativeAgent",
+            elapsed=elapsed,
+            tool_calls=n_tools,
+        )
         return {"current_narrative": result, "tool_calls_log": tool_log}
     except Exception:
         logger.warning("narrative_node LLM failed — falling back to deterministic", exc_info=True)
         elapsed = time.monotonic() - t0
-        _emit(EventType.AGENT_FAILED, f"NarrativeAgent failed ({elapsed:.1f}s) — deterministic fallback",
-              agent="NarrativeAgent", elapsed=elapsed)
+        _emit(
+            EventType.AGENT_FAILED,
+            f"NarrativeAgent failed ({elapsed:.1f}s) — deterministic fallback",
+            agent="NarrativeAgent",
+            elapsed=elapsed,
+        )
         return {"current_narrative": build_deterministic_narrative(spec, config), "tool_calls_log": tool_log}
 
 
@@ -429,7 +469,8 @@ def validate_node(state: ForgeState) -> dict[str, Any]:
     retry_count = state.get("retry_count", 0)
 
     result = validate(
-        narrative, spec,
+        narrative,
+        spec,
         min_words=config.narrative.word_count_min,
         max_words=config.narrative.word_count_max,
     )
@@ -440,21 +481,33 @@ def validate_node(state: ForgeState) -> dict[str, Any]:
 
     if retry_count >= 3:
         # Max retries — accept as-is
-        _emit(EventType.VALIDATION_PASSED,
-              f"Validation accepted after max retries (failures: {result.failures})",
-              accepted_with_failures=True)
+        _emit(
+            EventType.VALIDATION_PASSED,
+            f"Validation accepted after max retries (failures: {result.failures})",
+            accepted_with_failures=True,
+        )
         return {"validation_passed": True, "validation_failures": result.failures, "retry_appendix": ""}
 
     appendix = build_retry_appendix(
-        retry_count + 1, 3, result.failures, result.word_count,
+        retry_count + 1,
+        3,
+        result.failures,
+        result.word_count,
         min_words=config.narrative.word_count_min,
         max_words=config.narrative.word_count_max,
     )
-    _emit(EventType.VALIDATION_FAILED,
-          f"Validation failed (retry {retry_count + 1}/3): {result.failures}",
-          failures=result.failures, retry=retry_count + 1)
-    _emit(EventType.AGENT_RETRY, f"NarrativeAgent retry {retry_count + 1}/3",
-          agent="NarrativeAgent", retry=retry_count + 1)
+    _emit(
+        EventType.VALIDATION_FAILED,
+        f"Validation failed (retry {retry_count + 1}/3): {result.failures}",
+        failures=result.failures,
+        retry=retry_count + 1,
+    )
+    _emit(
+        EventType.AGENT_RETRY,
+        f"NarrativeAgent retry {retry_count + 1}/3",
+        agent="NarrativeAgent",
+        retry=retry_count + 1,
+    )
     return {
         "validation_passed": False,
         "retry_count": retry_count + 1,
@@ -497,9 +550,14 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        response = _run_async(agent.call_llm_with_tools(
-            messages, tools, emitting_executor, tool_choice=tool_choice,
-        ))
+        response = _run_async(
+            agent.call_llm_with_tools(
+                messages,
+                tools,
+                emitting_executor,
+                tool_choice=tool_choice,
+            )
+        )
         n_tools = response.get("_tool_calls_count", 0)
         text = agent._extract_text_from_openai_style({"choices": [{"message": response}]})
         llm_result = agent.parse_json(text)
@@ -513,15 +571,24 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
 
         elapsed = time.monotonic() - t0
         rating = enriched.get("quality_rating", "")
-        _emit(EventType.AGENT_COMPLETED,
-              f"EnricherAgent ({elapsed:.1f}s, {n_tools} tool calls) — {rating}",
-              agent="EnricherAgent", elapsed=elapsed, tool_calls=n_tools, rating=rating)
+        _emit(
+            EventType.AGENT_COMPLETED,
+            f"EnricherAgent ({elapsed:.1f}s, {n_tools} tool calls) — {rating}",
+            agent="EnricherAgent",
+            elapsed=elapsed,
+            tool_calls=n_tools,
+            rating=rating,
+        )
         return {"current_enriched": enriched, "validation_passed": True, "tool_calls_log": tool_log}
     except Exception:
         logger.warning("enrich_node LLM failed — falling back to deterministic", exc_info=True)
         elapsed = time.monotonic() - t0
-        _emit(EventType.AGENT_FAILED, f"EnricherAgent failed ({elapsed:.1f}s) — deterministic fallback",
-              agent="EnricherAgent", elapsed=elapsed)
+        _emit(
+            EventType.AGENT_FAILED,
+            f"EnricherAgent failed ({elapsed:.1f}s) — deterministic fallback",
+            agent="EnricherAgent",
+            elapsed=elapsed,
+        )
         enriched = build_deterministic_enriched(spec, narrative, config)
         return {"current_enriched": enriched, "validation_passed": True, "tool_calls_log": tool_log}
 
@@ -531,8 +598,7 @@ def merge_node(state: ForgeState) -> dict[str, Any]:
     enriched = state["current_enriched"]
     rating = enriched.get("quality_rating", "")
     idx = state["current_idx"]
-    _emit(EventType.CONTROL_COMPLETED, f"Control {idx + 1} completed — {rating}",
-          index=idx + 1, rating=rating)
+    _emit(EventType.CONTROL_COMPLETED, f"Control {idx + 1} completed — {rating}", index=idx + 1, rating=rating)
     return {
         "generated_records": [enriched],
         "current_idx": idx + 1,
@@ -546,9 +612,12 @@ def finalize_node(state: ForgeState) -> dict[str, Any]:
 
     final_records = assign_control_ids(records, config)
 
-    _emit(EventType.PIPELINE_COMPLETED,
-          f"Generated {len(final_records)} controls for {config.name}",
-          total=len(final_records), config_name=config.name)
+    _emit(
+        EventType.PIPELINE_COMPLETED,
+        f"Generated {len(final_records)} controls for {config.name}",
+        total=len(final_records),
+        config_name=config.name,
+    )
 
     return {
         "plan_payload": {
@@ -610,22 +679,34 @@ def build_forge_graph() -> StateGraph:
     graph.add_node("finalize", finalize_node)
 
     graph.set_entry_point("init")
-    graph.add_conditional_edges("init", after_init, {
-        "select": "select",
-        "finalize": "finalize",
-    })
+    graph.add_conditional_edges(
+        "init",
+        after_init,
+        {
+            "select": "select",
+            "finalize": "finalize",
+        },
+    )
     graph.add_edge("select", "spec")
     graph.add_edge("spec", "narrative")
     graph.add_edge("narrative", "validate")
-    graph.add_conditional_edges("validate", after_validate, {
-        "enrich": "enrich",
-        "narrative": "narrative",
-    })
+    graph.add_conditional_edges(
+        "validate",
+        after_validate,
+        {
+            "enrich": "enrich",
+            "narrative": "narrative",
+        },
+    )
     graph.add_edge("enrich", "merge")
-    graph.add_conditional_edges("merge", has_more, {
-        "select": "select",
-        "finalize": "finalize",
-    })
+    graph.add_conditional_edges(
+        "merge",
+        has_more,
+        {
+            "select": "select",
+            "finalize": "finalize",
+        },
+    )
     graph.add_edge("finalize", END)
 
     return graph

@@ -50,9 +50,7 @@ def build_assignment_matrix(
     )
 
     # Determine per-section count (weighted by risk multiplier)
-    default_section_weights = {
-        pa.id: pa.risk_profile.multiplier for pa in config.process_areas
-    }
+    default_section_weights = {pa.id: pa.risk_profile.multiplier for pa in config.process_areas}
     section_weight_overrides = (distribution_config or {}).get("section_weights")
     section_weights = section_weight_overrides if section_weight_overrides else default_section_weights
     section_counts = _distribute_by_weight(section_ids, target_count, section_weights)
@@ -98,16 +96,18 @@ def build_assignment_matrix(
         # Get BU
         bu_id, bu_name = _next_bu(bu_cycle, section_id, config)
 
-        assignments.append({
-            "section_id": section_id,
-            "section_name": section_name,
-            "domain": domain,
-            "control_type": ct,
-            "business_unit_id": bu_id,
-            "business_unit_name": bu_name,
-            "leaf_name": f"{section_name} – {ct}",
-            "hierarchy_id": f"{section_id}.1.1",
-        })
+        assignments.append(
+            {
+                "section_id": section_id,
+                "section_name": section_name,
+                "domain": domain,
+                "control_type": ct,
+                "business_unit_id": bu_id,
+                "business_unit_name": bu_name,
+                "leaf_name": f"{section_name} – {ct}",
+                "hierarchy_id": f"{section_id}.1.1",
+            }
+        )
 
         type_remaining[ct] -= 1
         section_remaining[section_id] -= 1
@@ -123,7 +123,8 @@ def _build_assignments_no_sections(
     """Fallback when no process areas are defined."""
     type_names = [ct.name for ct in config.control_types]
     type_counts = _distribute_by_weight(
-        type_names, target_count,
+        type_names,
+        target_count,
         (distribution_config or {}).get("type_weights"),
     )
 
@@ -134,16 +135,18 @@ def _build_assignments_no_sections(
     for ct_name, count in type_counts.items():
         for i in range(count):
             bu = next(bu_cycle)
-            assignments.append({
-                "section_id": "0.0",
-                "section_name": "General",
-                "domain": "",
-                "control_type": ct_name,
-                "business_unit_id": bu.id if bu else "BU-DEFAULT",
-                "business_unit_name": bu.name if bu else "Default",
-                "leaf_name": f"General – {ct_name}",
-                "hierarchy_id": "0.0.1.1",
-            })
+            assignments.append(
+                {
+                    "section_id": "0.0",
+                    "section_name": "General",
+                    "domain": "",
+                    "control_type": ct_name,
+                    "business_unit_id": bu.id if bu else "BU-DEFAULT",
+                    "business_unit_name": bu.name if bu else "Default",
+                    "leaf_name": f"General – {ct_name}",
+                    "hierarchy_id": "0.0.1.1",
+                }
+            )
 
     return assignments[:target_count]
 
@@ -171,10 +174,7 @@ def _distribute_by_weight(
     if total_weight <= 0:
         total_weight = len(items)
 
-    raw = {
-        item: (weights.get(item, 1.0) / total_weight) * total
-        for item in items
-    }
+    raw = {item: (weights.get(item, 1.0) / total_weight) * total for item in items}
 
     # Floor + distribute remainder by largest fractional part
     floored = {item: int(v) for item, v in raw.items()}
@@ -327,7 +327,8 @@ def build_deterministic_enriched(
 
     # Derive frequency from when text if narrative doesn't include it
     frequency = narrative.get("frequency") or _derive_frequency(
-        narrative.get("when", ""), config,
+        narrative.get("when", ""),
+        config,
     )
 
     return {
@@ -415,10 +416,7 @@ def build_spec_system_prompt(config: DomainConfig) -> str:
 
     evidence_section = ""
     if evidence_rules:
-        evidence_section = (
-            "EVIDENCE QUALITY RULES:\n"
-            + "\n".join(f"- {rule}" for rule in evidence_rules)
-        )
+        evidence_section = "EVIDENCE QUALITY RULES:\n" + "\n".join(f"- {rule}" for rule in evidence_rules)
     else:
         evidence_section = (
             "EVIDENCE QUALITY RULES: The evidence field must be a specific, audit-grade "
@@ -462,10 +460,7 @@ def build_spec_user_prompt(assignment: dict[str, Any], config: DomainConfig) -> 
 
     # Build diversity context from business units
     diversity_context: dict[str, Any] = {
-        "available_business_units": [
-            {"business_unit_id": bu.id, "name": bu.name}
-            for bu in config.business_units
-        ],
+        "available_business_units": [{"business_unit_id": bu.id, "name": bu.name} for bu in config.business_units],
     }
     suggested_bu = assignment.get("business_unit_id")
     if suggested_bu:
@@ -521,8 +516,10 @@ def build_narrative_user_prompt(
     retry_appendix: str | None = None,
 ) -> str:
     """Build a user prompt for the NarrativeAgent from spec + config."""
-    section_id = spec.get("hierarchy_id", "").split(".")[0] + "." + (
-        spec.get("hierarchy_id", "0.0").split(".")[1] if "." in spec.get("hierarchy_id", "") else "0"
+    section_id = (
+        spec.get("hierarchy_id", "").split(".")[0]
+        + "."
+        + (spec.get("hierarchy_id", "0.0").split(".")[1] if "." in spec.get("hierarchy_id", "") else "0")
     )
     pa = config.get_process_area(section_id)
 
@@ -609,10 +606,7 @@ def build_slim_spec_user_prompt(assignment: dict[str, Any], config: DomainConfig
     ct_name = assignment.get("control_type", "")
 
     diversity_context: dict[str, Any] = {
-        "available_business_units": [
-            {"business_unit_id": bu.id, "name": bu.name}
-            for bu in config.business_units
-        ],
+        "available_business_units": [{"business_unit_id": bu.id, "name": bu.name} for bu in config.business_units],
     }
     suggested_bu = assignment.get("business_unit_id")
     if suggested_bu:
@@ -679,10 +673,7 @@ def build_slim_narrative_user_prompt(
             f"{config.narrative.word_count_min} and {config.narrative.word_count_max} words.",
             "Do not change locked spec values for who and where_system.",
         ],
-        "instructions": (
-            "Use exemplar_lookup to get example narratives and "
-            "frequency_lookup to validate timing."
-        ),
+        "instructions": ("Use exemplar_lookup to get example narratives and frequency_lookup to validate timing."),
     }
 
     prompt = json.dumps(payload, indent=2)

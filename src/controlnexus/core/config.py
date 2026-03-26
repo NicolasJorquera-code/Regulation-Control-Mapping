@@ -62,9 +62,7 @@ def load_taxonomy_catalog(path: Path) -> TaxonomyCatalog:
 
     if invalid_refs:
         joined = ", ".join(sorted(set(invalid_refs)))
-        raise ConfigValidationError(
-            "business_units references unknown control types: " + joined
-        )
+        raise ConfigValidationError("business_units references unknown control types: " + joined)
     return catalog
 
 
@@ -79,9 +77,7 @@ def load_section_profiles(config_dir: Path, section_ids: list[str]) -> dict[str,
     for section_id in section_ids:
         section_path = config_dir / "sections" / f"section_{section_id}.yaml"
         if not section_path.exists():
-            raise ConfigValidationError(
-                f"Missing section profile for section {section_id}: {section_path}"
-            )
+            raise ConfigValidationError(f"Missing section profile for section {section_id}: {section_path}")
         profiles[section_id] = load_section_profile(section_path)
     logger.info("Loaded %d section profiles: %s", len(profiles), section_ids)
     return profiles

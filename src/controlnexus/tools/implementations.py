@@ -65,7 +65,12 @@ def regulatory_lookup(framework: str, section_id: str) -> dict[str, Any]:
     """
     profile = _section_profiles.get(section_id)
     if not profile:
-        return {"framework": framework, "required_themes": [], "applicable_types": [], "error": f"Unknown section {section_id}"}
+        return {
+            "framework": framework,
+            "required_themes": [],
+            "applicable_types": [],
+            "error": f"Unknown section {section_id}",
+        }
 
     # Check if this framework applies to this section
     frameworks = profile.registry.regulatory_frameworks

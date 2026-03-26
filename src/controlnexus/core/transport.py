@@ -92,9 +92,7 @@ class AsyncTransportClient:
                         break  # try next URL
 
                     if resp.status_code in (401, 403):
-                        raise ExternalServiceException(
-                            f"Authentication failure at {url} (HTTP {resp.status_code})"
-                        )
+                        raise ExternalServiceException(f"Authentication failure at {url} (HTTP {resp.status_code})")
 
                     resp.raise_for_status()
                     self._working_url = url
@@ -107,11 +105,11 @@ class AsyncTransportClient:
                             f"Authentication failure at {url} (HTTP {exc.response.status_code})"
                         ) from exc
                     if attempt < self.max_retries - 1:
-                        await asyncio.sleep(2 ** attempt)
+                        await asyncio.sleep(2**attempt)
                 except httpx.RequestError as exc:
                     last_error = exc
                     if attempt < self.max_retries - 1:
-                        await asyncio.sleep(2 ** attempt)
+                        await asyncio.sleep(2**attempt)
 
         raise ExternalServiceException("All LLM endpoint candidates exhausted") from last_error
 
@@ -139,8 +137,11 @@ def build_client_from_env(
     if api_key and base_url and model_id:
         logger.info("LLM client configured (ICA): %s", base_url)
         return AsyncTransportClient(
-            api_key=api_key, base_url=base_url, model=model_id,
-            provider="ica", timeout_seconds=timeout_seconds,
+            api_key=api_key,
+            base_url=base_url,
+            model=model_id,
+            provider="ica",
+            timeout_seconds=timeout_seconds,
         )
 
     # OpenAI
@@ -150,8 +151,11 @@ def build_client_from_env(
     if api_key:
         logger.info("LLM client configured (OpenAI): %s", base_url)
         return AsyncTransportClient(
-            api_key=api_key, base_url=base_url, model=model_id,
-            provider="openai", timeout_seconds=timeout_seconds,
+            api_key=api_key,
+            base_url=base_url,
+            model=model_id,
+            provider="openai",
+            timeout_seconds=timeout_seconds,
         )
 
     # Anthropic (via OpenAI-compatible proxy or direct)
@@ -161,8 +165,11 @@ def build_client_from_env(
         model_id = model_override or os.getenv("ANTHROPIC_MODEL_ID", "claude-sonnet-4-6")
         logger.info("LLM client configured (Anthropic): %s", base_url)
         return AsyncTransportClient(
-            api_key=api_key, base_url=base_url, model=model_id,
-            provider="anthropic", timeout_seconds=timeout_seconds,
+            api_key=api_key,
+            base_url=base_url,
+            model=model_id,
+            provider="anthropic",
+            timeout_seconds=timeout_seconds,
         )
 
     logger.info("LLM credentials not found — LLM mode disabled")

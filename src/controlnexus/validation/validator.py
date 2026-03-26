@@ -16,9 +16,22 @@ VAGUE_WHEN_TERMS = ("periodic", "ad hoc", "as needed", "various", "as required",
 
 # Risk-related marker words expected in the 'why' field
 RISK_MARKERS = (
-    "risk", "prevent", "mitigate", "reduce", "ensure", "compliance",
-    "violation", "failure", "loss", "exposure", "threat", "safeguard",
-    "protect", "detect", "deter", "avoid",
+    "risk",
+    "prevent",
+    "mitigate",
+    "reduce",
+    "ensure",
+    "compliance",
+    "violation",
+    "failure",
+    "loss",
+    "exposure",
+    "threat",
+    "safeguard",
+    "protect",
+    "detect",
+    "deter",
+    "avoid",
 )
 
 # Minimum and maximum word count for full_description
@@ -29,14 +42,48 @@ MAX_WORDS = 80
 # Only these roots are considered "action verbs" — prevents false positives
 # from nouns ending in s/ed/ing (e.g. "transactions", "outstanding", "lending").
 _ACTION_VERB_ROOTS = (
-    "perform", "review", "validat", "reconcil", "authoriz", "monitor",
-    "verif", "approv", "ensur", "confirm", "evaluat", "assess", "execut",
-    "examin", "inspect", "test", "check", "audit", "submit",
-    "analyz", "investigat", "updat", "maintain",
-    "track", "enforc", "certif", "supervis", "escalat",
-    "notif", "remov", "generat", "suspend", "terminat",
-    "consolid", "classify", "determin", "identif", "manag",
-    "scan", "complet", "compar", "calculat",
+    "perform",
+    "review",
+    "validat",
+    "reconcil",
+    "authoriz",
+    "monitor",
+    "verif",
+    "approv",
+    "ensur",
+    "confirm",
+    "evaluat",
+    "assess",
+    "execut",
+    "examin",
+    "inspect",
+    "test",
+    "check",
+    "audit",
+    "submit",
+    "analyz",
+    "investigat",
+    "updat",
+    "maintain",
+    "track",
+    "enforc",
+    "certif",
+    "supervis",
+    "escalat",
+    "notif",
+    "remov",
+    "generat",
+    "suspend",
+    "terminat",
+    "consolid",
+    "classify",
+    "determin",
+    "identif",
+    "manag",
+    "scan",
+    "complet",
+    "compar",
+    "calculat",
 )
 
 # Compiled pattern: match any word that starts with one of the verb roots
@@ -171,10 +218,16 @@ def build_retry_appendix(
             )
         elif code == "WORD_COUNT_OUT_OF_RANGE":
             if word_count < min_words:
-                lines.append(f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — increase to at least {min_words}.")
+                lines.append(
+                    f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — increase to at least {min_words}."
+                )
             else:
-                lines.append(f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — reduce to {max_words} or fewer.")
+                lines.append(
+                    f"- WORD_COUNT_OUT_OF_RANGE: Word count was {word_count} — reduce to {max_words} or fewer."
+                )
         elif code == "SPEC_MISMATCH":
-            lines.append("- SPEC_MISMATCH: The 'who' or 'where' field does not match the locked spec. Preserve them exactly.")
+            lines.append(
+                "- SPEC_MISMATCH: The 'who' or 'where' field does not match the locked spec. Preserve them exactly."
+            )
 
     return "\n".join(lines)
