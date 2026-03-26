@@ -16,11 +16,10 @@ This document provides an in-depth technical breakdown of the ControlNexus syste
 8. [Memory Layer (ChromaDB)](#8-memory-layer-chromadb)
 9. [Tool Function Calling](#9-tool-function-calling)
 10. [Validation Engine](#10-validation-engine)
-11. [Evaluation Harness](#11-evaluation-harness)
-12. [Transport Layer](#12-transport-layer)
-13. [Streamlit Dashboard](#13-streamlit-dashboard)
-14. [Testing Strategy](#14-testing-strategy)
-15. [Deployment Architecture](#15-deployment-architecture)
+11. [Transport Layer](#11-transport-layer)
+12. [Streamlit Dashboard](#12-streamlit-dashboard)
+13. [Testing Strategy](#13-testing-strategy)
+14. [Deployment Architecture](#14-deployment-architecture)
 
 ---
 
@@ -242,20 +241,34 @@ Writes `list[FinalControlRecord]` to `.xlsx` using openpyxl with 19 standardized
 
 ```python
 class BaseAgent:
-    def __init__(self, ctx: AgentContext):
-        self.ctx = ctx          # Contains AsyncTransportClient
-        self.token_usage = {}   # Tracks input/output tokens
+    def __init__(self, ctx: AgentContext, name: str | None = None):
+        self.context = ctx
+        self.name = name or self.__class__.__name__
+        self.call_count = 0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
 
     async def execute(self, **kwargs) -> dict:
         """Subclass implements this."""
         raise NotImplementedError
 
-    async def call_llm(self, messages, **kwargs) -> dict:
-        """Delegates to ctx.client.chat_completion()"""
+    async def call_llm(self, system_prompt, user_prompt, **kwargs) -> str:
+        """Send system+user prompt to the LLM and return text."""
+        ...
+
+    async def call_llm_with_tools(
+        self, messages, tools, tool_executor, *,
+        max_tool_rounds=5, tool_choice=None,
+    ) -> dict:
+        """Multi-turn LLM call with tool execution loop.
+
+        If tool_choice='required', forces at least one tool call on
+        round 1, then relaxes to 'auto' for subsequent rounds so the
+        LLM can produce a final content response."""
         ...
 
     @staticmethod
-    def _parse_json(text: str) -> dict:
+    def parse_json(text: str) -> dict:
         """Extracts JSON from plain or markdown-fenced responses."""
         ...
 ```
@@ -288,7 +301,10 @@ All agents are async. All agents produce structured JSON. All agents have determ
 @dataclass
 class AgentContext:
     client: AsyncTransportClient | None = None
-    # Future: memory, tools, config
+    model: str = ""
+    temperature: float = 0.2
+    max_tokens: int = 1400
+    timeout_seconds: int = 120
 ```
 
 ---
@@ -350,6 +366,88 @@ Routing logic:
 
 Key design: The graph processes one assignment at a time (router picks `assignments[0]`). For multiple gaps, the graph would be invoked iteratively or the router would be extended to loop.
 
+### ControlForge Modular Graph (`forge_modular_graph.py`)
+
+The config-driven control generation pipeline. 8-node LangGraph StateGraph:
+
+```
+START --> init --> select --> spec --> narrative --> validate
+                                                       |
+                              +------------------------+
+                              |                        |
+                           enrich              narrative (retry)
+                              |
+                           merge --> [select (loop) | finalize] --> END
+```
+
+**ForgeState** (TypedDict):
+```python
+class ForgeState(TypedDict, total=False):
+    config_path: str
+    domain_config: dict[str, Any]
+    llm_enabled: bool
+    provider: str              # "ica", "openai", "anthropic" — set by init_node
+    assignments: list[dict]
+    current_idx: int
+    current_assignment: dict
+    current_spec: dict
+    current_narrative: dict
+    current_enriched: dict
+    retry_count: int
+    validation_passed: bool
+    retry_appendix: str
+    generated_records: Annotated[list[dict], _add]
+    tool_calls_log: Annotated[list[dict], _add]
+    plan_payload: dict
+```
+
+**Dual-mode prompt strategy:**
+
+Each agent node checks `_supports_tools(provider)` and selects:
+- **ICA (no tool support):** Fat prompts that inline all domain data (placements, methods, evidence rules, exemplars, registry). Tools offered with `tool_choice=None` (optional). The LLM typically ignores them.
+- **OpenAI/Anthropic (tool support):** Slim prompts with minimal context + instructions to call lookup tools. `tool_choice="required"` forces at least one tool call on round 1. After tool results are appended, relaxes to `tool_choice="auto"` so the LLM produces a final JSON response.
+
+Tool schema subsets per agent:
+
+| Agent | Fat-mode tools | Slim-mode tools |
+|-------|---------------|-----------------|
+| SpecAgent | taxonomy_validator, hierarchy_search, regulatory_lookup | + placement_lookup, method_lookup, evidence_rules_lookup |
+| NarrativeAgent | frequency_lookup, regulatory_lookup | + exemplar_lookup |
+| EnricherAgent | taxonomy_validator, frequency_lookup, memory_retrieval | *(same — prompts already minimal)* |
+
+**Event emission:** Every node emits `PipelineEvent`s via a module-level `EventEmitter`. Events include `PIPELINE_STARTED`, `CONTROL_STARTED`, `AGENT_STARTED/COMPLETED/FAILED`, `VALIDATION_PASSED/FAILED`, `AGENT_RETRY`, `TOOL_CALLED/COMPLETED`, `CONTROL_COMPLETED`, `PIPELINE_COMPLETED`.
+
+### Event System (`core/events.py`)
+
+```python
+class EventType(str, Enum):
+    PIPELINE_STARTED = "pipeline_started"
+    CONTROL_STARTED = "control_started"
+    AGENT_STARTED = "agent_started"
+    AGENT_COMPLETED = "agent_completed"
+    AGENT_FAILED = "agent_failed"
+    AGENT_RETRY = "agent_retry"
+    TOOL_CALLED = "tool_called"
+    TOOL_COMPLETED = "tool_completed"
+    VALIDATION_PASSED = "validation_passed"
+    VALIDATION_FAILED = "validation_failed"
+    CONTROL_COMPLETED = "control_completed"
+    PIPELINE_COMPLETED = "pipeline_completed"
+    # ... 19 total
+
+@dataclass
+class PipelineEvent:
+    event_type: EventType
+    message: str = ""
+    data: dict = field(default_factory=dict)
+
+class EventEmitter:
+    """Fan-out event bus. Listeners call emitter.on(callback)."""
+    def emit(self, event: PipelineEvent) -> None: ...
+```
+
+The UI layer registers a `StreamlitEventListener` that maps events to `st.status()` updates for real-time progress display.
+
 ---
 
 ## 8. Memory Layer (ChromaDB)
@@ -402,32 +500,42 @@ class ControlMemory:
 
 ### Tool Schemas (`schemas.py`)
 
-5 tools defined in OpenAI function-calling JSON schema format:
+9 tools defined in OpenAI function-calling JSON schema format:
 
-| Tool | Purpose | Input |
-|------|---------|-------|
-| `taxonomy_validator` | Validates L1/L2 type pair against taxonomy | `level_1`, `level_2` |
-| `regulatory_lookup` | Returns required themes + applicable types for a framework/section | `framework`, `section_id` |
-| `hierarchy_search` | Returns domain info for a section + keyword | `section_id`, `keyword` |
-| `frequency_lookup` | Derives expected frequency from control type + trigger | `control_type`, `trigger` |
-| `memory_retrieval` | Queries ChromaDB for similar controls | `query_text`, `section_id`, `n` |
+| Tool | Purpose | Input | Mode |
+|------|---------|-------|------|
+| `taxonomy_validator` | Validates L1/L2 type pair against taxonomy | `level_1`, `level_2` | Both |
+| `regulatory_lookup` | Returns required themes + applicable types for a framework/section | `framework`, `section_id` | Both |
+| `hierarchy_search` | Returns domain info for a section + keyword | `section_id`, `keyword` | Both |
+| `frequency_lookup` | Derives expected frequency from control type + trigger | `control_type`, `trigger` | Both |
+| `memory_retrieval` | Queries ChromaDB for similar controls | `query_text`, `section_id`, `n` | Both |
+| `placement_lookup` | Returns allowed placements + definitions for a control type | `control_type` | Slim |
+| `method_lookup` | Returns all control methods and definitions | *(none)* | Slim |
+| `evidence_rules_lookup` | Returns evidence quality criteria for a control type | `control_type` | Slim |
+| `exemplar_lookup` | Retrieves exemplar narratives for an APQC section | `section_id` | Slim |
 
-### Module-Level Tool Context (`implementations.py`)
+The last 4 tools ("Slim" mode) replace data that fat prompts inline. They are only offered when the provider supports function calling (OpenAI/Anthropic).
+
+### DomainConfig-Aware Tool Context (`domain_tools.py`)
+
+The modular graph uses `build_domain_tool_executor(config)` which returns a closure dispatching by tool name. The closure captures the `DomainConfig` instance, avoiding global state:
 
 ```python
-# Module globals set before graph execution
-_placement_config: dict = {}
-_section_profiles: dict = {}
-_memory: ControlMemory | None = None
-_bank_id: str = ""
-
-def configure_tools(placement_config, section_profiles, memory, bank_id):
-    """Set module-level context for tool implementations."""
-    global _placement_config, _section_profiles, _memory, _bank_id
-    ...
+def build_domain_tool_executor(config: DomainConfig, *, memory=None, bank_id=""):
+    dispatch = {
+        "taxonomy_validator": lambda **kw: dc_taxonomy_validator(**kw, config=config),
+        "placement_lookup":   lambda **kw: dc_placement_lookup(**kw, config=config),
+        "method_lookup":      lambda **kw: dc_method_lookup(config=config),
+        # ... 9 tools total
+    }
+    def executor(tool_name, arguments):
+        return dispatch[tool_name](**arguments)
+    return executor
 ```
 
-This pattern avoids threading config through every tool call signature.
+### Legacy Module-Level Tool Context (`implementations.py`)
+
+The original analysis/remediation graphs still use the module-level `configure_tools()` pattern with `_placement_config` and `_section_profiles` globals.
 
 ### LangGraph ToolNode (`nodes.py`)
 
@@ -458,7 +566,7 @@ Pure Python, no LLM. Six deterministic rules:
 
 | Rule | Check | Failure Code |
 |------|-------|--------------|
-| Multiple Whats | >2 distinct action verbs in `what` | `MULTIPLE_WHATS` |
+| Multiple Whats | >2 distinct action verb *roots* in `what` (curated list of 42 roots; noun-suffix filtered) | `MULTIPLE_WHATS` |
 | Vague When | `when` contains "periodic", "ad hoc", "as needed", etc. | `VAGUE_WHEN` |
 | Who = Where | `who` and `where` are substrings of each other | `WHO_EQUALS_WHERE` |
 | Why Missing Risk | `why` lacks risk marker words (risk, prevent, mitigate, ensure, compliance, ...) | `WHY_MISSING_RISK` |
@@ -473,56 +581,7 @@ When validation fails, `build_retry_appendix()` generates targeted instructions 
 
 ---
 
-## 11. Evaluation Harness
-
-**Files:** `src/controlnexus/evaluation/`
-
-### Four Scoring Dimensions
-
-**Faithfulness (0--4):**
-- +1 `who` matches spec
-- +1 `where` matches spec
-- +1 `control_type` is valid for `selected_level_1` in taxonomy
-- +1 `placement` is valid for the control type
-
-**Completeness (0--6):**
-- +1 `who` has a specific role title (not "Control Owner", "Manager", etc.)
-- +1 `what` contains an action verb
-- +1 `frequency` is a real frequency (Daily, Weekly, Monthly, Quarterly, Semi-Annual, Annual)
-- +1 `where` names a specific system
-- +1 `why` contains a risk-related word
-- +1 `full_description` is 30--80 words
-
-**Diversity (0.0--1.0):**
-- Computes pairwise cosine similarity across all control `full_description` embeddings
-- `diversity = 1 - mean(similarities above 0.92 threshold)`
-- Also reports `near_duplicate_count` (pairs above threshold)
-- Requires an `Embedder` instance; returns 1.0 if no embedder provided
-
-**Gap Closure (delta):**
-- Re-runs `run_analysis()` on original + generated controls combined
-- Delta = new_score - original_score
-- Positive delta means the generated controls improved the ecosystem
-
-### EvalReport
-
-```python
-class EvalReport(BaseModel):
-    run_id: str
-    faithfulness_avg: float    # 0.0-4.0
-    completeness_avg: float    # 0.0-6.0
-    diversity_score: float     # 0.0-1.0
-    near_duplicate_count: int
-    gap_closure_delta: float   # positive = improvement
-    per_control_scores: list[ControlScore]
-    total_controls: int
-```
-
-Optionally exports to `{run_id}__eval.json` for persistence.
-
----
-
-## 12. Transport Layer
+## 11. Transport Layer
 
 **File:** `src/controlnexus/core/transport.py`
 
@@ -534,24 +593,27 @@ class AsyncTransportClient:
     api_key: str
     base_url: str
     model: str
+    provider: str = "openai"   # "ica", "openai", or "anthropic"
     timeout_seconds: int = 120
     max_retries: int = 3
 ```
 
 Features:
-- **Candidate URL discovery:** Tries `{base_url}/v1/chat/completions` then `{base_url}/chat/completions`
-- **URL caching:** Caches the first successful URL to skip discovery on subsequent calls
-- **Retry with backoff:** Exponential backoff on transient failures (500, timeout, connection error)
-- **Immediate fail on auth errors:** 401/403 raises immediately without retry
-- **Multi-provider support:** Factory function `build_client_from_env()` auto-detects ICA > OpenAI > Anthropic from environment variables
+- **Provider tracking:** The `provider` field is set at construction time by `build_client_from_env()` and propagated into `ForgeState` so graph nodes can select prompt strategies.
+- **Candidate URL discovery:** Tries `{base_url}/v1/chat/completions` then `{base_url}/chat/completions`. Strips trailing `/v1` from `base_url` to prevent doubled paths.
+- **URL caching:** Caches the first successful URL to skip discovery on subsequent calls.
+- **Tool calling support:** `chat_completion()` accepts `tools` and `tool_choice` parameters, passed through to the provider.
+- **Retry with backoff:** Exponential backoff on transient failures (500, timeout, connection error).
+- **Immediate fail on auth errors:** 401/403 raises immediately without retry.
+- **Multi-provider support:** Factory function `build_client_from_env()` auto-detects ICA > OpenAI > Anthropic from environment variables.
 
 ### Provider Priority
 
 ```python
 def build_client_from_env() -> AsyncTransportClient | None:
-    # 1. Check ICA_BASE_URL + ICA_API_KEY
-    # 2. Check OPENAI_API_KEY
-    # 3. Check ANTHROPIC_API_KEY
+    # 1. Check ICA_BASE_URL + ICA_API_KEY → provider="ica"
+    # 2. Check OPENAI_API_KEY           → provider="openai"
+    # 3. Check ANTHROPIC_API_KEY        → provider="anthropic"
     # Returns None if no credentials found
 ```
 
@@ -564,9 +626,12 @@ def build_client_from_env() -> AsyncTransportClient | None:
 ### Architecture
 
 ```
-app.py                          Main entrypoint, 3-tab layout
+app.py                          Main entrypoint, 4-tab layout
   |
   +-- styles.py                 IBM Carbon Design CSS + design tokens
+  |
+  +-- modular_tab.py            ControlForge Modular: config-driven generation
+  |                             StreamlitEventListener for real-time st.status()
   |
   +-- components/
   |     upload.py               File upload -> ingest_excel() -> session state
@@ -574,10 +639,11 @@ app.py                          Main entrypoint, 3-tab layout
   |
   +-- renderers/
   |     gap_dashboard.py        GapReport visualization: cards, dimension details
-  |     eval_dashboard.py       EvalReport visualization: score tiles, breakdowns
   |
   +-- playground.py             Agent selector, JSON input, async execution
 ```
+
+The Modular tab wires an `EventEmitter` before graph invocation via `set_emitter()`, registers a `StreamlitEventListener` callback that maps 12 event types to `st.status()` live updates (agent progress, tool calls, validation results, control completion), and resets the emitter after the run.
 
 ### Session State Management
 
@@ -586,7 +652,6 @@ st.session_state["controls"]          # list[FinalControlRecord] from ingest
 st.session_state["section_profiles"]  # dict[str, SectionProfile] from config
 st.session_state["gap_report"]        # GapReport from analysis pipeline
 st.session_state["accepted_gaps"]     # GapReport accepted for remediation
-st.session_state["eval_report"]       # EvalReport from evaluation harness
 st.session_state["playground_last_result"]  # Last agent execution result
 ```
 
@@ -605,15 +670,16 @@ Self-contained CSS tokens (no external npm dependency) following Carbon guidelin
 ### Test Pyramid
 
 ```
-258 total tests
+308 total tests
     |
-    +-- 15 e2e integration tests (test_e2e.py)
-    |       Full pipeline: ingest -> analysis -> remediation -> eval -> export
+    +-- 13 e2e integration tests (test_e2e.py)
+    |       Full pipeline: ingest -> analysis -> remediation -> export
     |       LangGraph graph compilation and execution
     |
-    +-- 243 unit tests (test_*.py)
+    +-- 295 unit tests (test_*.py)
             Models, config loading, agents, scanners, validator,
-            memory, tools, evaluation, export, graphs
+            memory, tools, export, graphs, dual-mode prompts,
+            provider detection, event emission, lookup tools
 ```
 
 ### Mocking Strategy
@@ -630,19 +696,19 @@ Self-contained CSS tokens (no external npm dependency) following Carbon guidelin
 | `test_models.py` | 18 | All Pydantic models, frozen immutability, validation |
 | `test_config.py` | 14 | All YAML loaders, taxonomy catalog, cross-validation |
 | `test_agents.py` | 17 | Registry, base agent, parse_json, all 3 core agents |
-| `test_validator.py` | 16 | All 6 rules, boundary conditions, retry appendix |
+| `test_validator.py` | 36 | All 6 rules, curated verb root detection, noun filtering, boundary conditions, retry appendix |
 | `test_scanners.py` | 13 | All 4 scanners, edge cases, score_evidence |
 | `test_pipeline.py` | 5 | run_analysis integration with real config |
 | `test_graphs.py` | 10 | Graph compilation, node functions, conditional routing |
+| `test_forge_modular_graph.py` | 73 | Assignment matrix, deterministic builders, 8-node graph execution, LLM node mocks, validation retry loop, prompt templates (fat+slim), event emission, dual-mode provider selection |
 | `test_memory.py` | 14 | ChromaDB operations, embedder protocol |
-| `test_tools.py` | 20 | Schemas, all 5 tools, ToolNode processing |
-| `test_evaluation.py` | 23 | All 4 scorers, cosine similarity, EvalReport, run_eval |
+| `test_tools.py` | 31 | Schemas, all 9 tools (5 original + 4 lookup), ToolNode processing, domain tool executor dispatch |
 | `test_remediation.py` | 15 | Planner, all 4 paths, AdversarialReviewer, DifferentiationAgent |
 | `test_export.py` | 5 | Excel export, headers, row count, round-trip |
 | `test_ingest.py` | 8 | Type coercion, parse_failures, Excel parsing |
 | `test_transport.py` | 12 | Candidate URLs, retry logic, multi-provider factory |
 | `test_constants.py` | 11 | Frequency derivation, type codes, control ID builder |
-| `test_e2e.py` | 15 | Full pipeline, graph execution, round-trips |
+| `test_e2e.py` | 13 | Full pipeline, graph execution, round-trips |
 
 ---
 
@@ -706,11 +772,12 @@ core/
   constants.py     <-- No internal deps
   state.py         <-- models
   config.py        <-- models, state
+  domain_config.py <-- (Pydantic v2, self-contained)
   events.py        <-- No internal deps
   transport.py     <-- exceptions
 
 agents/
-  base.py          <-- core/transport
+  base.py          <-- core/transport (call_llm, call_llm_with_tools)
   spec.py          <-- base
   narrative.py     <-- base
   enricher.py      <-- base
@@ -730,31 +797,32 @@ memory/
   store.py         <-- embedder, core/state
 
 tools/
-  schemas.py       <-- (pure data)
+  schemas.py       <-- (pure data, 9 tool schemas)
   implementations.py <-- core/config, core/constants, memory/store
+  domain_tools.py  <-- core/domain_config (DomainConfig-aware executors)
   nodes.py         <-- implementations
 
 remediation/
   planner.py       <-- (dict processing only)
   paths.py         <-- core/constants
 
-evaluation/
-  models.py        <-- (Pydantic only)
-  scorers.py       <-- analysis/pipeline, core/constants, memory/embedder
-  harness.py       <-- scorers, models, core/models, core/state
-
 graphs/
   state.py         <-- (TypedDict only)
   analysis_graph.py <-- analysis/*, core/*, state
   remediation_graph.py <-- remediation/*, validation/*, state
+  forge_modular_graph.py <-- agents/base, tools/domain_tools, tools/schemas,
+                             validation/*, core/events, core/domain_config,
+                             graphs/forge_modular_helpers
+  forge_modular_helpers.py <-- core/domain_config (prompt builders, deterministic)
 
 export/
   excel.py         <-- core/state
 
 ui/
-  app.py           <-- styles, components/*, renderers/*, playground
+  app.py           <-- styles, components/*, renderers/*, modular_tab, playground
   styles.py        <-- streamlit
+  modular_tab.py   <-- graphs/forge_modular_graph, core/events
   components/*     <-- analysis/*, core/*
-  renderers/*      <-- core/state, evaluation/models, styles
+  renderers/*      <-- core/state, styles
   playground.py    <-- agents/
 ```
