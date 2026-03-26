@@ -96,3 +96,80 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     FREQUENCY_LOOKUP_SCHEMA,
     MEMORY_RETRIEVAL_SCHEMA,
 ]
+
+
+# ── Lookup tools for slim-prompt / tool-calling mode ──────────────────────────
+
+PLACEMENT_LOOKUP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "placement_lookup",
+        "description": "Look up allowed placement categories and their definitions for a control type.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "control_type": {
+                    "type": "string",
+                    "description": "Control type name (e.g., 'Reconciliation', 'Authorization')",
+                },
+            },
+            "required": ["control_type"],
+        },
+    },
+}
+
+METHOD_LOOKUP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "method_lookup",
+        "description": "Look up allowed control methods and their definitions.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+}
+
+EVIDENCE_RULES_LOOKUP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "evidence_rules_lookup",
+        "description": "Look up evidence quality criteria for a control type.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "control_type": {
+                    "type": "string",
+                    "description": "Control type name (e.g., 'Reconciliation', 'Authorization')",
+                },
+            },
+            "required": ["control_type"],
+        },
+    },
+}
+
+EXEMPLAR_LOOKUP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "exemplar_lookup",
+        "description": "Retrieve exemplar narratives for a given APQC section.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "section_id": {
+                    "type": "string",
+                    "description": "APQC section ID (e.g., '4.0', '1.0')",
+                },
+            },
+            "required": ["section_id"],
+        },
+    },
+}
+
+SLIM_TOOL_SCHEMAS: list[dict[str, Any]] = [
+    PLACEMENT_LOOKUP_SCHEMA,
+    METHOD_LOOKUP_SCHEMA,
+    EVIDENCE_RULES_LOOKUP_SCHEMA,
+    EXEMPLAR_LOOKUP_SCHEMA,
+]

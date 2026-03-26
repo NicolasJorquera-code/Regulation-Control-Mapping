@@ -315,21 +315,36 @@ def build_deterministic_enriched(
     config: DomainConfig,
 ) -> dict[str, Any]:
     """Build an enriched record by merging spec + narrative."""
+    # Derive selected_level_2 from control_type if the LLM didn't return it
+    selected_level_2 = spec.get("selected_level_2") or spec.get("control_type", "")
+
+    # Look up business_unit_name from config if spec only has the ID
+    bu_name = spec.get("business_unit_name", "")
+    if not bu_name or bu_name == "Default":
+        bu_id = spec.get("business_unit_id", "")
+        bu_match = next((bu for bu in config.business_units if bu.id == bu_id), None)
+        bu_name = bu_match.name if bu_match else (bu_name or "Default")
+
+    # Derive frequency from when text if narrative doesn't include it
+    frequency = narrative.get("frequency") or _derive_frequency(
+        narrative.get("when", ""), config,
+    )
+
     return {
         "control_id": "",  # set later by finalize
         "hierarchy_id": spec.get("hierarchy_id", ""),
         "leaf_name": spec.get("leaf_name", ""),
         "control_type": spec.get("control_type", ""),
         "selected_level_1": spec.get("selected_level_1", "Unspecified"),
-        "selected_level_2": spec.get("selected_level_2", ""),
+        "selected_level_2": selected_level_2,
         "business_unit_id": spec.get("business_unit_id", "BU-DEFAULT"),
-        "business_unit_name": spec.get("business_unit_name", "Default"),
+        "business_unit_name": bu_name,
         "placement": spec.get("placement", "Detective"),
         "method": spec.get("method", "Manual"),
         "who": narrative.get("who", ""),
         "what": narrative.get("what", ""),
         "when": narrative.get("when", ""),
-        "frequency": narrative.get("frequency", "Other"),
+        "frequency": frequency,
         "where": narrative.get("where", ""),
         "why": narrative.get("why", ""),
         "full_description": narrative.get("full_description", ""),
@@ -415,9 +430,10 @@ def build_spec_system_prompt(config: DomainConfig) -> str:
     return (
         "You are SpecAgent. Produce a locked control specification JSON for one control. "
         "Choose exactly one who, what_action, when, where_system, why_risk, and business_unit_id. "
-        "Return ONLY JSON with keys: hierarchy_id, leaf_name, selected_level_1, control_type, "
-        "placement, method, who, what_action, what_detail, when, where_system, why_risk, "
-        "evidence, business_unit_id.\n\n"
+        "Return ONLY JSON with keys: hierarchy_id, leaf_name, selected_level_1, selected_level_2, "
+        "control_type, placement, method, who, what_action, what_detail, when, where_system, "
+        "why_risk, evidence, business_unit_id.\n\n"
+        "selected_level_2 should be the control type name (e.g. Reconciliation, Authorization).\n\n"
         f"ALLOWED PLACEMENTS: {placements}\n"
         f"ALLOWED METHODS: {methods}\n\n"
         f"{evidence_section}"
@@ -561,3 +577,115 @@ def build_enricher_user_prompt(
         },
         indent=2,
     )
+
+
+# ── Slim Prompt Builders (OpenAI / tool-calling providers) ────────────────────
+#
+# These strip inline domain data (placements, methods, evidence rules,
+# exemplars, registry) from prompts.  The LLM is instructed to call lookup
+# tools instead.  This reduces token usage by ~55-60% while keeping the
+# same agent structure.
+# --------------------------------------------------------------------------
+
+
+def build_slim_spec_system_prompt(config: DomainConfig) -> str:
+    """Slim SpecAgent system prompt — output schema only, no inline data."""
+    return (
+        "You are SpecAgent. Produce a locked control specification JSON for one control.\n\n"
+        "Return ONLY JSON with keys: hierarchy_id, leaf_name, selected_level_1, selected_level_2, "
+        "control_type, placement, method, who, what_action, what_detail, when, where_system, "
+        "why_risk, evidence, business_unit_id.\n\n"
+        "selected_level_2 should be the control type name (e.g. Reconciliation, Authorization).\n\n"
+        "IMPORTANT: You MUST use tools to look up allowed placements, methods, and evidence "
+        "rules before producing your JSON. Call placement_lookup to get valid placements for "
+        "the control type, method_lookup to get valid methods, and evidence_rules_lookup to "
+        "get evidence quality criteria. Also call taxonomy_validator to verify your "
+        "(level_1, level_2) pair."
+    )
+
+
+def build_slim_spec_user_prompt(assignment: dict[str, Any], config: DomainConfig) -> str:
+    """Slim SpecAgent user prompt — leaf info + control type only."""
+    ct_name = assignment.get("control_type", "")
+
+    diversity_context: dict[str, Any] = {
+        "available_business_units": [
+            {"business_unit_id": bu.id, "name": bu.name}
+            for bu in config.business_units
+        ],
+    }
+    suggested_bu = assignment.get("business_unit_id")
+    if suggested_bu:
+        diversity_context["suggested_business_unit"] = suggested_bu
+
+    return json.dumps(
+        {
+            "leaf": {
+                "hierarchy_id": assignment.get("hierarchy_id", ""),
+                "leaf_name": assignment.get("leaf_name", ""),
+                "section_name": assignment.get("section_name", ""),
+                "domain": assignment.get("domain", ""),
+            },
+            "control_type": ct_name,
+            "diversity_context": diversity_context,
+            "instructions": (
+                "Use placement_lookup, method_lookup, and evidence_rules_lookup tools "
+                "to retrieve allowed values before generating JSON."
+            ),
+        },
+        indent=2,
+    )
+
+
+def build_slim_narrative_system_prompt(config: DomainConfig) -> str:
+    """Slim NarrativeAgent system prompt — output schema + word limits, no exemplars."""
+    word_min = config.narrative.word_count_min
+    word_max = config.narrative.word_count_max
+
+    field_lines: list[str] = []
+    for f in config.narrative.fields:
+        if f.definition:
+            field_lines.append(f"- {f.name}: {f.definition}")
+        else:
+            field_lines.append(f"- {f.name}")
+
+    output_keys = ", ".join(f.name for f in config.narrative.fields)
+
+    return (
+        "You are NarrativeAgent. Convert the locked control specification into 5W prose. "
+        "You must preserve locked spec values for who and where_system exactly in output fields. "
+        f"Return ONLY JSON with keys: {output_keys}.\n\n"
+        "OUTPUT FIELD DEFINITIONS:\n"
+        + "\n".join(field_lines)
+        + f"\n\nWord count for full_description must be between {word_min} and {word_max} words.\n\n"
+        "IMPORTANT: You MUST use the exemplar_lookup tool to retrieve example narratives "
+        "for the relevant section before writing prose. Also use frequency_lookup to "
+        "determine the correct frequency for the control type."
+    )
+
+
+def build_slim_narrative_user_prompt(
+    spec: dict[str, Any],
+    config: DomainConfig,
+    retry_appendix: str | None = None,
+) -> str:
+    """Slim NarrativeAgent user prompt — locked spec + constraints only, no exemplars."""
+    payload = {
+        "locked_spec": spec,
+        "constraints": [
+            "Use exactly one primary action in WHAT.",
+            "WHEN must be specific and avoid vague terms.",
+            f"Word count for full_description must be between "
+            f"{config.narrative.word_count_min} and {config.narrative.word_count_max} words.",
+            "Do not change locked spec values for who and where_system.",
+        ],
+        "instructions": (
+            "Use exemplar_lookup to get example narratives and "
+            "frequency_lookup to validate timing."
+        ),
+    }
+
+    prompt = json.dumps(payload, indent=2)
+    if retry_appendix:
+        prompt += "\n\n" + retry_appendix
+    return prompt

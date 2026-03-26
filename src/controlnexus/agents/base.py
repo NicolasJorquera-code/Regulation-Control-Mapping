@@ -139,6 +139,116 @@ class BaseAgent(ABC):
         )
         return self._extract_text_from_openai_style(response_json)
 
+    async def call_llm_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        tool_executor: Any,
+        *,
+        max_tool_rounds: int = 5,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Multi-turn LLM call with tool execution loop.
+
+        Sends *messages* to the LLM with the given *tools*.  If the
+        response contains ``tool_calls``, executes each via *tool_executor*,
+        appends tool-result messages, and re-sends.  Repeats until the LLM
+        returns a content-only response or *max_tool_rounds* is reached.
+
+        If the provider ignores the ``tools`` parameter (e.g. ICA/Granite)
+        the response will contain content only on round 1 — this is expected
+        and the method returns that content immediately.
+
+        Returns the final assistant message dict with an extra
+        ``_tool_calls_count`` key indicating how many tool invocations
+        actually occurred.
+        """
+        if self.client is None:
+            raise ExternalServiceException("No LLM client configured")
+
+        effective_temp = temperature if temperature is not None else self.context.temperature
+        effective_max = max_tokens if max_tokens is not None else self.context.max_tokens
+        current_messages = list(messages)
+        total_tool_calls = 0
+        # After the first round with tool_choice="required", relax to "auto"
+        # so the LLM can produce a content-only final response.
+        active_tool_choice = tool_choice
+
+        for round_idx in range(max_tool_rounds):
+            self.call_count += 1
+            call_number = self.call_count
+
+            logger.info(
+                "LLM round %d started (%s, call #%d, tools offered: %d)",
+                round_idx + 1, self.name, call_number, len(tools),
+            )
+            t0 = time.monotonic()
+
+            response_json = await self.client.chat_completion(
+                messages=current_messages,
+                temperature=effective_temp,
+                max_tokens=effective_max,
+                tools=tools,
+                tool_choice=active_tool_choice,
+            )
+
+            usage = response_json.get("usage", {})
+            self.total_input_tokens += int(usage.get("prompt_tokens", 0) or 0)
+            self.total_output_tokens += int(usage.get("completion_tokens", 0) or 0)
+
+            elapsed = time.monotonic() - t0
+            logger.info(
+                "LLM round %d completed (%s, %.3fs)",
+                round_idx + 1, self.name, elapsed,
+            )
+
+            assistant_msg = response_json.get("choices", [{}])[0].get("message", {})
+            current_messages.append(assistant_msg)
+
+            tool_calls = assistant_msg.get("tool_calls", [])
+            if not tool_calls:
+                if round_idx == 0 and total_tool_calls == 0:
+                    logger.info(
+                        "Provider returned content without tool calls (%s) — "
+                        "tools not supported or not needed",
+                        self.name,
+                    )
+                assistant_msg["_tool_calls_count"] = total_tool_calls
+                return assistant_msg
+
+            for tc in tool_calls:
+                fn = tc.get("function", {})
+                tool_name = fn.get("name", "")
+                raw_args = fn.get("arguments", "{}")
+                arguments = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+
+                total_tool_calls += 1
+                logger.info(
+                    "Tool executed: %s(%s) round %d (%s)",
+                    tool_name, list(arguments.keys()), round_idx + 1, self.name,
+                )
+                result = tool_executor(tool_name, arguments)
+                current_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.get("id", ""),
+                    "content": json.dumps(result),
+                })
+
+            # After first round of tool calls, relax to "auto" so the LLM
+            # can produce the final content response.
+            if active_tool_choice == "required":
+                active_tool_choice = "auto"
+
+        # max_tool_rounds exhausted — return last assistant message
+        if current_messages:
+            for msg in reversed(current_messages):
+                if msg.get("role") == "assistant":
+                    msg["_tool_calls_count"] = total_tool_calls
+                    return msg
+        return {"_tool_calls_count": total_tool_calls}
+
     @staticmethod
     def parse_json(text: str) -> dict[str, Any]:
         """Parse JSON from LLM output, stripping markdown code fences if present."""

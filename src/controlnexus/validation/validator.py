@@ -25,6 +25,29 @@ RISK_MARKERS = (
 MIN_WORDS = 30
 MAX_WORDS = 80
 
+# Curated control-domain action verb roots for MULTIPLE_WHATS detection.
+# Only these roots are considered "action verbs" — prevents false positives
+# from nouns ending in s/ed/ing (e.g. "transactions", "outstanding", "lending").
+_ACTION_VERB_ROOTS = (
+    "perform", "review", "validat", "reconcil", "authoriz", "monitor",
+    "verif", "approv", "ensur", "confirm", "evaluat", "assess", "execut",
+    "examin", "inspect", "test", "check", "audit", "submit",
+    "analyz", "investigat", "updat", "maintain",
+    "track", "enforc", "certif", "supervis", "escalat",
+    "notif", "remov", "generat", "suspend", "terminat",
+    "consolid", "classify", "determin", "identif", "manag",
+    "scan", "complet", "compar", "calculat",
+)
+
+# Compiled pattern: match any word that starts with one of the verb roots
+_ACTION_VERB_RE = re.compile(
+    r"\b(?:" + "|".join(_ACTION_VERB_ROOTS) + r")[a-z]*\b",
+    re.IGNORECASE,
+)
+
+# Noun-form suffixes — words ending in these are likely nouns, not action verbs
+_NOUN_SUFFIXES = ("tion", "ment", "ance", "ence", "ity", "ness", "ure")
+
 
 def validate(
     narrative: dict[str, Any],
@@ -62,10 +85,18 @@ def validate(
     words = full_desc.split()
     word_count = len(words)
 
-    # Rule 1: MULTIPLE_WHATS
-    action_verbs = re.findall(r"\b[a-z]+(?:s|es|ed|ing)\b", what_text.lower())
-    unique_verbs = set(action_verbs)
-    if len(unique_verbs) > 2:
+    # Rule 1: MULTIPLE_WHATS — count distinct control-action verbs only
+    action_matches = _ACTION_VERB_RE.findall(what_text.lower())
+    # Filter out noun forms (reconciliation, management, etc.) and normalize to roots
+    unique_roots: set[str] = set()
+    for match in action_matches:
+        if any(match.endswith(sfx) or match.endswith(sfx + "s") for sfx in _NOUN_SUFFIXES):
+            continue
+        for root in _ACTION_VERB_ROOTS:
+            if match.startswith(root):
+                unique_roots.add(root)
+                break
+    if len(unique_roots) > 2:
         failures.append("MULTIPLE_WHATS")
 
     # Rule 2: VAGUE_WHEN

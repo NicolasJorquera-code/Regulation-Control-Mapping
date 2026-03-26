@@ -31,6 +31,7 @@ class AsyncTransportClient:
     api_key: str
     base_url: str
     model: str
+    provider: str = "openai"  # "ica", "openai", or "anthropic"
     timeout_seconds: int = 120
     max_retries: int = 3
     _client: httpx.AsyncClient | None = field(default=None, repr=False)
@@ -43,6 +44,9 @@ class AsyncTransportClient:
 
     def _candidate_urls(self) -> list[str]:
         base = self.base_url.rstrip("/")
+        # Strip trailing /v1 to avoid doubled paths like /v1/v1/chat/completions
+        if base.endswith("/v1"):
+            base = base[:-3]
         candidates = [f"{base}/v1/chat/completions", f"{base}/chat/completions"]
         if self._working_url:
             return [self._working_url] + [u for u in candidates if u != self._working_url]
@@ -53,6 +57,8 @@ class AsyncTransportClient:
         messages: list[dict[str, str]],
         temperature: float = 0.2,
         max_tokens: int = 1400,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Send a chat completion request with retry and URL discovery.
 
@@ -63,12 +69,16 @@ class AsyncTransportClient:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "temperature": temperature,
             "max_tokens": max_tokens,
             "messages": messages,
         }
+        if tools:
+            payload["tools"] = tools
+        if tool_choice is not None:
+            payload["tool_choice"] = tool_choice
 
         last_error: Exception | None = None
         for url in self._candidate_urls():
@@ -130,7 +140,7 @@ def build_client_from_env(
         logger.info("LLM client configured (ICA): %s", base_url)
         return AsyncTransportClient(
             api_key=api_key, base_url=base_url, model=model_id,
-            timeout_seconds=timeout_seconds,
+            provider="ica", timeout_seconds=timeout_seconds,
         )
 
     # OpenAI
@@ -141,7 +151,7 @@ def build_client_from_env(
         logger.info("LLM client configured (OpenAI): %s", base_url)
         return AsyncTransportClient(
             api_key=api_key, base_url=base_url, model=model_id,
-            timeout_seconds=timeout_seconds,
+            provider="openai", timeout_seconds=timeout_seconds,
         )
 
     # Anthropic (via OpenAI-compatible proxy or direct)
@@ -152,7 +162,7 @@ def build_client_from_env(
         logger.info("LLM client configured (Anthropic): %s", base_url)
         return AsyncTransportClient(
             api_key=api_key, base_url=base_url, model=model_id,
-            timeout_seconds=timeout_seconds,
+            provider="anthropic", timeout_seconds=timeout_seconds,
         )
 
     logger.info("LLM credentials not found — LLM mode disabled")

@@ -13,8 +13,51 @@ import pandas as pd
 import streamlit as st
 
 from controlnexus.core.domain_config import DomainConfig, load_domain_config
-from controlnexus.graphs.forge_modular_graph import build_forge_graph
+from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
+from controlnexus.graphs.forge_modular_graph import build_forge_graph, set_emitter
 from controlnexus.ui.components.data_table import render_data_table
+
+
+# ── Streamlit event listener ──────────────────────────────────────────────────
+
+
+class StreamlitEventListener:
+    """Maps pipeline events to st.status() live-feed updates."""
+
+    def __init__(self, status: Any) -> None:
+        self._status = status
+
+    def __call__(self, event: PipelineEvent) -> None:
+        et = event.event_type
+        msg = event.message
+
+        if et == EventType.PIPELINE_STARTED:
+            self._status.write(f"\U0001F680 Pipeline started: {msg}")
+        elif et == EventType.CONTROL_STARTED:
+            idx = event.data.get("index", "?")
+            total = event.data.get("total", "?")
+            self._status.write(f"\n\U0001F4CB Control {idx}/{total}: {msg}")
+        elif et == EventType.AGENT_STARTED:
+            self._status.write(f"\u23F3 {msg} started")
+        elif et == EventType.AGENT_COMPLETED:
+            self._status.write(f"\u2713 {msg}")
+        elif et == EventType.AGENT_FAILED:
+            self._status.write(f"\u2717 {msg}")
+        elif et == EventType.VALIDATION_PASSED:
+            self._status.write(f"\u2713 {msg}")
+        elif et == EventType.VALIDATION_FAILED:
+            self._status.write(f"\u2717 {msg}")
+        elif et == EventType.AGENT_RETRY:
+            self._status.write(f"\u27F3 {msg}")
+        elif et == EventType.TOOL_CALLED:
+            self._status.write(f"\U0001F527 {msg}")
+        elif et == EventType.TOOL_COMPLETED:
+            pass  # tool completion is included in agent completed message
+        elif et == EventType.CONTROL_COMPLETED:
+            self._status.write(f"\u2714\uFE0F {msg}")
+        elif et == EventType.PIPELINE_COMPLETED:
+            self._status.update(label=f"\u2705 {msg}", state="complete", expanded=True)
+
 
 # ── Config resolution ─────────────────────────────────────────────────────────
 
@@ -209,23 +252,39 @@ def render_modular_tab() -> None:
     st.markdown("---")
 
     if st.button("Generate Controls", type="primary", use_container_width=True):
-        with st.spinner(f"Generating {target_count} controls…"):
-            graph = build_forge_graph().compile()
-            input_state: dict[str, Any] = {
-                "config_path": str(config_path),
-                "target_count": target_count,
-                "llm_enabled": llm_enabled,
-            }
-            if distribution_config:
-                input_state["distribution_config"] = distribution_config
+        with st.status(f"Generating {target_count} controls\u2026", expanded=True) as status:
+            # Wire up real-time event feed
+            emitter = EventEmitter()
+            listener = StreamlitEventListener(status)
+            emitter.on(listener)
+            set_emitter(emitter)
 
-            result = graph.invoke(input_state)
+            try:
+                graph = build_forge_graph().compile()
+                input_state: dict[str, Any] = {
+                    "config_path": str(config_path),
+                    "target_count": target_count,
+                    "llm_enabled": llm_enabled,
+                }
+                if distribution_config:
+                    input_state["distribution_config"] = distribution_config
+
+                result = graph.invoke(input_state)
+            finally:
+                # Reset to no-op emitter so other tabs aren't affected
+                set_emitter(EventEmitter())
 
         payload = result.get("plan_payload", {})
         records = payload.get("final_records", [])
         st.session_state["modular_result"] = payload
 
         st.success(f"Generated **{payload.get('total_controls', 0)}** controls for **{payload.get('config_name', '')}**")
+
+        # Show tool usage summary if any tools were called
+        tool_log = result.get("tool_calls_log", [])
+        if tool_log:
+            with st.expander(f"Tool Usage ({len(tool_log)} calls)", expanded=False):
+                st.dataframe(pd.DataFrame(tool_log), hide_index=True)
 
     # ── Display results ───────────────────────────────────────────────────
     payload = st.session_state.get("modular_result")

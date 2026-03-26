@@ -36,6 +36,12 @@ class EventType(str, Enum):
     EXPORT_STARTED = "export.started"
     EXPORT_COMPLETED = "export.completed"
 
+    TOOL_CALLED = "tool.called"
+    TOOL_COMPLETED = "tool.completed"
+
+    CONTROL_STARTED = "control.started"
+    CONTROL_COMPLETED = "control.completed"
+
     WARNING = "warning"
 
 

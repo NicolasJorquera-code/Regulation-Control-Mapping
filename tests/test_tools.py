@@ -206,3 +206,85 @@ class TestToolNode:
     def test_tool_node_empty_messages(self):
         result = tool_node({"messages": []})
         assert result["messages"] == []
+
+
+# -- DomainConfig-aware tool tests (lookup tools for slim-prompt mode) ---------
+
+from pathlib import Path
+
+from controlnexus.core.domain_config import load_domain_config
+from controlnexus.tools.domain_tools import (
+    build_domain_tool_executor,
+    dc_evidence_rules_lookup,
+    dc_exemplar_lookup,
+    dc_method_lookup,
+    dc_placement_lookup,
+)
+
+_COMMUNITY_BANK = Path(__file__).resolve().parent.parent / "config" / "profiles" / "community_bank_demo.yaml"
+
+
+class TestDomainLookupTools:
+    """Tests for the 4 new lookup tools used in slim-prompt mode."""
+
+    @classmethod
+    def setup_class(cls):
+        cls.config = load_domain_config(_COMMUNITY_BANK)
+
+    def test_placement_lookup_returns_placements(self):
+        result = dc_placement_lookup("Authorization", config=self.config)
+        assert "placements" in result
+        assert len(result["placements"]) > 0
+        assert all("name" in p for p in result["placements"])
+        assert all("description" in p for p in result["placements"])
+
+    def test_placement_lookup_flags_allowed(self):
+        result = dc_placement_lookup("Authorization", config=self.config)
+        # At least one placement should be allowed for Authorization
+        allowed = [p for p in result["placements"] if p.get("allowed_for_type")]
+        assert len(allowed) >= 1
+
+    def test_placement_lookup_unknown_type(self):
+        result = dc_placement_lookup("NonexistentType", config=self.config)
+        assert result["allowed_categories"] == []
+
+    def test_method_lookup_returns_methods(self):
+        result = dc_method_lookup(config=self.config)
+        assert "methods" in result
+        assert len(result["methods"]) > 0
+        assert all("name" in m for m in result["methods"])
+
+    def test_evidence_rules_lookup_known_type(self):
+        result = dc_evidence_rules_lookup("Authorization", config=self.config)
+        assert "evidence_criteria" in result
+        assert len(result["evidence_criteria"]) > 0
+
+    def test_evidence_rules_lookup_unknown_type(self):
+        result = dc_evidence_rules_lookup("UnknownType", config=self.config)
+        # Should return default criteria
+        assert "evidence_criteria" in result
+        assert len(result["evidence_criteria"]) >= 2
+
+    def test_exemplar_lookup_known_section(self):
+        # Get first available section from config
+        if self.config.process_areas:
+            section_id = self.config.process_areas[0].id
+            result = dc_exemplar_lookup(section_id, config=self.config)
+            assert "exemplars" in result
+            assert "section_id" in result
+
+    def test_exemplar_lookup_unknown_section(self):
+        result = dc_exemplar_lookup("99.0", config=self.config)
+        assert "error" in result
+        assert result["exemplars"] == []
+
+    def test_executor_dispatches_new_tools(self):
+        executor = build_domain_tool_executor(self.config)
+        result = executor("placement_lookup", {"control_type": "Authorization"})
+        assert "placements" in result
+
+        result = executor("method_lookup", {})
+        assert "methods" in result
+
+        result = executor("evidence_rules_lookup", {"control_type": "Authorization"})
+        assert "evidence_criteria" in result

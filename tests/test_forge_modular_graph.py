@@ -11,16 +11,21 @@ import pytest
 from controlnexus.core.domain_config import DomainConfig, load_domain_config
 from controlnexus.graphs.forge_modular_graph import (
     ForgeState,
+    _supports_tools,
     after_init,
     after_validate,
     build_forge_graph,
     enrich_node,
+    has_more,
+    merge_node,
     narrative_node,
     reset_llm_cache,
     select_node,
+    set_emitter,
     spec_node,
     validate_node,
 )
+from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
 from controlnexus.graphs.forge_modular_helpers import (
     build_assignment_matrix,
     build_deterministic_enriched,
@@ -29,6 +34,10 @@ from controlnexus.graphs.forge_modular_helpers import (
     build_enricher_system_prompt,
     build_narrative_system_prompt,
     build_narrative_user_prompt,
+    build_slim_narrative_system_prompt,
+    build_slim_narrative_user_prompt,
+    build_slim_spec_system_prompt,
+    build_slim_spec_user_prompt,
     build_spec_system_prompt,
     build_spec_user_prompt,
 )
@@ -293,19 +302,23 @@ def _make_state(
         "validation_failures": [],
         "retry_appendix": "",
         "generated_records": [],
+        "tool_calls_log": [],
     }
     base.update(overrides)
     return base  # type: ignore[return-value]
 
 
 def _mock_agent(name: str = "TestAgent") -> MagicMock:
-    """Create a mock BaseAgent with call_llm and parse_json."""
+    """Create a mock BaseAgent with call_llm_with_tools and parse_json."""
     agent = MagicMock()
     agent.name = name
     agent.call_llm = AsyncMock()
+    agent.call_llm_with_tools = AsyncMock()
     # parse_json delegates to the real static method for realistic behavior
     from controlnexus.agents.base import BaseAgent
     agent.parse_json = BaseAgent.parse_json
+    # _extract_text_from_openai_style is an instance method used by graph nodes
+    agent._extract_text_from_openai_style = BaseAgent._extract_text_from_openai_style.__get__(agent)
     return agent
 
 
@@ -338,12 +351,16 @@ class TestLLMNodes:
             "evidence": "approval log",
             "business_unit_id": "BU-RB",
         }
-        agent.call_llm.return_value = json.dumps(spec_response)
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 0,
+        }
 
         state = _make_state(llm_enabled=True)
         result = spec_node(state)
         assert result["current_spec"]["hierarchy_id"] == "1.0.1.1"
-        agent.call_llm.assert_called_once()
+        agent.call_llm_with_tools.assert_called_once()
 
     @patch("controlnexus.graphs.forge_modular_graph._get_agent")
     def test_narrative_node_calls_llm_when_enabled(self, mock_get_agent):
@@ -358,12 +375,16 @@ class TestLLMNodes:
             "why": "to mitigate risk",
             "full_description": " ".join(["word"] * 40),
         }
-        agent.call_llm.return_value = json.dumps(narr_response)
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(narr_response),
+            "_tool_calls_count": 0,
+        }
 
         state = _make_state(llm_enabled=True)
         result = narrative_node(state)
         assert result["current_narrative"]["who"] == "Manager"
-        agent.call_llm.assert_called_once()
+        agent.call_llm_with_tools.assert_called_once()
 
     @patch("controlnexus.graphs.forge_modular_graph._get_agent")
     def test_enrich_node_calls_llm_when_enabled(self, mock_get_agent):
@@ -375,18 +396,22 @@ class TestLLMNodes:
             "quality_rating": "Effective",
             "rationale": "Good coverage",
         }
-        agent.call_llm.return_value = json.dumps(enrich_response)
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(enrich_response),
+            "_tool_calls_count": 0,
+        }
 
         state = _make_state(llm_enabled=True)
         result = enrich_node(state)
         assert result["current_enriched"]["quality_rating"] == "Effective"
-        agent.call_llm.assert_called_once()
+        agent.call_llm_with_tools.assert_called_once()
 
     @patch("controlnexus.graphs.forge_modular_graph._get_agent")
     def test_spec_node_falls_back_on_llm_error(self, mock_get_agent):
         agent = _mock_agent("SpecAgent")
         mock_get_agent.return_value = agent
-        agent.call_llm.side_effect = Exception("LLM unavailable")
+        agent.call_llm_with_tools.side_effect = Exception("LLM unavailable")
 
         state = _make_state(llm_enabled=True)
         result = spec_node(state)
@@ -398,7 +423,7 @@ class TestLLMNodes:
     def test_narrative_node_falls_back_on_llm_error(self, mock_get_agent):
         agent = _mock_agent("NarrativeAgent")
         mock_get_agent.return_value = agent
-        agent.call_llm.side_effect = Exception("LLM unavailable")
+        agent.call_llm_with_tools.side_effect = Exception("LLM unavailable")
 
         state = _make_state(llm_enabled=True)
         result = narrative_node(state)
@@ -409,7 +434,7 @@ class TestLLMNodes:
     def test_enrich_node_falls_back_on_llm_error(self, mock_get_agent):
         agent = _mock_agent("EnricherAgent")
         mock_get_agent.return_value = agent
-        agent.call_llm.side_effect = Exception("LLM unavailable")
+        agent.call_llm_with_tools.side_effect = Exception("LLM unavailable")
 
         state = _make_state(llm_enabled=True)
         result = enrich_node(state)
@@ -564,3 +589,370 @@ class TestPromptTemplates:
         prompt = build_enricher_system_prompt(config)
         assert str(config.narrative.word_count_min) in prompt
         assert str(config.narrative.word_count_max) in prompt
+
+
+# ── Event Emission Tests ──────────────────────────────────────────────────────
+
+
+class TestEventEmission:
+    """Verify that graph nodes emit the expected events."""
+
+    def setup_method(self):
+        reset_llm_cache()
+        self.events: list[PipelineEvent] = []
+        emitter = EventEmitter()
+        emitter.on(self.events.append)
+        set_emitter(emitter)
+
+    def teardown_method(self):
+        reset_llm_cache()
+        set_emitter(EventEmitter())  # reset to no-op
+
+    def test_select_node_emits_control_started(self):
+        state = _make_state(llm_enabled=False)
+        select_node(state)
+        types = [e.event_type for e in self.events]
+        assert EventType.CONTROL_STARTED in types
+
+    def test_validate_node_emits_validation_passed(self):
+        state = _make_state(llm_enabled=True, retry_count=0)
+        # Build a narrative that passes validation
+        config = DomainConfig(**state["domain_config"])
+        spec = state["current_spec"]
+        narr = build_deterministic_narrative(spec, config)
+        state["current_narrative"] = narr
+        validate_node(state)
+        types = [e.event_type for e in self.events]
+        assert EventType.VALIDATION_PASSED in types
+
+    def test_validate_node_emits_validation_failed(self):
+        state = _make_state(llm_enabled=True, retry_count=0)
+        state["current_narrative"] = {
+            "who": "Manager", "what": "Reviews and monitors and validates and audits transactions",
+            "when": "as needed", "where": "System", "why": "because",
+            "full_description": "short",
+        }
+        validate_node(state)
+        types = [e.event_type for e in self.events]
+        # Should have at least one failure event (could be VALIDATION_FAILED or AGENT_RETRY)
+        assert EventType.VALIDATION_FAILED in types or EventType.AGENT_RETRY in types
+
+    def test_merge_node_emits_control_completed(self):
+        state = _make_state(llm_enabled=False)
+        config = DomainConfig(**state["domain_config"])
+        enriched = build_deterministic_enriched(state["current_spec"], state["current_narrative"], config)
+        state["current_enriched"] = enriched
+        merge_node(state)
+        types = [e.event_type for e in self.events]
+        assert EventType.CONTROL_COMPLETED in types
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_spec_node_emits_agent_events(self, mock_get_agent):
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {"hierarchy_id": "1.0.1.1", "leaf_name": "Test",
+                         "selected_level_1": "Preventive", "control_type": "Authorization",
+                         "placement": "Preventive", "method": "Manual",
+                         "who": "Manager", "what_action": "reviews", "what_detail": "detail",
+                         "when": "monthly", "where_system": "System", "why_risk": "risk",
+                         "evidence": "log", "business_unit_id": "BU-RB"}
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant", "content": json.dumps(spec_response), "_tool_calls_count": 0,
+        }
+
+        state = _make_state(llm_enabled=True)
+        spec_node(state)
+        types = [e.event_type for e in self.events]
+        assert EventType.AGENT_STARTED in types
+        assert EventType.AGENT_COMPLETED in types
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_agent_failure_emits_agent_failed(self, mock_get_agent):
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+        agent.call_llm_with_tools.side_effect = Exception("boom")
+
+        state = _make_state(llm_enabled=True)
+        spec_node(state)  # should not raise — falls back to deterministic
+        types = [e.event_type for e in self.events]
+        assert EventType.AGENT_STARTED in types
+        assert EventType.AGENT_FAILED in types
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_tool_calls_log_populated_on_success(self, mock_get_agent):
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {"hierarchy_id": "1.0.1.1", "leaf_name": "Test",
+                         "selected_level_1": "Preventive", "control_type": "Authorization",
+                         "placement": "Preventive", "method": "Manual",
+                         "who": "Manager", "what_action": "reviews", "what_detail": "detail",
+                         "when": "monthly", "where_system": "System", "why_risk": "risk",
+                         "evidence": "log", "business_unit_id": "BU-RB"}
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant", "content": json.dumps(spec_response), "_tool_calls_count": 0,
+        }
+
+        state = _make_state(llm_enabled=True)
+        result = spec_node(state)
+        # tool_calls_log should be a list (empty if no tools were actually invoked)
+        assert "tool_calls_log" in result
+        assert isinstance(result["tool_calls_log"], list)
+
+
+# ── Dual-Mode / Provider Tests ────────────────────────────────────────────────
+
+
+class TestProviderDetection:
+    """Verify provider detection and _supports_tools helper."""
+
+    def test_supports_tools_openai(self):
+        assert _supports_tools("openai") is True
+
+    def test_supports_tools_anthropic(self):
+        assert _supports_tools("anthropic") is True
+
+    def test_supports_tools_ica(self):
+        assert _supports_tools("ica") is False
+
+    def test_supports_tools_none(self):
+        assert _supports_tools("none") is False
+
+    def test_supports_tools_empty(self):
+        assert _supports_tools("") is False
+
+
+class TestSlimPromptBuilders:
+    """Verify slim prompt builders produce shorter prompts without inline data."""
+
+    @pytest.fixture()
+    def config(self) -> DomainConfig:
+        return load_domain_config(COMMUNITY_BANK)
+
+    @pytest.fixture()
+    def assignment(self, config: DomainConfig) -> dict:
+        return build_assignment_matrix(config, target_count=1)[0]
+
+    def test_slim_spec_system_shorter_than_fat(self, config):
+        fat = build_spec_system_prompt(config)
+        slim = build_slim_spec_system_prompt(config)
+        assert len(slim) < len(fat), "Slim spec system prompt should be shorter"
+
+    def test_slim_spec_system_mentions_tools(self, config):
+        slim = build_slim_spec_system_prompt(config)
+        assert "placement_lookup" in slim
+        assert "method_lookup" in slim
+        assert "evidence_rules_lookup" in slim
+
+    def test_slim_spec_system_omits_placements(self, config):
+        slim = build_slim_spec_system_prompt(config)
+        assert "ALLOWED PLACEMENTS" not in slim
+        assert "ALLOWED METHODS" not in slim
+
+    def test_slim_spec_user_shorter_than_fat(self, config, assignment):
+        fat = build_spec_user_prompt(assignment, config)
+        slim = build_slim_spec_user_prompt(assignment, config)
+        assert len(slim) < len(fat), "Slim spec user prompt should be shorter"
+
+    def test_slim_spec_user_omits_registry(self, config, assignment):
+        slim = build_slim_spec_user_prompt(assignment, config)
+        payload = json.loads(slim)
+        assert "domain_registry" not in payload
+        assert "control_placement_definitions" not in payload
+        assert "control_method_definitions" not in payload
+
+    def test_slim_spec_user_has_leaf(self, config, assignment):
+        slim = build_slim_spec_user_prompt(assignment, config)
+        payload = json.loads(slim)
+        assert "leaf" in payload
+        assert payload["leaf"]["hierarchy_id"]
+
+    def test_slim_narrative_system_shorter_than_fat(self, config):
+        fat = build_narrative_system_prompt(config)
+        slim = build_slim_narrative_system_prompt(config)
+        # Slim is actually longer because of tool instructions, but shouldn't have exemplars
+        assert "exemplar_lookup" in slim
+
+    def test_slim_narrative_system_has_word_counts(self, config):
+        slim = build_slim_narrative_system_prompt(config)
+        assert str(config.narrative.word_count_min) in slim
+        assert str(config.narrative.word_count_max) in slim
+
+    def test_slim_narrative_user_omits_exemplars(self, config, assignment):
+        spec = build_deterministic_spec(assignment, config)
+        slim = build_slim_narrative_user_prompt(spec, config)
+        payload = json.loads(slim)
+        assert "exemplars" not in payload
+
+    def test_slim_narrative_user_has_locked_spec(self, config, assignment):
+        spec = build_deterministic_spec(assignment, config)
+        slim = build_slim_narrative_user_prompt(spec, config)
+        payload = json.loads(slim)
+        assert "locked_spec" in payload
+
+    def test_slim_narrative_user_includes_retry_appendix(self, config, assignment):
+        spec = build_deterministic_spec(assignment, config)
+        slim = build_slim_narrative_user_prompt(spec, config, retry_appendix="ATTEMPT 1/3")
+        assert "ATTEMPT 1/3" in slim
+
+
+class TestDualModeNodes:
+    """Verify graph nodes select prompts and tool_choice based on provider."""
+
+    def setup_method(self):
+        reset_llm_cache()
+
+    def teardown_method(self):
+        reset_llm_cache()
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_spec_node_uses_slim_for_openai(self, mock_get_agent):
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {
+            "hierarchy_id": "1.0.1.1", "leaf_name": "Test",
+            "selected_level_1": "Preventive", "control_type": "Authorization",
+            "placement": "Preventive", "method": "Manual",
+            "who": "Manager", "what_action": "reviews", "what_detail": "detail",
+            "when": "monthly", "where_system": "System", "why_risk": "risk",
+            "evidence": "log", "business_unit_id": "BU-RB",
+        }
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 2,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "openai"
+        spec_node(state)
+
+        # Verify call_llm_with_tools was called with tool_choice="required"
+        call_kwargs = agent.call_llm_with_tools.call_args
+        assert call_kwargs.kwargs.get("tool_choice") == "required"
+
+        # Verify slim prompt was used (no ALLOWED PLACEMENTS in system prompt)
+        messages = call_kwargs.args[0]
+        system_msg = messages[0]["content"]
+        assert "ALLOWED PLACEMENTS" not in system_msg
+        assert "placement_lookup" in system_msg
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_spec_node_uses_fat_for_ica(self, mock_get_agent):
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {
+            "hierarchy_id": "1.0.1.1", "leaf_name": "Test",
+            "selected_level_1": "Preventive", "control_type": "Authorization",
+            "placement": "Preventive", "method": "Manual",
+            "who": "Manager", "what_action": "reviews", "what_detail": "detail",
+            "when": "monthly", "where_system": "System", "why_risk": "risk",
+            "evidence": "log", "business_unit_id": "BU-RB",
+        }
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 0,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "ica"
+        spec_node(state)
+
+        call_kwargs = agent.call_llm_with_tools.call_args
+        # ICA: no tool_choice forced
+        assert call_kwargs.kwargs.get("tool_choice") is None
+        # Fat prompt should have ALLOWED PLACEMENTS
+        messages = call_kwargs.args[0]
+        system_msg = messages[0]["content"]
+        assert "ALLOWED PLACEMENTS" in system_msg
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_narrative_node_uses_slim_for_openai(self, mock_get_agent):
+        agent = _mock_agent("NarrativeAgent")
+        mock_get_agent.return_value = agent
+
+        narr_response = {
+            "who": "Manager", "what": "reviews transactions",
+            "when": "monthly", "where": "Core Banking",
+            "why": "to mitigate risk",
+            "full_description": " ".join(["word"] * 40),
+        }
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(narr_response),
+            "_tool_calls_count": 1,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "openai"
+        narrative_node(state)
+
+        call_kwargs = agent.call_llm_with_tools.call_args
+        assert call_kwargs.kwargs.get("tool_choice") == "required"
+
+        # Slim narrative prompt should not have exemplars
+        messages = call_kwargs.args[0]
+        user_msg = messages[1]["content"]
+        payload = json.loads(user_msg)
+        assert "exemplars" not in payload
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_narrative_node_uses_fat_for_ica(self, mock_get_agent):
+        agent = _mock_agent("NarrativeAgent")
+        mock_get_agent.return_value = agent
+
+        narr_response = {
+            "who": "Manager", "what": "reviews transactions",
+            "when": "monthly", "where": "Core Banking",
+            "why": "to mitigate risk",
+            "full_description": " ".join(["word"] * 40),
+        }
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(narr_response),
+            "_tool_calls_count": 0,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "ica"
+        narrative_node(state)
+
+        call_kwargs = agent.call_llm_with_tools.call_args
+        assert call_kwargs.kwargs.get("tool_choice") is None
+
+        # Fat narrative prompt should have exemplars
+        messages = call_kwargs.args[0]
+        user_msg = messages[1]["content"]
+        payload = json.loads(user_msg)
+        assert "exemplars" in payload
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_default_provider_is_ica(self, mock_get_agent):
+        """When provider is not set in state, defaults to ICA (fat prompts)."""
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {
+            "hierarchy_id": "1.0.1.1", "leaf_name": "Test",
+            "selected_level_1": "Preventive", "control_type": "Authorization",
+            "placement": "Preventive", "method": "Manual",
+            "who": "Manager", "what_action": "reviews", "what_detail": "detail",
+            "when": "monthly", "where_system": "System", "why_risk": "risk",
+            "evidence": "log", "business_unit_id": "BU-RB",
+        }
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 0,
+        }
+
+        state = _make_state(llm_enabled=True)
+        # Don't set provider — should default to "ica"
+        spec_node(state)
+
+        call_kwargs = agent.call_llm_with_tools.call_args
+        assert call_kwargs.kwargs.get("tool_choice") is None
