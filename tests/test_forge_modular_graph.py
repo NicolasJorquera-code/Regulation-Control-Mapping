@@ -11,6 +11,7 @@ import pytest
 from controlnexus.core.domain_config import DomainConfig, load_domain_config
 from controlnexus.graphs.forge_modular_graph import (
     ForgeState,
+    _ica_xml_mode,
     _supports_tools,
     after_init,
     after_validate,
@@ -347,6 +348,7 @@ def _mock_agent(name: str = "TestAgent") -> MagicMock:
     agent.name = name
     agent.call_llm = AsyncMock()
     agent.call_llm_with_tools = AsyncMock()
+    agent.call_llm_with_xml_tools = AsyncMock()
     # parse_json delegates to the real static method for realistic behavior
     from controlnexus.agents.base import BaseAgent
 
@@ -1042,3 +1044,173 @@ class TestDualModeNodes:
 
         call_kwargs = agent.call_llm_with_tools.call_args
         assert call_kwargs.kwargs.get("tool_choice") is None
+
+
+# -- ICA XML mode tests ---------------------------------------------------------
+
+
+class TestIcaXmlMode:
+    """Verify ICA XML tool-call simulation mode routing."""
+
+    def test_ica_xml_mode_helper_true(self):
+        state = {"provider": "ica", "ica_tool_calling": True}
+        assert _ica_xml_mode(state) is True
+
+    def test_ica_xml_mode_helper_false_fat(self):
+        state = {"provider": "ica", "ica_tool_calling": False}
+        assert _ica_xml_mode(state) is False
+
+    def test_ica_xml_mode_helper_false_openai(self):
+        state = {"provider": "openai", "ica_tool_calling": True}
+        assert _ica_xml_mode(state) is False
+
+    def test_ica_xml_mode_helper_false_missing(self):
+        state = {"provider": "ica"}
+        assert _ica_xml_mode(state) is False
+
+    def setup_method(self):
+        reset_llm_cache()
+
+    def teardown_method(self):
+        reset_llm_cache()
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_spec_node_uses_xml_mode_for_ica_xml(self, mock_get_agent):
+        """When provider=ica + ica_tool_calling=True, spec_node uses XML tool loop."""
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
+        }
+        agent.call_llm_with_xml_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 1,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "ica"
+        state["ica_tool_calling"] = True
+        result = spec_node(state)
+
+        # call_llm_with_xml_tools should have been called (not call_llm_with_tools)
+        agent.call_llm_with_xml_tools.assert_called_once()
+        agent.call_llm_with_tools.assert_not_called()
+
+        # System prompt should contain XML tool instructions
+        call_args = agent.call_llm_with_xml_tools.call_args
+        messages = call_args.args[0]
+        system_msg = messages[0]["content"]
+        assert "TOOL CALLING INSTRUCTIONS" in system_msg
+        assert "<tool_call>" in system_msg
+
+        assert result["current_spec"]["control_type"] == "Authorization"
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_spec_node_still_uses_fat_for_ica_fat(self, mock_get_agent):
+        """When provider=ica + ica_tool_calling=False, spec_node uses fat prompts (regression)."""
+        agent = _mock_agent("SpecAgent")
+        mock_get_agent.return_value = agent
+
+        spec_response = {
+            "hierarchy_id": "1.0.1.1",
+            "leaf_name": "Test",
+            "selected_level_1": "Preventive",
+            "control_type": "Authorization",
+            "placement": "Preventive",
+            "method": "Manual",
+            "who": "Manager",
+            "what_action": "reviews",
+            "what_detail": "detail",
+            "when": "monthly",
+            "where_system": "System",
+            "why_risk": "risk",
+            "evidence": "log",
+            "business_unit_id": "BU-RB",
+        }
+        agent.call_llm_with_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(spec_response),
+            "_tool_calls_count": 0,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "ica"
+        state["ica_tool_calling"] = False
+        spec_node(state)
+
+        # call_llm_with_tools should have been called (not call_llm_with_xml_tools)
+        agent.call_llm_with_tools.assert_called_once()
+        agent.call_llm_with_xml_tools.assert_not_called()
+
+        # Fat prompt should have ALLOWED PLACEMENTS
+        call_kwargs = agent.call_llm_with_tools.call_args
+        messages = call_kwargs.args[0]
+        system_msg = messages[0]["content"]
+        assert "ALLOWED PLACEMENTS" in system_msg
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_narrative_node_uses_xml_mode(self, mock_get_agent):
+        """When provider=ica + ica_tool_calling=True, narrative_node uses XML tool loop."""
+        agent = _mock_agent("NarrativeAgent")
+        mock_get_agent.return_value = agent
+
+        narr_response = {
+            "who": "Manager",
+            "what": "reviews transactions",
+            "when": "monthly",
+            "where": "Core Banking",
+            "why": "to mitigate risk",
+            "full_description": " ".join(["word"] * 40),
+        }
+        agent.call_llm_with_xml_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(narr_response),
+            "_tool_calls_count": 1,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "ica"
+        state["ica_tool_calling"] = True
+        narrative_node(state)
+
+        agent.call_llm_with_xml_tools.assert_called_once()
+        agent.call_llm_with_tools.assert_not_called()
+
+    @patch("controlnexus.graphs.forge_modular_graph._get_agent")
+    def test_enrich_node_uses_xml_mode(self, mock_get_agent):
+        """When provider=ica + ica_tool_calling=True, enrich_node uses XML tool loop."""
+        agent = _mock_agent("EnricherAgent")
+        mock_get_agent.return_value = agent
+
+        enrich_response = {
+            "quality_rating": "Effective",
+            "refined_full_description": "The manager reviews transactions monthly.",
+        }
+        agent.call_llm_with_xml_tools.return_value = {
+            "role": "assistant",
+            "content": json.dumps(enrich_response),
+            "_tool_calls_count": 1,
+        }
+
+        state = _make_state(llm_enabled=True)
+        state["provider"] = "ica"
+        state["ica_tool_calling"] = True
+        enrich_node(state)
+
+        agent.call_llm_with_xml_tools.assert_called_once()
+        agent.call_llm_with_tools.assert_not_called()

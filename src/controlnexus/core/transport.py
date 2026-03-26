@@ -32,6 +32,7 @@ class AsyncTransportClient:
     base_url: str
     model: str
     provider: str = "openai"  # "ica", "openai", or "anthropic"
+    ica_tool_calling: bool = False  # True enables XML tool-call simulation for ICA
     timeout_seconds: int = 120
     max_retries: int = 3
     _client: httpx.AsyncClient | None = field(default=None, repr=False)
@@ -86,13 +87,39 @@ class AsyncTransportClient:
                 try:
                     logger.debug("POST to %s (attempt %d)", url, attempt + 1)
                     resp = await client.post(url, json=payload, headers=headers)
+                    logger.debug("Response from %s: HTTP %d", url, resp.status_code)
 
                     if resp.status_code == 404:
+                        # Distinguish API errors (correct URL, bad request)
+                        # from genuine path-not-found (wrong URL pattern).
+                        try:
+                            body = resp.json()
+                            if "error" in body:
+                                err_msg = body["error"]
+                                if isinstance(err_msg, dict):
+                                    err_msg = err_msg.get("message", str(body["error"]))
+                                raise ExternalServiceException(
+                                    f"API error at {url}: {err_msg}"
+                                )
+                        except (ValueError, KeyError, TypeError):
+                            pass
                         last_error = ExternalServiceException(f"404 at {url}")
                         break  # try next URL
 
                     if resp.status_code in (401, 403):
                         raise ExternalServiceException(f"Authentication failure at {url} (HTTP {resp.status_code})")
+
+                    if resp.status_code == 429:
+                        body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+                        err = body.get("error", {})
+                        if isinstance(err, dict) and err.get("code") == "insufficient_quota":
+                            raise ExternalServiceException(
+                                "OpenAI quota exceeded — check your plan and billing at https://platform.openai.com/account/billing"
+                            )
+                        # Rate-limited but not quota — retry with backoff
+                        if attempt < self.max_retries - 1:
+                            await asyncio.sleep(2**attempt)
+                            continue
 
                     resp.raise_for_status()
                     self._working_url = url
@@ -135,12 +162,14 @@ def build_client_from_env(
     base_url = os.getenv("ICA_BASE_URL")
     model_id = model_override or os.getenv("ICA_MODEL_ID")
     if api_key and base_url and model_id:
-        logger.info("LLM client configured (ICA): %s", base_url)
+        ica_tool_calling = os.getenv("ICA_TOOL_CALLING", "false").lower() in ("true", "1", "yes")
+        logger.info("LLM client configured (ICA, tool_calling=%s): %s", ica_tool_calling, base_url)
         return AsyncTransportClient(
             api_key=api_key,
             base_url=base_url,
             model=model_id,
             provider="ica",
+            ica_tool_calling=ica_tool_calling,
             timeout_seconds=timeout_seconds,
         )
 

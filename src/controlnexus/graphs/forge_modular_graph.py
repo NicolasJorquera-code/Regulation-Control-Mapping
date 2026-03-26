@@ -39,6 +39,7 @@ from controlnexus.graphs.forge_modular_helpers import (
     build_slim_spec_user_prompt,
     build_spec_system_prompt,
     build_spec_user_prompt,
+    build_xml_tool_instructions,
 )
 from controlnexus.tools.domain_tools import build_domain_tool_executor
 from controlnexus.tools.schemas import (
@@ -93,6 +94,11 @@ _TOOL_HINT_SLIM = (
 def _supports_tools(provider: str) -> bool:
     """Return True if the provider supports function calling."""
     return provider in ("openai", "anthropic")
+
+
+def _ica_xml_mode(state: dict[str, Any]) -> bool:
+    """Return True if ICA is configured with XML tool-call simulation."""
+    return state.get("provider") == "ica" and state.get("ica_tool_calling") is True
 
 
 # ── Event infrastructure ─────────────────────────────────────────────────────
@@ -152,6 +158,7 @@ class ForgeState(TypedDict, total=False):
     domain_config: dict[str, Any]
     llm_enabled: bool
     provider: str  # "ica", "openai", "anthropic" — set by init_node
+    ica_tool_calling: bool  # True = XML tool simulation — set by init_node
 
     # Distribution overrides from UI
     distribution_config: dict[str, Any]
@@ -209,11 +216,13 @@ def init_node(state: ForgeState) -> dict[str, Any]:
     # Detect provider from transport client
     client = _get_client()
     provider = client.provider if client else "none"
+    ica_tool_calling = getattr(client, "ica_tool_calling", False) if client else False
 
     return {
         "domain_config": domain_config.model_dump(),
         "llm_enabled": state.get("llm_enabled", False),
         "provider": provider,
+        "ica_tool_calling": ica_tool_calling,
         "assignments": assignments,
         "current_idx": 0,
         "generated_records": [],
@@ -335,6 +344,14 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
             user_prompt = build_slim_spec_user_prompt(assignment, config)
             tools = _SLIM_SPEC_TOOLS
             tool_choice: str | None = "required"
+        elif _ica_xml_mode(state):
+            system_prompt = (
+                build_slim_spec_system_prompt(config)
+                + build_xml_tool_instructions(_SLIM_SPEC_TOOLS)
+            )
+            user_prompt = build_slim_spec_user_prompt(assignment, config)
+            tools = _SLIM_SPEC_TOOLS  # used for prompt generation only
+            tool_choice = None
         else:
             system_prompt = build_spec_system_prompt(config) + _TOOL_HINT
             user_prompt = build_spec_user_prompt(assignment, config)
@@ -348,14 +365,23 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        response = _run_async(
-            agent.call_llm_with_tools(
-                messages,
-                tools,
-                emitting_executor,
-                tool_choice=tool_choice,
+
+        if _ica_xml_mode(state):
+            response = _run_async(
+                agent.call_llm_with_xml_tools(
+                    messages,
+                    emitting_executor,
+                )
             )
-        )
+        else:
+            response = _run_async(
+                agent.call_llm_with_tools(
+                    messages,
+                    tools,
+                    emitting_executor,
+                    tool_choice=tool_choice,
+                )
+            )
         n_tools = response.get("_tool_calls_count", 0)
         text = agent._extract_text_from_openai_style({"choices": [{"message": response}]})
         result = agent.parse_json(text)
@@ -407,6 +433,14 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
             user_prompt = build_slim_narrative_user_prompt(spec, config, retry_appendix or None)
             tools = _SLIM_NARRATIVE_TOOLS
             tool_choice: str | None = "required"
+        elif _ica_xml_mode(state):
+            system_prompt = (
+                build_slim_narrative_system_prompt(config)
+                + build_xml_tool_instructions(_SLIM_NARRATIVE_TOOLS)
+            )
+            user_prompt = build_slim_narrative_user_prompt(spec, config, retry_appendix or None)
+            tools = _SLIM_NARRATIVE_TOOLS
+            tool_choice = None
         else:
             system_prompt = build_narrative_system_prompt(config) + _TOOL_HINT
             user_prompt = build_narrative_user_prompt(spec, config, retry_appendix or None)
@@ -420,14 +454,23 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        response = _run_async(
-            agent.call_llm_with_tools(
-                messages,
-                tools,
-                emitting_executor,
-                tool_choice=tool_choice,
+
+        if _ica_xml_mode(state):
+            response = _run_async(
+                agent.call_llm_with_xml_tools(
+                    messages,
+                    emitting_executor,
+                )
             )
-        )
+        else:
+            response = _run_async(
+                agent.call_llm_with_tools(
+                    messages,
+                    tools,
+                    emitting_executor,
+                    tool_choice=tool_choice,
+                )
+            )
         n_tools = response.get("_tool_calls_count", 0)
         text = agent._extract_text_from_openai_style({"choices": [{"message": response}]})
         result = agent.parse_json(text)
@@ -538,7 +581,13 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
             return {"current_enriched": enriched, "validation_passed": True}
 
         # Enricher prompts are already minimal — no slim variant needed
-        system_prompt = build_enricher_system_prompt(config) + _TOOL_HINT
+        if _ica_xml_mode(state):
+            system_prompt = (
+                build_enricher_system_prompt(config)
+                + build_xml_tool_instructions(_SLIM_ENRICH_TOOLS)
+            )
+        else:
+            system_prompt = build_enricher_system_prompt(config) + _TOOL_HINT
         user_prompt = build_enricher_user_prompt(narrative, config)
         tools = _SLIM_ENRICH_TOOLS if _supports_tools(provider) else _ENRICH_TOOLS
         tool_choice = None  # enricher doesn't need forced tools
@@ -550,14 +599,23 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        response = _run_async(
-            agent.call_llm_with_tools(
-                messages,
-                tools,
-                emitting_executor,
-                tool_choice=tool_choice,
+
+        if _ica_xml_mode(state):
+            response = _run_async(
+                agent.call_llm_with_xml_tools(
+                    messages,
+                    emitting_executor,
+                )
             )
-        )
+        else:
+            response = _run_async(
+                agent.call_llm_with_tools(
+                    messages,
+                    tools,
+                    emitting_executor,
+                    tool_choice=tool_choice,
+                )
+            )
         n_tools = response.get("_tool_calls_count", 0)
         text = agent._extract_text_from_openai_style({"choices": [{"message": response}]})
         llm_result = agent.parse_json(text)

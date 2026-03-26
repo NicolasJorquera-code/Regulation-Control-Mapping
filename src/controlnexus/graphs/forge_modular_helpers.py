@@ -680,3 +680,60 @@ def build_slim_narrative_user_prompt(
     if retry_appendix:
         prompt += "\n\n" + retry_appendix
     return prompt
+
+
+# ── XML tool-call instruction builder (ICA XML mode) ─────────────────────────
+
+
+def build_xml_tool_instructions(tool_schemas: list[dict[str, Any]]) -> str:
+    """Build a prompt addendum that teaches the LLM to emit XML tool calls.
+
+    Converts OpenAI-format tool schemas into a text description of available
+    tools and the ``<tool_call>`` XML format the LLM should use.
+    """
+    lines = [
+        "\n\n--- TOOL CALLING INSTRUCTIONS ---",
+        "",
+        "You have access to the following tools. To call a tool, emit an XML block",
+        "in your response using this exact format:",
+        "",
+        "<tool_call>",
+        "<name>TOOL_NAME</name>",
+        '<arguments>{"param": "value"}</arguments>',
+        "</tool_call>",
+        "",
+        "You may call multiple tools in a single response. After each tool call,",
+        "you will receive results in <tool_result> blocks. Use those results to",
+        "inform your final answer.",
+        "",
+        "When you have enough information, respond with ONLY the raw JSON object.",
+        "Do NOT include <tool_call> blocks in your final response.",
+        "Do NOT wrap the JSON in markdown code fences (``` ```json ```).",
+        "Do NOT include any prose, explanation, or commentary — output ONLY the JSON object.",
+        "",
+        "IMPORTANT: You MUST call the relevant tools to look up domain data",
+        "before producing your JSON response. Do not guess values.",
+        "",
+        "Available tools:",
+        "",
+    ]
+
+    for schema in tool_schemas:
+        fn = schema.get("function", {})
+        name = fn.get("name", "unknown")
+        desc = fn.get("description", "")
+        params = fn.get("parameters", {})
+        props = params.get("properties", {})
+        required = params.get("required", [])
+
+        lines.append(f"  {name}: {desc}")
+        if props:
+            lines.append("    Parameters:")
+            for pname, pdef in props.items():
+                ptype = pdef.get("type", "string")
+                pdesc = pdef.get("description", "")
+                req_marker = " (required)" if pname in required else ""
+                lines.append(f"      - {pname} ({ptype}){req_marker}: {pdesc}")
+        lines.append("")
+
+    return "\n".join(lines)
