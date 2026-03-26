@@ -339,16 +339,16 @@ GENERATED CONTROL:
 
 ### Where It Lives in the App
 
-The ControlForge tab is the fourth tab in the main dashboard (after Analysis, Playground, Evaluation). It contains three sub-tabs:
+The ControlForge tab is the third tab in the main dashboard (after Analysis and Playground). It contains three sub-tabs:
 
 ```
-┌──────────┐ ┌────────────┐ ┌────────────┐ ┌──────────────┐
-│ Analysis │ │ Playground │ │ Evaluation │ │ ControlForge │  <-- you are here
-└──────────┘ └────────────┘ └────────────┘ └──────────────┘
-                                              │
-                     ┌────────────────────┬────┴──────────┬──────────────┐
-                     │ Section Profiles   │ Global Config │ Run Section  │
-                     └────────────────────┴───────────────┴──────────────┘
+┌──────────┐ ┌────────────┐ ┌──────────────┐
+│ Analysis │ │ Playground │ │ ControlForge │  <-- you are here
+└──────────┘ └────────────┘ └──────────────┘
+                                │
+                   ┌────────────────────┬────┴──────────┬──────────────┐
+                   │ Section Profiles   │ Global Config │ Run Section  │
+                   └────────────────────┴───────────────┴──────────────┘
 ```
 
 ### Sub-Tab 1: Section Profiles
@@ -394,7 +394,7 @@ Runs the full control generation pipeline from the UI:
 
 ```
 src/controlnexus/ui/
-├── app.py                    # Main entry point, defines 4 tabs
+├── app.py                    # Main entry point, defines 3 tabs
 ├── controlforge_tab.py       # All ControlForge rendering logic (this guide)
 ├── styles.py                 # IBM Carbon CSS classes and design tokens
 ├── playground.py             # Playground tab (not relevant here)
@@ -402,8 +402,7 @@ src/controlnexus/ui/
 │   ├── upload.py             # Analysis tab upload widget
 │   └── analysis_runner.py    # Analysis tab runner
 └── renderers/
-    ├── gap_dashboard.py      # Analysis tab results
-    └── eval_dashboard.py     # Evaluation tab results
+    └── gap_dashboard.py      # Analysis tab results
 
 src/controlnexus/hierarchy/
 ├── __init__.py               # Exports: load_apqc_hierarchy, select_scope, build_section_breakdown
@@ -436,8 +435,8 @@ config/
 
 ```python
 # app.py lines 38-53
-tab_analysis, tab_playground, tab_evaluation, tab_controlforge = st.tabs(
-    ["Analysis", "Playground", "Evaluation", "ControlForge"]
+tab_analysis, tab_playground, tab_controlforge = st.tabs(
+    ["Analysis", "Playground", "ControlForge"]
 )
 with tab_controlforge:
     _render_controlforge_tab()

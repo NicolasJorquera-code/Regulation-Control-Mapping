@@ -7,7 +7,7 @@ An intelligent internal controls management system that identifies gaps in finan
 ControlNexus operates in three layers:
 
 1. **Analysis** -- Ingests existing control populations from Excel, runs 4 deterministic scanners (regulatory coverage, ecosystem balance, frequency coherence, evidence sufficiency), and produces a weighted gap report.
-2. **Dashboard** -- Streamlit-based HITL (Human-in-the-Loop) interface for reviewing gaps, accepting remediation targets, testing individual agents, and viewing evaluation reports.
+2. **Dashboard** -- Streamlit-based HITL (Human-in-the-Loop) interface for reviewing gaps, accepting remediation targets, and testing individual agents.
 3. **Remediation** -- LangGraph-orchestrated multi-agent pipeline that generates new controls via SpecAgent, NarrativeAgent, EnricherAgent with deterministic validation, adversarial review, and deduplication.
 
 ## Quick Start
@@ -54,10 +54,9 @@ Supported LLM providers (configure one in `.env`):
 streamlit run src/controlnexus/ui/app.py
 ```
 
-Opens at `http://localhost:8501` with four tabs:
+Opens at `http://localhost:8501` with three tabs:
 - **Analysis** -- Upload Excel, run gap analysis, view gap dashboard
 - **Playground** -- Select and test any registered agent interactively
-- **Evaluation** -- View quality scores (faithfulness, completeness, diversity, gap closure)
 - **ControlForge** -- Browse config profiles, explore the control taxonomy, and run the control generation pipeline
 
 ### Run Tests
@@ -95,9 +94,8 @@ src/controlnexus/
   remediation/    Planner, 4 gap-type path handlers
   memory/         ChromaDB vector store + embedder protocol
   tools/          5 function-calling tools + LangGraph ToolNode
-  evaluation/     4-dimension scoring harness
   export/         Excel export for FinalControlRecord
-  ui/             Streamlit dashboard (4 tabs)
+  ui/             Streamlit dashboard (3 tabs)
 
 config/
   taxonomy.yaml             Control type taxonomy
@@ -120,7 +118,6 @@ Excel Upload --> ingest_excel() --> FinalControlRecord[]
     --> SpecAgent --> NarrativeAgent --> Validator (retry <= 3)
     --> EnricherAgent --> quality gate --> dedup check
     --> FinalControlRecord[] --> export_to_excel()
-    --> run_eval() --> EvalReport (4 dimensions)
 ```
 
 ### Control Generation (ControlForge Tab)
@@ -181,15 +178,6 @@ print(f"Sections: {list(result.section_allocation.keys())}")
 | Ecosystem Balance | 25% | Control type distribution vs. expected ranges |
 | Frequency Coherence | 15% | Frequency alignment with control type expectations |
 | Evidence Sufficiency | 20% | Artifact name, preparer sign-off, retention location |
-
-## Evaluation Dimensions
-
-| Dimension | Range | What it measures |
-|-----------|-------|------------------|
-| Faithfulness | 0--4 | Spec-to-narrative alignment (who, where, type, placement) |
-| Completeness | 0--6 | 5W coverage: role title, action verb, frequency, system, risk word, word count |
-| Diversity | 0.0--1.0 | Pairwise cosine similarity, 0.92 dedup threshold |
-| Gap Closure | delta | Score improvement from re-running analysis on combined controls |
 
 ## CI/CD
 
