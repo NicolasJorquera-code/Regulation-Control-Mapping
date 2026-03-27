@@ -1,0 +1,29 @@
+# CUSTOMIZE: Replace this entire file with your domain configuration.
+# This is the single source of truth consumed by all agents and tools.
+
+name: research-assistant
+description: "Demo multi-agent research workflow"
+
+# Maximum number of sub-questions the PlannerAgent may generate.
+max_sub_questions: 5
+
+# Word-count bounds for the final summary.
+summary_min_words: 50
+summary_max_words: 300
+
+# Quality criteria checked by the ReviewerAgent.
+# CUSTOMIZE: Replace with your domain's quality dimensions.
+quality_criteria:
+  - "Claims are supported by cited sources"
+  - "No internal contradictions between findings"
+  - "Key aspects of the original question are addressed"
+  - "Summary is concise and well-structured"
+
+# Known topic areas (used by the PlannerAgent for decomposition hints).
+# CUSTOMIZE: Replace with your domain's topic taxonomy.
+topic_areas:
+  - technology
+  - science
+  - business
+  - history
+  - culture
