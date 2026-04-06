@@ -16,8 +16,14 @@ TAXONOMY_VALIDATOR_SCHEMA: dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "level_1": {"type": "string", "description": "Level 1 placement (Preventive, Detective, Contingency Planning)"},
-                "level_2": {"type": "string", "description": "Level 2 control type (e.g., Reconciliation, Authorization)"},
+                "level_1": {
+                    "type": "string",
+                    "description": "Level 1 placement (Preventive, Detective, Contingency Planning)",
+                },
+                "level_2": {
+                    "type": "string",
+                    "description": "Level 2 control type (e.g., Reconciliation, Authorization)",
+                },
             },
             "required": ["level_1", "level_2"],
         },

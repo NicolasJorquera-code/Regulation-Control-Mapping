@@ -101,6 +101,7 @@ def ingest_excel(path: Path | str) -> list[FinalControlRecord]:
 
         for row_idx, row in enumerate(rows[1:], start=2):
             try:
+
                 def get(col: str, default: Any = "") -> Any:
                     idx = col_map.get(col)
                     if idx is not None and idx < len(row):

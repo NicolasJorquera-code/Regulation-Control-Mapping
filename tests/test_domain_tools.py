@@ -10,7 +10,6 @@ from controlnexus.core.domain_config import (
     AffinityConfig,
     ControlTypeConfig,
     DomainConfig,
-    FrequencyTier,
     PlacementConfig,
     ProcessAreaConfig,
     RegistryConfig,

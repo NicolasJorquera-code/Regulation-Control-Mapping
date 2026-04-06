@@ -68,23 +68,52 @@ class TestIngestExcel:
 
         # Header row
         headers = [
-            "control_id", "hierarchy_id", "leaf_name", "full_description",
-            "selected_level_1", "selected_level_2", "business_unit_id",
-            "business_unit_name", "who", "what", "when", "frequency",
-            "where", "why", "quality_rating", "validator_passed",
-            "validator_retries", "validator_failures", "evidence",
+            "control_id",
+            "hierarchy_id",
+            "leaf_name",
+            "full_description",
+            "selected_level_1",
+            "selected_level_2",
+            "business_unit_id",
+            "business_unit_name",
+            "who",
+            "what",
+            "when",
+            "frequency",
+            "where",
+            "why",
+            "quality_rating",
+            "validator_passed",
+            "validator_retries",
+            "validator_failures",
+            "evidence",
         ]
         ws.append(headers)
 
         # Data row
-        ws.append([
-            "CTRL-0401-REC-001", "4.1.1.1", "Test Leaf",
-            "Monthly reconciliation of accounts to prevent discrepancies.",
-            "Preventive", "Reconciliation", "BU-001", "Retail Banking",
-            "Senior Accountant", "Reconciles accounts", "Monthly", "Monthly",
-            "GL System", "Prevent discrepancies", "Strong", True, 0, "[]",
-            "Reconciliation report with sign-off",
-        ])
+        ws.append(
+            [
+                "CTRL-0401-REC-001",
+                "4.1.1.1",
+                "Test Leaf",
+                "Monthly reconciliation of accounts to prevent discrepancies.",
+                "Preventive",
+                "Reconciliation",
+                "BU-001",
+                "Retail Banking",
+                "Senior Accountant",
+                "Reconciles accounts",
+                "Monthly",
+                "Monthly",
+                "GL System",
+                "Prevent discrepancies",
+                "Strong",
+                True,
+                0,
+                "[]",
+                "Reconciliation report with sign-off",
+            ]
+        )
 
         path = tmp_path / "test.xlsx"
         wb.save(path)
@@ -115,21 +144,52 @@ class TestIngestExcel:
         ws.title = "section_9_controls"
 
         headers = [
-            "control_id", "hierarchy_id", "leaf_name", "full_description",
-            "selected_level_1", "selected_level_2", "business_unit_id",
-            "business_unit_name", "who", "what", "when", "frequency",
-            "where", "why", "quality_rating", "validator_passed",
-            "validator_retries", "validator_failures", "evidence",
+            "control_id",
+            "hierarchy_id",
+            "leaf_name",
+            "full_description",
+            "selected_level_1",
+            "selected_level_2",
+            "business_unit_id",
+            "business_unit_name",
+            "who",
+            "what",
+            "when",
+            "frequency",
+            "where",
+            "why",
+            "quality_rating",
+            "validator_passed",
+            "validator_retries",
+            "validator_failures",
+            "evidence",
         ]
         ws.append(headers)
 
         for i in range(5):
-            ws.append([
-                f"CTRL-090{i}", f"9.1.{i}", f"Leaf {i}", "Description words " * 5,
-                "Preventive", "Reconciliation", "BU-001", "Treasury",
-                "Analyst", "Reviews", "Monthly", "Monthly",
-                "System", "Prevent risk", "Satisfactory", True, 0, "[]", "Report",
-            ])
+            ws.append(
+                [
+                    f"CTRL-090{i}",
+                    f"9.1.{i}",
+                    f"Leaf {i}",
+                    "Description words " * 5,
+                    "Preventive",
+                    "Reconciliation",
+                    "BU-001",
+                    "Treasury",
+                    "Analyst",
+                    "Reviews",
+                    "Monthly",
+                    "Monthly",
+                    "System",
+                    "Prevent risk",
+                    "Satisfactory",
+                    True,
+                    0,
+                    "[]",
+                    "Report",
+                ]
+            )
 
         path = tmp_path / "test.xlsx"
         wb.save(path)

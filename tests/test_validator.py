@@ -166,8 +166,14 @@ class TestBuildRetryAppendix:
         assert "ATTEMPT 2/3" in text
 
     def test_each_failure_has_instruction(self):
-        codes = ["MULTIPLE_WHATS", "VAGUE_WHEN", "WHO_EQUALS_WHERE",
-                 "WHY_MISSING_RISK", "WORD_COUNT_OUT_OF_RANGE", "SPEC_MISMATCH"]
+        codes = [
+            "MULTIPLE_WHATS",
+            "VAGUE_WHEN",
+            "WHO_EQUALS_WHERE",
+            "WHY_MISSING_RISK",
+            "WORD_COUNT_OUT_OF_RANGE",
+            "SPEC_MISMATCH",
+        ]
         text = build_retry_appendix(1, 3, codes, 25)
         for code in codes:
             assert code in text
@@ -185,7 +191,6 @@ class TestBuildRetryAppendix:
 
 
 class TestCustomWordCountLimits:
-
     def test_custom_min_words_passes(self):
         narr = _make_narrative(full_description=" ".join(["word"] * 25))
         spec = _make_spec()

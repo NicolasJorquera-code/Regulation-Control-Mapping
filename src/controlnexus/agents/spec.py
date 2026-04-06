@@ -85,6 +85,4 @@ class SpecAgent(BaseAgent):
             raise
         except Exception as exc:
             logger.exception("SpecAgent run failed: %s", leaf.get("hierarchy_id"))
-            raise AgentExecutionException(
-                f"SpecAgent failed for {leaf.get('hierarchy_id')}"
-            ) from exc
+            raise AgentExecutionException(f"SpecAgent failed for {leaf.get('hierarchy_id')}") from exc

@@ -133,11 +133,15 @@ class TestChatCompletion:
 
 @patch("controlnexus.core.transport.load_dotenv")
 class TestBuildClientFromEnv:
-    @patch.dict(os.environ, {
-        "ICA_API_KEY": "ica-key",
-        "ICA_BASE_URL": "https://ica.example.com",
-        "ICA_MODEL_ID": "ica-model",
-    }, clear=True)
+    @patch.dict(
+        os.environ,
+        {
+            "ICA_API_KEY": "ica-key",
+            "ICA_BASE_URL": "https://ica.example.com",
+            "ICA_MODEL_ID": "ica-model",
+        },
+        clear=True,
+    )
     def test_ica_provider(self, _mock_dotenv):
         c = build_client_from_env()
         assert c is not None
@@ -169,12 +173,16 @@ class TestBuildClientFromEnv:
         assert c is not None
         assert c.model == "custom-model"
 
-    @patch.dict(os.environ, {
-        "ICA_API_KEY": "ica",
-        "ICA_BASE_URL": "https://ica.example.com",
-        "ICA_MODEL_ID": "m",
-        "OPENAI_API_KEY": "oai",
-    }, clear=True)
+    @patch.dict(
+        os.environ,
+        {
+            "ICA_API_KEY": "ica",
+            "ICA_BASE_URL": "https://ica.example.com",
+            "ICA_MODEL_ID": "m",
+            "OPENAI_API_KEY": "oai",
+        },
+        clear=True,
+    )
     def test_ica_takes_priority_over_openai(self, _mock_dotenv):
         c = build_client_from_env()
         assert c is not None

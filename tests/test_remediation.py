@@ -72,10 +72,12 @@ class TestPaths:
         assert result["control_type"] == "Reconciliation"
 
     def test_frequency_fix(self):
-        result = prepare_frequency_fix({
-            "control_id": "C1",
-            "expected_frequency": "Monthly",
-        })
+        result = prepare_frequency_fix(
+            {
+                "control_id": "C1",
+                "expected_frequency": "Monthly",
+            }
+        )
         assert result["path"] == "frequency"
         assert result["fix"]["frequency"] == "Monthly"
 
@@ -115,10 +117,18 @@ class TestAdversarialReviewer:
 
     async def test_with_mocked_llm(self):
         mock_client = AsyncMock()
-        mock_client.chat_completion = AsyncMock(return_value={
-            "choices": [{"message": {"content": '{"weaknesses": [{"issue": "vague", "suggestion": "be specific"}], "overall_assessment": "Needs Improvement", "rewrite_guidance": "Improve specificity"}'}}],
-            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-        })
+        mock_client.chat_completion = AsyncMock(
+            return_value={
+                "choices": [
+                    {
+                        "message": {
+                            "content": '{"weaknesses": [{"issue": "vague", "suggestion": "be specific"}], "overall_assessment": "Needs Improvement", "rewrite_guidance": "Improve specificity"}'
+                        }
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            }
+        )
         ctx = AgentContext(client=mock_client)
         agent = AdversarialReviewer(ctx)
         result = await agent.execute(control={}, spec={})
@@ -138,10 +148,18 @@ class TestDifferentiationAgent:
 
     async def test_with_mocked_llm(self):
         mock_client = AsyncMock()
-        mock_client.chat_completion = AsyncMock(return_value={
-            "choices": [{"message": {"content": '{"who": "Analyst", "what": "new action", "when": "weekly", "where": "system", "why": "risk", "full_description": "A different control."}'}}],
-            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-        })
+        mock_client.chat_completion = AsyncMock(
+            return_value={
+                "choices": [
+                    {
+                        "message": {
+                            "content": '{"who": "Analyst", "what": "new action", "when": "weekly", "where": "system", "why": "risk", "full_description": "A different control."}'
+                        }
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            }
+        )
         ctx = AgentContext(client=mock_client)
         agent = DifferentiationAgent(ctx)
         result = await agent.execute(control={}, existing_control="", spec={})

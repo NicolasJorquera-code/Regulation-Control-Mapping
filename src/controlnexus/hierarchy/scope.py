@@ -28,10 +28,7 @@ def select_scope(
 
     if subsection:
         prefix = subsection if subsection.endswith(".") else subsection + "."
-        filtered = [
-            n for n in filtered
-            if n.hierarchy_id == subsection or n.hierarchy_id.startswith(prefix)
-        ]
+        filtered = [n for n in filtered if n.hierarchy_id == subsection or n.hierarchy_id.startswith(prefix)]
 
     return filtered
 

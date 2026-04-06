@@ -16,7 +16,7 @@ import pytest
 
 from controlnexus.analysis.ingest import ingest_excel
 from controlnexus.analysis.pipeline import run_analysis
-from controlnexus.core.config import load_all_section_profiles, load_placement_methods
+from controlnexus.core.config import load_all_section_profiles
 from controlnexus.core.state import FinalControlRecord, GapReport
 from controlnexus.export.excel import export_to_excel
 from controlnexus.graphs.analysis_graph import build_analysis_graph
@@ -52,11 +52,25 @@ def _make_excel(path: Path, controls: list[FinalControlRecord]) -> Path:
     ws.title = "section_4"
 
     cols = [
-        "control_id", "hierarchy_id", "leaf_name", "full_description",
-        "selected_level_1", "selected_level_2", "business_unit_id",
-        "business_unit_name", "who", "what", "when", "frequency",
-        "where", "why", "quality_rating", "validator_passed",
-        "validator_retries", "validator_failures", "evidence",
+        "control_id",
+        "hierarchy_id",
+        "leaf_name",
+        "full_description",
+        "selected_level_1",
+        "selected_level_2",
+        "business_unit_id",
+        "business_unit_name",
+        "who",
+        "what",
+        "when",
+        "frequency",
+        "where",
+        "why",
+        "quality_rating",
+        "validator_passed",
+        "validator_retries",
+        "validator_failures",
+        "evidence",
     ]
     ws.append(cols)
 
@@ -289,10 +303,12 @@ class TestAnalysisGraphE2E:
             _make_excel(xlsx, healthy_controls)
 
             graph = build_analysis_graph()
-            result = graph.invoke({
-                "excel_path": str(xlsx),
-                "config_dir": str(config_dir),
-            })
+            result = graph.invoke(
+                {
+                    "excel_path": str(xlsx),
+                    "config_dir": str(config_dir),
+                }
+            )
 
             assert "gap_report" in result
             report = result["gap_report"]
@@ -363,11 +379,14 @@ class TestRemediationGraphE2E:
                 {"control_type": "Authorization", "expected_pct": 20.0, "actual_pct": 5.0, "direction": "under"}
             ],
             "frequency_issues": [
-                {"control_id": "CTRL-X", "hierarchy_id": "9.1.1.1", "expected_frequency": "Monthly", "actual_frequency": "Annual"}
+                {
+                    "control_id": "CTRL-X",
+                    "hierarchy_id": "9.1.1.1",
+                    "expected_frequency": "Monthly",
+                    "actual_frequency": "Annual",
+                }
             ],
-            "evidence_issues": [
-                {"control_id": "CTRL-Y", "hierarchy_id": "4.1.2.1", "issue": "Missing signer"}
-            ],
+            "evidence_issues": [{"control_id": "CTRL-Y", "hierarchy_id": "4.1.2.1", "issue": "Missing signer"}],
         }
         graph = build_remediation_graph()
         result = graph.invoke({"gap_report": gap_report})

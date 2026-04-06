@@ -82,30 +82,36 @@ class EventEmitter:
                 pass  # listeners must not break the pipeline
 
     def stage_started(self, stage: str, run_id: str = "", **data: Any) -> None:
-        self.emit(PipelineEvent(
-            event_type=EventType.STAGE_STARTED,
-            message=f"Stage started: {stage}",
-            stage=stage,
-            run_id=run_id,
-            data=data,
-        ))
+        self.emit(
+            PipelineEvent(
+                event_type=EventType.STAGE_STARTED,
+                message=f"Stage started: {stage}",
+                stage=stage,
+                run_id=run_id,
+                data=data,
+            )
+        )
 
     def stage_completed(self, stage: str, run_id: str = "", **data: Any) -> None:
-        self.emit(PipelineEvent(
-            event_type=EventType.STAGE_COMPLETED,
-            message=f"Stage completed: {stage}",
-            stage=stage,
-            run_id=run_id,
-            data=data,
-        ))
+        self.emit(
+            PipelineEvent(
+                event_type=EventType.STAGE_COMPLETED,
+                message=f"Stage completed: {stage}",
+                stage=stage,
+                run_id=run_id,
+                data=data,
+            )
+        )
 
     def progress(self, message: str, run_id: str = "", **data: Any) -> None:
-        self.emit(PipelineEvent(
-            event_type=EventType.PROGRESS,
-            message=message,
-            run_id=run_id,
-            data=data,
-        ))
+        self.emit(
+            PipelineEvent(
+                event_type=EventType.PROGRESS,
+                message=message,
+                run_id=run_id,
+                data=data,
+            )
+        )
 
 
 def cli_listener(event: PipelineEvent) -> None:

@@ -57,13 +57,13 @@ class EnricherAgent(BaseAgent):
             result = self.parse_json(raw)
             logger.info(
                 "EnricherAgent run completed: %s (%s, %.3fs)",
-                hierarchy_id, result.get("quality_rating"), time.monotonic() - t0,
+                hierarchy_id,
+                result.get("quality_rating"),
+                time.monotonic() - t0,
             )
             return result
         except AgentExecutionException:
             raise
         except Exception as exc:
             logger.exception("EnricherAgent run failed: %s", hierarchy_id)
-            raise AgentExecutionException(
-                f"EnricherAgent failed for {hierarchy_id}"
-            ) from exc
+            raise AgentExecutionException(f"EnricherAgent failed for {hierarchy_id}") from exc

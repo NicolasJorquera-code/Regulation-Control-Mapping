@@ -22,42 +22,50 @@ def plan_assignments(gap_report: dict[str, Any]) -> list[dict[str, Any]]:
 
     # Regulatory gaps → new controls
     for gap in gap_report.get("regulatory_gaps", []):
-        assignments.append({
-            "gap_source": "regulatory",
-            "framework": gap.get("framework", ""),
-            "required_theme": gap.get("required_theme", ""),
-            "severity": gap.get("severity", "medium"),
-            "current_coverage": gap.get("current_coverage", 0),
-        })
+        assignments.append(
+            {
+                "gap_source": "regulatory",
+                "framework": gap.get("framework", ""),
+                "required_theme": gap.get("required_theme", ""),
+                "severity": gap.get("severity", "medium"),
+                "current_coverage": gap.get("current_coverage", 0),
+            }
+        )
 
     # Balance gaps → new controls for under-represented types
     for gap in gap_report.get("balance_gaps", []):
         if gap.get("direction") == "under":
-            assignments.append({
-                "gap_source": "balance",
-                "control_type": gap.get("control_type", ""),
-                "expected_pct": gap.get("expected_pct", 0),
-                "actual_pct": gap.get("actual_pct", 0),
-            })
+            assignments.append(
+                {
+                    "gap_source": "balance",
+                    "control_type": gap.get("control_type", ""),
+                    "expected_pct": gap.get("expected_pct", 0),
+                    "actual_pct": gap.get("actual_pct", 0),
+                }
+            )
 
     # Frequency issues → fix existing controls
     for issue in gap_report.get("frequency_issues", []):
-        assignments.append({
-            "gap_source": "frequency",
-            "control_id": issue.get("control_id", ""),
-            "hierarchy_id": issue.get("hierarchy_id", ""),
-            "expected_frequency": issue.get("expected_frequency", ""),
-            "actual_frequency": issue.get("actual_frequency", ""),
-        })
+        assignments.append(
+            {
+                "gap_source": "frequency",
+                "control_id": issue.get("control_id", ""),
+                "hierarchy_id": issue.get("hierarchy_id", ""),
+                "expected_frequency": issue.get("expected_frequency", ""),
+                "actual_frequency": issue.get("actual_frequency", ""),
+            }
+        )
 
     # Evidence issues → fix existing controls
     for issue in gap_report.get("evidence_issues", []):
-        assignments.append({
-            "gap_source": "evidence",
-            "control_id": issue.get("control_id", ""),
-            "hierarchy_id": issue.get("hierarchy_id", ""),
-            "issue": issue.get("issue", ""),
-        })
+        assignments.append(
+            {
+                "gap_source": "evidence",
+                "control_id": issue.get("control_id", ""),
+                "hierarchy_id": issue.get("hierarchy_id", ""),
+                "issue": issue.get("issue", ""),
+            }
+        )
 
     logger.info(
         "Planned %d assignments: %d regulatory, %d balance, %d frequency, %d evidence",

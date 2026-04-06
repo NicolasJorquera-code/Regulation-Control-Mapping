@@ -54,8 +54,12 @@ class TestTaxonomyItem:
 class TestExemplarControl:
     def test_frozen(self):
         ec = ExemplarControl(
-            control_type="Reconciliation", placement="Detective", method="Manual",
-            full_description="Test description", word_count=2, quality_rating="Strong"
+            control_type="Reconciliation",
+            placement="Detective",
+            method="Manual",
+            full_description="Test description",
+            word_count=2,
+            quality_rating="Strong",
         )
         with pytest.raises(ValidationError):
             ec.quality_rating = "Weak"
@@ -96,8 +100,11 @@ class TestSizingConfig:
 class TestSectionProfile:
     def test_extra_fields_ignored(self):
         sp = SectionProfile(
-            section_id="4.0", domain="Procurement",
-            risk_profile=RiskProfile(inherent_risk=3, regulatory_intensity=4, control_density=3, multiplier=2.3, rationale="Test"),
+            section_id="4.0",
+            domain="Procurement",
+            risk_profile=RiskProfile(
+                inherent_risk=3, regulatory_intensity=4, control_density=3, multiplier=2.3, rationale="Test"
+            ),
             registry=DomainRegistry(),
             unknown_field="should_be_ignored",
         )
@@ -142,11 +149,25 @@ class TestFinalControlRecord:
         record = FinalControlRecord(control_id="CTRL-0401-REC-001", hierarchy_id="4.1.1.1")
         export = record.to_export_dict()
         expected_keys = {
-            "control_id", "hierarchy_id", "leaf_name", "selected_level_1",
-            "selected_level_2", "business_unit_id", "business_unit_name",
-            "who", "what", "when", "frequency", "where", "why",
-            "full_description", "quality_rating", "validator_passed",
-            "validator_retries", "validator_failures", "evidence",
+            "control_id",
+            "hierarchy_id",
+            "leaf_name",
+            "selected_level_1",
+            "selected_level_2",
+            "business_unit_id",
+            "business_unit_name",
+            "who",
+            "what",
+            "when",
+            "frequency",
+            "where",
+            "why",
+            "full_description",
+            "quality_rating",
+            "validator_passed",
+            "validator_retries",
+            "validator_failures",
+            "evidence",
         }
         assert set(export.keys()) == expected_keys
 

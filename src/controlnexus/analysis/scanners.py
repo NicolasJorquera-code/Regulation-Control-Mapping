@@ -60,12 +60,14 @@ def regulatory_coverage_scan(
             coverage = matching / total if total > 0 else 0.0
 
             if coverage < 0.6:
-                gaps.append(RegulatoryGap(
-                    framework=framework,
-                    required_theme=framework,
-                    current_coverage=round(coverage, 3),
-                    severity="high" if coverage < 0.3 else "medium",
-                ))
+                gaps.append(
+                    RegulatoryGap(
+                        framework=framework,
+                        required_theme=framework,
+                        current_coverage=round(coverage, 3),
+                        severity="high" if coverage < 0.3 else "medium",
+                    )
+                )
 
     return gaps
 
@@ -136,19 +138,23 @@ def ecosystem_balance_analysis(
             min_pct, max_pct = EXPECTED_RANGES.get(level, (0.0, 1.0))
 
             if actual_pct < min_pct:
-                gaps.append(BalanceGap(
-                    control_type=control_type,
-                    expected_pct=round(min_pct, 3),
-                    actual_pct=round(actual_pct, 3),
-                    direction="under",
-                ))
+                gaps.append(
+                    BalanceGap(
+                        control_type=control_type,
+                        expected_pct=round(min_pct, 3),
+                        actual_pct=round(actual_pct, 3),
+                        direction="under",
+                    )
+                )
             elif actual_pct > max_pct:
-                gaps.append(BalanceGap(
-                    control_type=control_type,
-                    expected_pct=round(max_pct, 3),
-                    actual_pct=round(actual_pct, 3),
-                    direction="over",
-                ))
+                gaps.append(
+                    BalanceGap(
+                        control_type=control_type,
+                        expected_pct=round(max_pct, 3),
+                        actual_pct=round(actual_pct, 3),
+                        direction="over",
+                    )
+                )
 
     return gaps
 
@@ -208,12 +214,14 @@ def frequency_coherence_scan(
             derived_idx = FREQUENCY_ORDER.index(derived) if derived in FREQUENCY_ORDER else 6
             expected_idx = FREQUENCY_ORDER.index(expected) if expected in FREQUENCY_ORDER else 6
             if derived_idx > expected_idx:
-                issues.append(FrequencyIssue(
-                    control_id=ctrl.control_id,
-                    hierarchy_id=ctrl.hierarchy_id,
-                    expected_frequency=expected,
-                    actual_frequency=derived,
-                ))
+                issues.append(
+                    FrequencyIssue(
+                        control_id=ctrl.control_id,
+                        hierarchy_id=ctrl.hierarchy_id,
+                        expected_frequency=expected,
+                        actual_frequency=derived,
+                    )
+                )
 
     return issues
 
@@ -245,11 +253,13 @@ def evidence_sufficiency_scan(
     for ctrl in controls:
         score, missing = _score_evidence(ctrl.evidence)
         if score <= 1:
-            issues.append(EvidenceIssue(
-                control_id=ctrl.control_id,
-                hierarchy_id=ctrl.hierarchy_id,
-                issue=f"Evidence score {score}/3: missing {', '.join(missing)}",
-            ))
+            issues.append(
+                EvidenceIssue(
+                    control_id=ctrl.control_id,
+                    hierarchy_id=ctrl.hierarchy_id,
+                    issue=f"Evidence score {score}/3: missing {', '.join(missing)}",
+                )
+            )
 
     return issues
 
@@ -266,16 +276,27 @@ def _score_evidence(evidence: str) -> tuple[int, list[str]]:
     # 1. Specific artifact: look for specific document words beyond generic terms
     generic_artifacts = {"documentation", "records", "files", "data", "information"}
     specific_patterns = [
-        "report", "log", "certificate", "scorecard", "checklist",
-        "register", "tracker", "template", "form", "schedule",
-        "matrix", "dashboard", "reconciliation", "assessment",
+        "report",
+        "log",
+        "certificate",
+        "scorecard",
+        "checklist",
+        "register",
+        "tracker",
+        "template",
+        "form",
+        "schedule",
+        "matrix",
+        "dashboard",
+        "reconciliation",
+        "assessment",
     ]
     has_specific = any(p in text for p in specific_patterns)
-    all_generic = all(
-        any(g in word for g in generic_artifacts)
-        for word in re.findall(r"\b\w+\b", text)
-        if len(word) > 4
-    ) if not has_specific else False
+    all_generic = (
+        all(any(g in word for g in generic_artifacts) for word in re.findall(r"\b\w+\b", text) if len(word) > 4)
+        if not has_specific
+        else False
+    )
 
     if has_specific and not all_generic:
         score += 1
@@ -284,9 +305,18 @@ def _score_evidence(evidence: str) -> tuple[int, list[str]]:
 
     # 2. Signer/approver
     signer_patterns = [
-        "sign-off", "signoff", "sign off", "approval", "approved",
-        "preparer", "reviewer", "authorized", "certified", "attested",
-        "signature", "signed",
+        "sign-off",
+        "signoff",
+        "sign off",
+        "approval",
+        "approved",
+        "preparer",
+        "reviewer",
+        "authorized",
+        "certified",
+        "attested",
+        "signature",
+        "signed",
     ]
     if any(p in text for p in signer_patterns):
         score += 1
@@ -295,8 +325,15 @@ def _score_evidence(evidence: str) -> tuple[int, list[str]]:
 
     # 3. Retention system
     system_patterns = [
-        "retained in", "stored in", "maintained in", "housed in",
-        "platform", "system", "tool", "application", "database",
+        "retained in",
+        "stored in",
+        "maintained in",
+        "housed in",
+        "platform",
+        "system",
+        "tool",
+        "application",
+        "database",
         "repository",
     ]
     if any(p in text for p in system_patterns):

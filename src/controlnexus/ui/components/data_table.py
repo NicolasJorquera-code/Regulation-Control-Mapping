@@ -36,16 +36,25 @@ import streamlit.components.v1 as components
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _humanise(col: str) -> str:
     """Convert a ``snake_case`` column name to ``Title Case``."""
     return col.replace("_", " ").title()
 
 
 # Columns whose values are typically long prose — these get a wider min-width.
-_LONG_TEXT_COLUMNS = frozenset({
-    "full_description", "what", "why", "evidence", "detail",
-    "rationale", "context", "issue",
-})
+_LONG_TEXT_COLUMNS = frozenset(
+    {
+        "full_description",
+        "what",
+        "why",
+        "evidence",
+        "detail",
+        "rationale",
+        "context",
+        "issue",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -229,10 +238,7 @@ def _build_html_document(
     # Header — each <th> gets a draggable resize handle
     parts.append("<thead><tr>")
     for col in columns:
-        parts.append(
-            f'<th>{html_mod.escape(_humanise(col))}'
-            f'<span class="cn-rh"></span></th>'
-        )
+        parts.append(f'<th>{html_mod.escape(_humanise(col))}<span class="cn-rh"></span></th>')
     parts.append("</tr></thead>")
 
     # Body
@@ -264,6 +270,7 @@ def _to_csv_bytes(rows: list[dict[str, Any]], columns: list[str]) -> bytes:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def render_data_table(
     records: list[dict[str, Any]],
@@ -337,10 +344,7 @@ def render_data_table(
         return
 
     # Build filtered rows -------------------------------------------------
-    filtered_rows = [
-        {col: rec.get(col, "") for col in visible}
-        for rec in records
-    ]
+    filtered_rows = [{col: rec.get(col, "") for col in visible} for rec in records]
 
     # Render HTML table ---------------------------------------------------
     # components.html() renders in an iframe that executes <script> tags.

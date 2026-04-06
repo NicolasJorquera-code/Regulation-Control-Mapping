@@ -38,9 +38,7 @@ _SAMPLE_INPUTS: dict[str, dict] = {
             "roles": ["Senior Accountant", "Procurement Analyst", "Control Owner"],
             "systems": ["SAP Financial Close Platform", "Oracle EBS", "Workiva"],
             "regulatory_frameworks": ["SOX", "Basel III"],
-            "evidence_artifacts": [
-                "Reconciliation report with preparer sign-off retained in financial close platform"
-            ],
+            "evidence_artifacts": ["Reconciliation report with preparer sign-off retained in financial close platform"],
         },
         "placement_defs": {
             "placements": ["Preventive", "Detective", "Corrective"],
@@ -51,7 +49,9 @@ _SAMPLE_INPUTS: dict[str, dict] = {
         "taxonomy_constraints": {
             "level_1_options": ["Preventive", "Detective", "Corrective"],
             "allowed_level_2_for_selected_level_1": [
-                "Reconciliation", "Variance Analysis", "Exception Monitoring",
+                "Reconciliation",
+                "Variance Analysis",
+                "Exception Monitoring",
             ],
         },
         "diversity_context": {
@@ -62,7 +62,6 @@ _SAMPLE_INPUTS: dict[str, dict] = {
             "suggested_business_unit": "BU-011",
         },
     },
-
     # NarrativeAgent.execute(*, locked_spec, standards, phrase_bank_cfg,
     #   exemplars, regulatory_context, retry_appendix=None)
     "NarrativeAgent": {
@@ -104,7 +103,6 @@ _SAMPLE_INPUTS: dict[str, dict] = {
         ],
         "regulatory_context": ["SOX Section 404", "Basel III"],
     },
-
     # EnricherAgent.execute(*, validated_control, rating_criteria_cfg, nearest_neighbors)
     "EnricherAgent": {
         "validated_control": {
@@ -140,7 +138,6 @@ _SAMPLE_INPUTS: dict[str, dict] = {
             }
         ],
     },
-
     # AdversarialReviewer.execute(**kwargs)  — uses kwargs.get("control"), kwargs.get("spec")
     "AdversarialReviewer": {
         "control": {
@@ -150,8 +147,7 @@ _SAMPLE_INPUTS: dict[str, dict] = {
             "where": "Enterprise System",
             "why": "Risk mitigation",
             "full_description": (
-                "The analyst reviews transactions monthly in the "
-                "enterprise system for risk mitigation."
+                "The analyst reviews transactions monthly in the enterprise system for risk mitigation."
             ),
         },
         "spec": {
@@ -159,7 +155,6 @@ _SAMPLE_INPUTS: dict[str, dict] = {
             "where_system": "SAP",
         },
     },
-
     # DifferentiationAgent.execute(**kwargs)  — uses kwargs.get("control"), etc.
     "DifferentiationAgent": {
         "control": {
@@ -168,15 +163,9 @@ _SAMPLE_INPUTS: dict[str, dict] = {
             "when": "Monthly",
             "where": "GL System",
             "why": "Prevent errors",
-            "full_description": (
-                "The accountant reconciles accounts monthly in the "
-                "GL system to prevent errors."
-            ),
+            "full_description": ("The accountant reconciles accounts monthly in the GL system to prevent errors."),
         },
-        "existing_control": (
-            "The accountant reconciles accounts monthly in the "
-            "GL system to prevent errors."
-        ),
+        "existing_control": ("The accountant reconciles accounts monthly in the GL system to prevent errors."),
         "spec": {},
     },
 }

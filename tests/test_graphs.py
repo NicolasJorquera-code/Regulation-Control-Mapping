@@ -71,9 +71,7 @@ class TestAnalysisNodes:
     def test_build_report_node_with_gaps(self):
         state: dict[str, Any] = {
             "ingested_records": [{"control_id": "C1", "selected_level_2": "Reconciliation"}] * 10,
-            "section_profiles": {
-                "4.0": {"registry": {"regulatory_frameworks": ["SOX", "OCC"]}}
-            },
+            "section_profiles": {"4.0": {"registry": {"regulatory_frameworks": ["SOX", "OCC"]}}},
             "regulatory_gaps": [{"framework": "SOX"}],
             "balance_gaps": [],
             "frequency_issues": [{"control_id": "C1"}, {"control_id": "C2"}],
@@ -100,12 +98,16 @@ class TestAnalysisGraph:
 
 class TestRemediationNodes:
     def test_planner_node_with_gaps(self):
-        result = planner_node({"gap_report": {
-            "regulatory_gaps": [{"framework": "SOX"}],
-            "balance_gaps": [],
-            "frequency_issues": [],
-            "evidence_issues": [],
-        }})
+        result = planner_node(
+            {
+                "gap_report": {
+                    "regulatory_gaps": [{"framework": "SOX"}],
+                    "balance_gaps": [],
+                    "frequency_issues": [],
+                    "evidence_issues": [],
+                }
+            }
+        )
         assert len(result["assignments"]) == 1
         assert result["assignments"][0]["gap_source"] == "regulatory"
 
@@ -114,10 +116,14 @@ class TestRemediationNodes:
         assert result["assignments"] == []
 
     def test_router_node_picks_first(self):
-        result = router_node({"assignments": [
-            {"id": 1, "gap_source": "balance"},
-            {"id": 2, "gap_source": "regulatory"},
-        ]})
+        result = router_node(
+            {
+                "assignments": [
+                    {"id": 1, "gap_source": "balance"},
+                    {"id": 2, "gap_source": "regulatory"},
+                ]
+            }
+        )
         assert result["current_gap_source"] == "balance"
 
     def test_router_node_empty(self):

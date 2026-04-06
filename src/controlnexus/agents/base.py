@@ -17,6 +17,11 @@ from typing import Any
 
 from controlnexus.core.transport import AsyncTransportClient
 from controlnexus.exceptions import ExternalServiceException, ValidationException
+from controlnexus.tools.xml_tool_parser import (
+    format_tool_results,
+    parse_xml_tool_calls,
+    strip_tool_calls,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +140,11 @@ class BaseAgent(ABC):
         elapsed = time.monotonic() - t0
         logger.info(
             "LLM call #%d completed (%s, %.3fs, %d+%d tokens)",
-            call_number, self.name, elapsed, prompt_tokens, completion_tokens,
+            call_number,
+            self.name,
+            elapsed,
+            prompt_tokens,
+            completion_tokens,
         )
         return self._extract_text_from_openai_style(response_json)
 
@@ -182,7 +191,10 @@ class BaseAgent(ABC):
 
             logger.info(
                 "LLM round %d started (%s, call #%d, tools offered: %d)",
-                round_idx + 1, self.name, call_number, len(tools),
+                round_idx + 1,
+                self.name,
+                call_number,
+                len(tools),
             )
             t0 = time.monotonic()
 
@@ -201,7 +213,9 @@ class BaseAgent(ABC):
             elapsed = time.monotonic() - t0
             logger.info(
                 "LLM round %d completed (%s, %.3fs)",
-                round_idx + 1, self.name, elapsed,
+                round_idx + 1,
+                self.name,
+                elapsed,
             )
 
             assistant_msg = response_json.get("choices", [{}])[0].get("message", {})
@@ -211,8 +225,7 @@ class BaseAgent(ABC):
             if not tool_calls:
                 if round_idx == 0 and total_tool_calls == 0:
                     logger.info(
-                        "Provider returned content without tool calls (%s) — "
-                        "tools not supported or not needed",
+                        "Provider returned content without tool calls (%s) — tools not supported or not needed",
                         self.name,
                     )
                 assistant_msg["_tool_calls_count"] = total_tool_calls
@@ -227,14 +240,19 @@ class BaseAgent(ABC):
                 total_tool_calls += 1
                 logger.info(
                     "Tool executed: %s(%s) round %d (%s)",
-                    tool_name, list(arguments.keys()), round_idx + 1, self.name,
+                    tool_name,
+                    list(arguments.keys()),
+                    round_idx + 1,
+                    self.name,
                 )
                 result = tool_executor(tool_name, arguments)
-                current_messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.get("id", ""),
-                    "content": json.dumps(result),
-                })
+                current_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.get("id", ""),
+                        "content": json.dumps(result),
+                    }
+                )
 
             # After first round of tool calls, relax to "auto" so the LLM
             # can produce the final content response.
@@ -249,19 +267,143 @@ class BaseAgent(ABC):
                     return msg
         return {"_tool_calls_count": total_tool_calls}
 
+    async def call_llm_with_xml_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tool_executor: Any,
+        *,
+        max_tool_rounds: int = 5,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
+        """Multi-turn LLM call using XML-based tool-call simulation.
+
+        Designed for providers (e.g. ICA/Granite) that do not support native
+        function calling.  The system prompt must instruct the LLM to emit
+        tool invocations as ``<tool_call>`` XML blocks.
+
+        On each round the method:
+        1. Sends messages **without** ``tools`` / ``tool_choice`` parameters.
+        2. Parses any ``<tool_call>`` blocks from the text response.
+        3. Executes each tool via *tool_executor*.
+        4. Formats results as ``<tool_result>`` XML and appends as a user message.
+        5. Loops until no tool calls are found or *max_tool_rounds* is reached.
+
+        Returns the final assistant message dict (with ``<tool_call>`` blocks
+        stripped from the content) plus an ``_tool_calls_count`` key.
+        """
+        if self.client is None:
+            raise ExternalServiceException("No LLM client configured")
+
+        effective_temp = temperature if temperature is not None else self.context.temperature
+        effective_max = max_tokens if max_tokens is not None else self.context.max_tokens
+        current_messages = list(messages)
+        total_tool_calls = 0
+
+        for round_idx in range(max_tool_rounds):
+            self.call_count += 1
+            call_number = self.call_count
+
+            logger.info(
+                "XML-tool LLM round %d started (%s, call #%d)",
+                round_idx + 1,
+                self.name,
+                call_number,
+            )
+            t0 = time.monotonic()
+
+            response_json = await self.client.chat_completion(
+                messages=current_messages,
+                temperature=effective_temp,
+                max_tokens=effective_max,
+            )
+
+            usage = response_json.get("usage", {})
+            self.total_input_tokens += int(usage.get("prompt_tokens", 0) or 0)
+            self.total_output_tokens += int(usage.get("completion_tokens", 0) or 0)
+
+            elapsed = time.monotonic() - t0
+            logger.info(
+                "XML-tool LLM round %d completed (%s, %.3fs)",
+                round_idx + 1,
+                self.name,
+                elapsed,
+            )
+
+            text = self._extract_text_from_openai_style(response_json)
+            parsed_calls = parse_xml_tool_calls(text)
+
+            if not parsed_calls:
+                # No tool calls — this is the final response.
+                cleaned = strip_tool_calls(text)
+                return {
+                    "role": "assistant",
+                    "content": cleaned,
+                    "_tool_calls_count": total_tool_calls,
+                }
+
+            # Execute each parsed tool call
+            tool_results: list[dict[str, Any]] = []
+            for tc in parsed_calls:
+                tool_name = tc["name"]
+                arguments = tc["arguments"]
+                total_tool_calls += 1
+                logger.info(
+                    "XML-tool executed: %s(%s) round %d (%s)",
+                    tool_name,
+                    list(arguments.keys()),
+                    round_idx + 1,
+                    self.name,
+                )
+                result = tool_executor(tool_name, arguments)
+                tool_results.append({"name": tool_name, "output": result})
+
+            # Append the assistant's raw response and the tool results
+            current_messages.append({"role": "assistant", "content": text})
+            current_messages.append({
+                "role": "user",
+                "content": format_tool_results(tool_results),
+            })
+
+        # max_tool_rounds exhausted — return last text with tool calls stripped
+        return {
+            "role": "assistant",
+            "content": strip_tool_calls(text) if "text" in dir() else "",
+            "_tool_calls_count": total_tool_calls,
+        }
+
     @staticmethod
     def parse_json(text: str) -> dict[str, Any]:
-        """Parse JSON from LLM output, stripping markdown code fences if present."""
+        """Parse JSON from LLM output, stripping markdown code fences and surrounding prose."""
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            candidate = text.strip()
-            candidate = re.sub(r"^```(?:json)?", "", candidate).strip()
-            candidate = re.sub(r"```$", "", candidate).strip()
+            pass
+
+        candidate = text.strip()
+        # Strip leading/trailing code fences when the entire text is fenced
+        candidate = re.sub(r"^```(?:json)?\s*", "", candidate)
+        candidate = re.sub(r"\s*```$", "", candidate)
+        try:
+            return json.loads(candidate.strip())
+        except json.JSONDecodeError:
+            pass
+
+        # Extract the first ```json...``` block from prose-wrapped responses
+        fence_match = re.search(r"```(?:json)?\s*\n?(\{.*?\})\s*\n?```", text, re.DOTALL)
+        if fence_match:
             try:
-                return json.loads(candidate)
-            except json.JSONDecodeError as exc:
-                logger.error("JSON parse failure: %s", candidate[:300])
-                raise ValidationException(
-                    f"Failed to parse JSON from LLM response: {candidate[:200]}"
-                ) from exc
+                return json.loads(fence_match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Last resort: find the first top-level { ... } in the text
+        brace_match = re.search(r"(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})", text, re.DOTALL)
+        if brace_match:
+            try:
+                return json.loads(brace_match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        logger.error("JSON parse failure: %s", text[:300])
+        raise ValidationException(f"Failed to parse JSON from LLM response: {text[:200]}")

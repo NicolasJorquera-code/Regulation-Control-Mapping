@@ -19,6 +19,17 @@ from controlnexus.tools.implementations import (
 from controlnexus.tools.nodes import execute_tool_call, tool_node
 from controlnexus.tools.schemas import TOOL_SCHEMAS
 
+from pathlib import Path
+
+from controlnexus.core.domain_config import load_domain_config
+from controlnexus.tools.domain_tools import (
+    build_domain_tool_executor,
+    dc_evidence_rules_lookup,
+    dc_exemplar_lookup,
+    dc_method_lookup,
+    dc_placement_lookup,
+)
+
 
 # -- Setup ---------------------------------------------------------------------
 
@@ -38,8 +49,11 @@ SECTION_PROFILES = {
         section_id="4.0",
         domain="sourcing_and_procurement",
         risk_profile=RiskProfile(
-            inherent_risk=3, regulatory_intensity=4, control_density=3,
-            multiplier=2.3, rationale="test",
+            inherent_risk=3,
+            regulatory_intensity=4,
+            control_density=3,
+            multiplier=2.3,
+            rationale="test",
         ),
         registry=DomainRegistry(
             roles=["Procurement Analyst", "Vendor Risk Analyst"],
@@ -76,8 +90,11 @@ class TestSchemas:
     def test_schema_names(self):
         names = {s["function"]["name"] for s in TOOL_SCHEMAS}
         assert names == {
-            "taxonomy_validator", "regulatory_lookup",
-            "hierarchy_search", "frequency_lookup", "memory_retrieval",
+            "taxonomy_validator",
+            "regulatory_lookup",
+            "hierarchy_search",
+            "frequency_lookup",
+            "memory_retrieval",
         }
 
 
@@ -209,17 +226,6 @@ class TestToolNode:
 
 
 # -- DomainConfig-aware tool tests (lookup tools for slim-prompt mode) ---------
-
-from pathlib import Path
-
-from controlnexus.core.domain_config import load_domain_config
-from controlnexus.tools.domain_tools import (
-    build_domain_tool_executor,
-    dc_evidence_rules_lookup,
-    dc_exemplar_lookup,
-    dc_method_lookup,
-    dc_placement_lookup,
-)
 
 _COMMUNITY_BANK = Path(__file__).resolve().parent.parent / "config" / "profiles" / "community_bank_demo.yaml"
 

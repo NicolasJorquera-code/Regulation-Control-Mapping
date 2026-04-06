@@ -11,11 +11,7 @@ from controlnexus.core.domain_config import (
     BusinessUnitConfig,
     ControlTypeConfig,
     DomainConfig,
-    FrequencyTier,
-    PlacementConfig,
     ProcessAreaConfig,
-    RegistryConfig,
-    RiskProfileConfig,
     load_domain_config,
 )
 
@@ -234,9 +230,7 @@ class TestDomainConfigHelpers:
 
     def test_narrative_field_names(self):
         config = _minimal_config()
-        assert config.narrative_field_names() == [
-            "who", "what", "when", "where", "why", "full_description"
-        ]
+        assert config.narrative_field_names() == ["who", "what", "when", "where", "why", "full_description"]
 
     def test_frequency_tier_rank(self):
         config = _minimal_config()
@@ -263,8 +257,7 @@ class TestBankingStandardParity:
         dc_codes = config.type_code_map()
         for type_name, expected_code in TYPE_CODE_MAP.items():
             assert dc_codes.get(type_name) == expected_code, (
-                f"Code mismatch for '{type_name}': "
-                f"DomainConfig={dc_codes.get(type_name)}, legacy={expected_code}"
+                f"Code mismatch for '{type_name}': DomainConfig={dc_codes.get(type_name)}, legacy={expected_code}"
             )
 
     def test_monthly_types_match_legacy(self, config: DomainConfig):
@@ -291,9 +284,7 @@ class TestBankingStandardParity:
 
     def test_all_types_have_placement_category(self, config: DomainConfig):
         for ct in config.control_types:
-            assert len(ct.placement_categories) >= 1, (
-                f"Control type '{ct.name}' has no placement category"
-            )
+            assert len(ct.placement_categories) >= 1, f"Control type '{ct.name}' has no placement category"
 
     def test_section_registries_populated(self, config: DomainConfig):
         for pa in config.process_areas:

@@ -61,10 +61,7 @@ def load_context_node(state: AnalysisState) -> dict[str, Any]:
 def _records_and_profiles(state: AnalysisState) -> tuple[list[FinalControlRecord], dict[str, SectionProfile]]:
     """Reconstruct typed objects from state dicts."""
     records = [FinalControlRecord(**r) for r in state.get("ingested_records", [])]
-    profiles = {
-        k: SectionProfile(**v)
-        for k, v in state.get("section_profiles", {}).items()
-    }
+    profiles = {k: SectionProfile(**v) for k, v in state.get("section_profiles", {}).items()}
     return records, profiles
 
 
@@ -108,10 +105,7 @@ def build_report_node(state: AnalysisState) -> dict[str, Any]:
     profiles_data = state.get("section_profiles", {})
 
     # Score each dimension
-    total_frameworks = sum(
-        len(p.get("registry", {}).get("regulatory_frameworks", []))
-        for p in profiles_data.values()
-    )
+    total_frameworks = sum(len(p.get("registry", {}).get("regulatory_frameworks", [])) for p in profiles_data.values())
     reg_score = ((total_frameworks - len(reg_gaps)) / total_frameworks * 100) if total_frameworks else 100.0
 
     total_types = len({r.get("selected_level_2") or r.get("control_type", "") for r in records})

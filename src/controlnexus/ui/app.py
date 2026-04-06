@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import logging
 import sys
-import pandas as pd
 
 import streamlit as st
 
@@ -80,9 +79,7 @@ def _render_analysis_tab() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="report-subtitle">'
-        "Upload your control population, run gap analysis, and review findings"
-        "</div>",
+        '<div class="report-subtitle">Upload your control population, run gap analysis, and review findings</div>',
         unsafe_allow_html=True,
     )
 
@@ -122,9 +119,7 @@ def _render_playground_tab() -> None:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="report-subtitle">'
-        "Interactive testing environment for individual agents"
-        "</div>",
+        '<div class="report-subtitle">Interactive testing environment for individual agents</div>',
         unsafe_allow_html=True,
     )
 

@@ -126,10 +126,7 @@ def _render_regulatory_gaps(gaps: list) -> None:
             framework = gap.framework
             coverage = gap.current_coverage
             theme = gap.required_theme
-            st.markdown(
-                f"- **{framework}** ({theme}): "
-                f"Coverage {coverage:.0f}% — below 60% threshold"
-            )
+            st.markdown(f"- **{framework}** ({theme}): Coverage {coverage:.0f}% — below 60% threshold")
 
 
 def _render_balance_gaps(gaps: list) -> None:
@@ -143,10 +140,7 @@ def _render_balance_gaps(gaps: list) -> None:
             direction = gap.direction
             actual = gap.actual_pct
             expected = gap.expected_pct
-            st.markdown(
-                f"- **{ctrl_type}**: {direction}-represented "
-                f"(actual {actual:.1f}%, expected {expected:.1f}%)"
-            )
+            st.markdown(f"- **{ctrl_type}**: {direction}-represented (actual {actual:.1f}%, expected {expected:.1f}%)")
 
 
 def _render_frequency_issues(issues: list) -> None:
@@ -159,9 +153,7 @@ def _render_frequency_issues(issues: list) -> None:
             ctrl_id = issue.control_id
             actual = issue.actual_frequency
             expected = issue.expected_frequency
-            st.markdown(
-                f"- **{ctrl_id}**: Frequency is *{actual}*, expected *{expected}*"
-            )
+            st.markdown(f"- **{ctrl_id}**: Frequency is *{actual}*, expected *{expected}*")
 
 
 def _render_evidence_issues(issues: list) -> None:
@@ -173,6 +165,4 @@ def _render_evidence_issues(issues: list) -> None:
         for issue in issues:
             ctrl_id = issue.control_id
             detail = issue.issue
-            st.markdown(
-                f"- **{ctrl_id}**: {detail if detail else 'Evidence documentation insufficient'}"
-            )
+            st.markdown(f"- **{ctrl_id}**: {detail if detail else 'Evidence documentation insufficient'}")
