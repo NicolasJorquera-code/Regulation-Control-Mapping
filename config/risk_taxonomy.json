@@ -1,0 +1,39 @@
+{
+  "Credit Risk": {
+    "description": "Risk of loss arising from a borrower or counterparty failing to meet its obligations.",
+    "sub_risks": ["Commercial Credit Risk", "Consumer Credit Risk"]
+  },
+  "Operational Risk": {
+    "description": "Risk of loss from inadequate or failed internal processes, people, systems, or external events.",
+    "sub_risks": [
+      "Technology Risk", "Information Security Risk", "Third Party Risk",
+      "Data Management Risk", "External Fraud Risk", "Business Continuity Risk",
+      "Process Risk", "Model Risk", "People Risk", "Change Management Risk",
+      "Execution Risk", "Internal Fraud Risk"
+    ]
+  },
+  "Market Risk": {
+    "description": "Risk of loss from adverse movements in market prices or rates.",
+    "sub_risks": ["Commodity Risk", "Counterparty Risk", "FX Risk", "Equity Risk"]
+  },
+  "Compliance Risk": {
+    "description": "Risk from failure to comply with laws and regulations.",
+    "sub_risks": ["Conduct Risk", "Regulatory Compliance Risk", "Financial Crimes Risk"]
+  },
+  "Strategic Risk": {
+    "description": "Risk to earnings from adverse business decisions or improper strategy implementation.",
+    "sub_risks": ["Capital Adequacy Risk", "New Business Initiatives Risk", "Competitive Risk", "Business Model Risk"]
+  },
+  "Reputational Risk": {
+    "description": "Risk from negative public perception.",
+    "sub_risks": ["Media Risk", "Political Risk", "Social and Public Risk"]
+  },
+  "Interest Rate Risk": {
+    "description": "Risk from interest rate changes affecting assets and liabilities.",
+    "sub_risks": ["Balance Sheet Management Risk", "Basis Risk", "Repricing Risk", "Yield Curve Risk"]
+  },
+  "Liquidity Risk": {
+    "description": "Risk of inability to meet obligations as they become due.",
+    "sub_risks": ["Collateral Risk", "Deposit Risk", "Funding Gap Risk", "Market Liquidity Risk", "Contingency Funding Risk"]
+  }
+}

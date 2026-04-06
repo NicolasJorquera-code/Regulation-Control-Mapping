@@ -1,0 +1,87 @@
+name: "reg-obligation-mapper"
+description: "Regulatory Obligation → APQC → Control Coverage → Risk Scoring"
+
+# Ingest
+active_statuses:
+  - "In Force"
+  - "Pending"
+control_file_pattern: "section_*__controls.xlsx"
+
+# Classification
+obligation_categories:
+  - "Attestation"
+  - "Documentation"
+  - "Controls"
+  - "General Awareness"
+  - "Not Assigned"
+
+relationship_types:
+  - "Requires Existence"
+  - "Constrains Execution"
+  - "Requires Evidence"
+  - "Sets Frequency"
+  - "N/A"
+
+criticality_tiers:
+  - "High"
+  - "Medium"
+  - "Low"
+
+# Categories that require APQC mapping and control coverage assessment
+actionable_categories:
+  - "Controls"
+  - "Documentation"
+  - "Attestation"
+
+# APQC mapping
+apqc_mapping_depth: 3
+max_apqc_mappings_per_obligation: 5
+
+# Control coverage
+coverage_thresholds:
+  semantic_match_min_confidence: 0.6
+  frequency_tolerance: 1
+
+# Risk extraction
+min_risks_per_gap: 1
+max_risks_per_gap: 3
+
+# Risk scoring (4-point scales from SCB framework)
+impact_scale:
+  1:
+    label: "Minor"
+    financial: "<5% annual pre-tax income or <$1B outflow"
+    operational: "Non-critical activity impact"
+    reputational: "Employee-level coverage"
+  2:
+    label: "Moderate"
+    financial: "5-25% annual pre-tax income or $1-3B outflow"
+    operational: "<1 day critical activity impact"
+    reputational: "Localised media"
+  3:
+    label: "Major"
+    financial: "1-2 quarters pre-tax income or $3-5B outflow"
+    operational: "1 day partial failure"
+    reputational: "National/short-term media"
+  4:
+    label: "Severe"
+    financial: ">=2 quarters pre-tax income or >=$5B outflow"
+    operational: ">1 day critical system failure"
+    reputational: "National media, cease and desist"
+
+frequency_scale:
+  1:
+    label: "Remote"
+    frequency: "Once every 3+ years"
+  2:
+    label: "Unlikely"
+    frequency: "Once every 1-3 years"
+  3:
+    label: "Possible"
+    frequency: "Once per year"
+  4:
+    label: "Likely"
+    frequency: "Once per quarter or more"
+
+# Output
+risk_id_prefix: "RISK"

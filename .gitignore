@@ -1,0 +1,67 @@
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode & packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+*.so
+*.pyd
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Testing / Linting
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.junit.xml
+.tox/
+.nox/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Checkpoint data (large JSON files — optional, uncomment to track)
+# data/checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Embedded repo (has its own .git — run `rm -rf langgraph-multiagent-skeleton/.git`
+# then `git add langgraph-multiagent-skeleton/` to track as plain files)
+langgraph-multiagent-skeleton/
