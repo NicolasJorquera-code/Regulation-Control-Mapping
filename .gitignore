@@ -55,8 +55,17 @@ coverage.xml
 # Streamlit
 .streamlit/secrets.toml
 
-# Checkpoint data (large JSON files — optional, uncomment to track)
-# data/checkpoints/
+# Data files
+data/checkpoints/
+data/*.xlsx
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/Control Dataset/
+
+# Plan
+plan.md
+doc/plan.md
 
 # Logs
 *.log

@@ -8,12 +8,16 @@ register_agent decorator, call_llm, call_llm_with_tools, parse_json.
 from __future__ import annotations
 
 import json
+import logging
 import re
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable
 
 from regrisk.core.transport import AsyncTransportClient
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -75,19 +79,47 @@ class BaseAgent(ABC):
         Returns an empty string when no LLM client is available (deterministic mode).
         """
         if self.context.client is None:
+            logger.info("[%s] call #%d — no LLM client, using deterministic fallback", self.name, self.call_count + 1)
             return ""
+
+        # Update trace context so transport wrapper knows which agent is calling
+        from regrisk.tracing.decorators import get_current_trace_context, set_current_trace_context
+        ctx = get_current_trace_context()
+        set_current_trace_context(node_name=ctx.get("node_name", ""), agent_name=self.name)
+
+        call_num = self.call_count + 1
+        sys_len = len(system_prompt)
+        usr_len = len(user_prompt)
+        logger.info(
+            "[%s] call #%d — sending request (system=%d chars, user=%d chars, max_tokens=%d)",
+            self.name, call_num, sys_len, usr_len,
+            max_tokens if max_tokens is not None else self.context.max_tokens,
+        )
 
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
+        t0 = time.perf_counter()
         resp = await self.context.client.chat_completion(
             messages=messages,
             temperature=temperature if temperature is not None else self.context.temperature,
             max_tokens=max_tokens if max_tokens is not None else self.context.max_tokens,
         )
+        elapsed_ms = (time.perf_counter() - t0) * 1000
         self.call_count += 1
-        return self._extract_text(resp)
+
+        text = self._extract_text(resp)
+        usage = resp.get("usage", {})
+        logger.info(
+            "[%s] call #%d — response received (%.1fs, %d chars, tokens: %s/%s/%s)",
+            self.name, self.call_count, elapsed_ms / 1000,
+            len(text),
+            usage.get("prompt_tokens", "?"),
+            usage.get("completion_tokens", "?"),
+            usage.get("total_tokens", "?"),
+        )
+        return text
 
     async def call_llm_with_tools(
         self,
@@ -101,9 +133,15 @@ class BaseAgent(ABC):
         if self.context.client is None:
             return {"role": "assistant", "content": ""}
 
+        # Update trace context
+        from regrisk.tracing.decorators import get_current_trace_context, set_current_trace_context
+        ctx = get_current_trace_context()
+        set_current_trace_context(node_name=ctx.get("node_name", ""), agent_name=self.name)
+
         conversation = list(messages)
 
         for _round in range(max_tool_rounds):
+            logger.info("[%s] tool-call round %d/%d", self.name, _round + 1, max_tool_rounds)
             resp = await self.context.client.chat_completion(
                 messages=conversation,
                 tools=tools,

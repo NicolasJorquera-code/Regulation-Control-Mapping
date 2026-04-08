@@ -133,9 +133,25 @@ class AsyncTransportClient:
                     self._resolved_url = url
                     data = resp.json()
                     usage = data.get("usage", {})
+
+                    # Include agent/node context if available
+                    _ctx_label = ""
+                    try:
+                        from regrisk.tracing.decorators import get_current_trace_context
+                        _ctx = get_current_trace_context()
+                        parts = []
+                        if _ctx.get("node_name"):
+                            parts.append(f"node={_ctx['node_name']}")
+                        if _ctx.get("agent_name"):
+                            parts.append(f"agent={_ctx['agent_name']}")
+                        if parts:
+                            _ctx_label = f" [{', '.join(parts)}]"
+                    except Exception:
+                        pass
+
                     logger.info(
-                        "LLM OK — %s prompt=%s completion=%s total=%s",
-                        url,
+                        "  ↳ LLM OK%s — prompt=%s completion=%s total=%s",
+                        _ctx_label,
                         usage.get("prompt_tokens", "?"),
                         usage.get("completion_tokens", "?"),
                         usage.get("total_tokens", "?"),

@@ -36,6 +36,8 @@ from regrisk.agents.risk_extractor_scorer import RiskExtractorAndScorerAgent
 from regrisk.core.events import EventEmitter, EventType, PipelineEvent
 from regrisk.core.transport import build_client_from_env
 from regrisk.graphs.assess_state import AssessState
+from regrisk.tracing.decorators import trace_node, set_current_trace_context
+from regrisk.tracing.transport_wrapper import TracingTransportClient
 from regrisk.ingest.apqc_loader import build_apqc_summary
 from regrisk.ingest.control_loader import build_control_index, find_controls_for_apqc
 from regrisk.core.models import APQCNode
@@ -486,15 +488,32 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
 # Graph builder
 # ---------------------------------------------------------------------------
 
-def build_assess_graph():
-    """Build and compile the assessment graph."""
+def build_assess_graph(trace_db=None, run_id: str = ""):
+    """Build and compile the assessment graph.
+
+    Parameters
+    ----------
+    trace_db : TraceDB | None
+        If provided, every node execution, event, and LLM call is recorded
+        to the local SQLite trace database.
+    run_id : str
+        Unique identifier for this pipeline run (used for tracing).
+    """
+    if trace_db and run_id:
+        _install_tracing_transport(trace_db, run_id)
+
+    def _wrap(name, fn):
+        if trace_db and run_id:
+            return trace_node(trace_db, run_id, name)(fn)
+        return fn
+
     graph = StateGraph(AssessState)
-    graph.add_node("map_group", map_group_node)
-    graph.add_node("prepare_assessment", prepare_assessment_node)
-    graph.add_node("assess_coverage", assess_coverage_node)
-    graph.add_node("prepare_risks", prepare_risks_node)
-    graph.add_node("extract_and_score", extract_and_score_node)
-    graph.add_node("finalize", finalize_node)
+    graph.add_node("map_group", _wrap("map_group", map_group_node))
+    graph.add_node("prepare_assessment", _wrap("prepare_assessment", prepare_assessment_node))
+    graph.add_node("assess_coverage", _wrap("assess_coverage", assess_coverage_node))
+    graph.add_node("prepare_risks", _wrap("prepare_risks", prepare_risks_node))
+    graph.add_node("extract_and_score", _wrap("extract_and_score", extract_and_score_node))
+    graph.add_node("finalize", _wrap("finalize", finalize_node))
     graph.add_edge(START, "map_group")
     graph.add_conditional_edges("map_group", has_more_map_groups)
     graph.add_edge("prepare_assessment", "assess_coverage")
@@ -503,3 +522,15 @@ def build_assess_graph():
     graph.add_conditional_edges("extract_and_score", has_more_gaps)
     graph.add_edge("finalize", END)
     return graph.compile()
+
+
+def _install_tracing_transport(trace_db, run_id: str) -> None:
+    """Replace the cached LLM client with a tracing wrapper."""
+    global _llm_client_cache
+    if _llm_client_cache is None:
+        _llm_client_cache = build_client_from_env()
+    if _llm_client_cache and not isinstance(_llm_client_cache, TracingTransportClient):
+        _llm_client_cache = TracingTransportClient(_llm_client_cache, trace_db, run_id)
+    for agent in _agent_cache.values():
+        if hasattr(agent, "context") and agent.context.client is not _llm_client_cache:
+            agent.context.client = _llm_client_cache
