@@ -221,7 +221,7 @@ def prepare_assessment_node(state: AssessState) -> dict[str, Any]:
 
 
 def assess_coverage_node(state: AssessState) -> dict[str, Any]:
-    """Assess coverage for the current item."""
+    """Assess coverage for the current item using the 3-tier resolution system."""
     idx = state.get("assess_idx", 0)
     items = state.get("assess_items", [])
 
@@ -238,29 +238,34 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     obligation = item.get("obligation", {})
     apqc_id = item.get("apqc_hierarchy_id", "")
     apqc_name = item.get("apqc_process_name", "")
+    mapping = item.get("mapping")
 
     context = _build_context(max_tokens=2048)
     agent = _get_agent("assessor", context)
     loop = _get_loop()
 
     if not candidates:
-        # No candidates → deterministic Not Covered
+        # No candidates → deterministic Not Covered (edge case detector still runs)
         assessment = loop.run_until_complete(
             agent.execute(
                 obligation=obligation,
                 control=None,
+                candidate_controls=[],
+                mapping=mapping,
                 apqc_hierarchy_id=apqc_id,
                 apqc_process_name=apqc_name,
             )
         )
     else:
-        # Evaluate best candidate
+        # Evaluate best candidate — pass all candidates for edge case detection context
         best_assessment: dict[str, Any] | None = None
         for ctrl in candidates:
             result = loop.run_until_complete(
                 agent.execute(
                     obligation=obligation,
                     control=ctrl,
+                    candidate_controls=candidates,
+                    mapping=mapping,
                     apqc_hierarchy_id=apqc_id,
                     apqc_process_name=apqc_name,
                 )
@@ -284,6 +289,13 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
             "relationship_match": "Not Satisfied",
             "relationship_rationale": "",
             "overall_coverage": "Not Covered",
+            "edge_case": {
+                "is_edge_case": False,
+                "reasons": [],
+                "resolution_tier": "deterministic",
+                "llm_used": False,
+                "details": {},
+            },
         }
 
     # Validate
@@ -292,11 +304,22 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     if not passed:
         errors.append(f"Coverage validation for {citation}: {failures}")
 
-    _emit(EventType.COVERAGE_ASSESSED, f"Coverage for {citation}: {assessment.get('overall_coverage', '?')}")
+    # Track edge case stats
+    edge_info = assessment.get("edge_case", {})
+    edge_increment = 1 if edge_info.get("is_edge_case") else 0
+    llm_increment = 1 if edge_info.get("llm_used") else 0
+
+    tier = edge_info.get("resolution_tier", "deterministic")
+    _emit(
+        EventType.COVERAGE_ASSESSED,
+        f"Coverage for {citation}: {assessment.get('overall_coverage', '?')} (tier={tier})",
+    )
 
     return {
         "coverage_assessments": [assessment],
         "assess_idx": idx + 1,
+        "edge_case_count": state.get("edge_case_count", 0) + edge_increment,
+        "llm_resolution_count": state.get("llm_resolution_count", 0) + llm_increment,
         "errors": errors,
     }
 
@@ -472,9 +495,21 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
         "high_count": high_count,
     }
 
+    # Edge case summary
+    edge_case_count = state.get("edge_case_count", 0)
+    llm_resolution_count = state.get("llm_resolution_count", 0)
+    tier_distribution: dict[str, int] = defaultdict(int)
+    edge_case_reasons_dist: dict[str, int] = defaultdict(int)
+    for a in assessments:
+        ec = a.get("edge_case", {})
+        tier_distribution[ec.get("resolution_tier", "deterministic")] += 1
+        for reason in ec.get("reasons", []):
+            edge_case_reasons_dist[reason] += 1
+
     _emit(
         EventType.PIPELINE_COMPLETED,
-        f"Finalized: {len(assessments)} assessments, {len(gaps)} gaps, {len(risks)} risks",
+        f"Finalized: {len(assessments)} assessments, {len(gaps)} gaps, {len(risks)} risks, "
+        f"{edge_case_count} edge cases ({llm_resolution_count} resolved by LLM)",
     )
 
     return {

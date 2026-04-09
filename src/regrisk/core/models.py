@@ -107,6 +107,16 @@ class ObligationAPQCMapping(BaseModel, frozen=True):
 
 # ── Coverage Assessment artifacts (Phase 4) ──────────────────────────────
 
+class EdgeCaseMetadata(BaseModel, frozen=True):
+    """Audit trail for edge case detection — explains WHY and HOW a decision was made."""
+
+    is_edge_case: bool = False
+    reasons: list[str] = Field(default_factory=list)
+    resolution_tier: str = "deterministic"
+    llm_used: bool = False
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
 class CoverageAssessment(BaseModel, frozen=True):
     """Assessment of whether a control covers a mapped obligation."""
 
@@ -121,6 +131,9 @@ class CoverageAssessment(BaseModel, frozen=True):
     relationship_rationale: str
 
     overall_coverage: str
+
+    # Edge case audit trail
+    edge_case: EdgeCaseMetadata = Field(default_factory=EdgeCaseMetadata)
 
 
 # ── Risk artifacts (Phase 5) ─────────────────────────────────────────────
