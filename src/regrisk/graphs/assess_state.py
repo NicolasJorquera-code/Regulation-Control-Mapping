@@ -32,6 +32,10 @@ class AssessState(TypedDict, total=False):
     assess_idx: int
     coverage_assessments: Annotated[list[dict[str, Any]], operator.add]
 
+    # Edge case tracking
+    edge_case_count: int
+    llm_resolution_count: int
+
     # Risk extraction loop
     gap_obligations: list[dict[str, Any]]
     risk_idx: int
