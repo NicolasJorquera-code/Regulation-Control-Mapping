@@ -29,6 +29,7 @@ class ControlMemory:
         embedder: Embedder,
         chroma_client: chromadb.ClientAPI | None = None,
     ) -> None:
+        """Initialise with an embedder and optional ChromaDB client."""
         self._embedder = embedder
         self._client = chroma_client or chromadb.Client()
 

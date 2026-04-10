@@ -143,6 +143,7 @@ class AsyncTransportClient:
         raise ExternalServiceException("All LLM endpoint candidates exhausted") from last_error
 
     async def close(self) -> None:
+        """Close the underlying httpx client and release connections."""
         if self._client is not None:
             await self._client.aclose()
             self._client = None

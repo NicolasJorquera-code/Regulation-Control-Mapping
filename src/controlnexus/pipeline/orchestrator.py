@@ -89,6 +89,7 @@ class Orchestrator:
         verbose: bool,
         progress_callback: Callable[[str], None] | None,
     ) -> None:
+        """Log a progress message and optionally forward to the UI callback."""
         logger.info(message)
         if verbose and progress_callback:
             progress_callback(f"[controlforge] {message}")
@@ -886,6 +887,12 @@ class Orchestrator:
 
     @staticmethod
     def _build_taxonomy_constraint_config(placement_methods_cfg: dict[str, Any]) -> dict[str, Any]:
+        """Build a normalised taxonomy constraint config from placement methods.
+
+        Returns:
+            Dict with ``level_1_options``, ``level_2_by_level_1``, and
+            ``level_1_by_level_2`` reverse mapping.
+        """
         control_taxonomy = (
             placement_methods_cfg.get("control_taxonomy", {}) if isinstance(placement_methods_cfg, dict) else {}
         )
@@ -922,6 +929,7 @@ class Orchestrator:
         taxonomy_cfg: dict[str, Any],
         type_definitions: dict[str, str],
     ) -> dict[str, Any]:
+        """Resolve taxonomy level-1/level-2 selections for a control type."""
         level_1_options = list(taxonomy_cfg.get("level_1_options", []))
         level_2_by_level_1 = dict(taxonomy_cfg.get("level_2_by_level_1", {}))
         reverse = dict(taxonomy_cfg.get("level_1_by_level_2", {}))
