@@ -40,6 +40,12 @@ class SK:
     APPROVED_FOR_MAPPING = "approved_for_mapping"
     CACHES_INITIALISED = "caches_initialised"
 
+    # ── UI navigation ──
+    SELECTED_OBLIGATION_IDX = "selected_obligation_idx"
+    SELECTED_MAPPING_OBLIGATION_IDX = "selected_mapping_obligation_idx"
+    RESULTS_GAP_EXPANDED = "results_gap_expanded"
+    RESULTS_RISK_EXPANDED = "results_risk_expanded"
+
     # ── Tracing ──
     TRACE_DB = "trace_db"
     CURRENT_TRACE_RUN_ID = "current_trace_run_id"

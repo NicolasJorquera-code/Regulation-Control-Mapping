@@ -49,8 +49,9 @@ from regrisk.ui.traceability_tab import render_traceability_tab
 # Global CSS
 # ---------------------------------------------------------------------------
 
-_TABLE_CSS = """
+_GLOBAL_CSS = """
 <style>
+/* ── Retained table styles (Tab 5 traceability only) ── */
 .wrapped-table-container {
     max-height: 500px;
     overflow-y: auto;
@@ -88,6 +89,79 @@ _TABLE_CSS = """
 .wrapped-table tr:hover {
     background-color: #f8f9fa;
 }
+
+/* ── Category pill badges ── */
+.category-pill {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+}
+
+/* ── Citation monospace badges ── */
+.citation-badge {
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    background: #f0f2f6;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* ── Obligation detail panel ── */
+.obligation-detail {
+    padding: 1rem;
+    border-left: 3px solid #1E88E5;
+    margin-bottom: 0.5rem;
+    background: #fafbfc;
+    line-height: 1.6;
+}
+
+/* ── Coverage indicators ── */
+.coverage-covered { color: #2e7d32; font-weight: 600; }
+.coverage-partial { color: #f57f17; font-weight: 600; }
+.coverage-gap { color: #c62828; font-weight: 600; }
+
+/* ── Risk score badges ── */
+.risk-critical {
+    display: inline-block; background: #c62828; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.risk-high {
+    display: inline-block; background: #ef6c00; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.risk-medium {
+    display: inline-block; background: #f9a825; color: #333;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.risk-low {
+    display: inline-block; background: #2e7d32; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+
+/* ── Confidence coloring ── */
+.conf-high { color: #2e7d32; font-weight: 600; }
+.conf-medium { color: #f57f17; font-weight: 600; }
+.conf-low { color: #c62828; font-weight: 600; }
+
+/* ── Muted text ── */
+.text-muted { color: #6c757d; font-size: 0.85rem; }
+
+/* ── Stacked coverage bar ── */
+.coverage-bar {
+    display: flex; height: 28px; border-radius: 4px; overflow: hidden;
+    margin: 0.5rem 0; font-size: 0.75rem; font-weight: 600;
+}
+.coverage-bar > div {
+    display: flex; align-items: center; justify-content: center; color: white;
+}
+.coverage-bar .bar-covered { background: #2e7d32; }
+.coverage-bar .bar-partial { background: #f9a825; color: #333; }
+.coverage-bar .bar-gap { background: #c62828; }
 </style>
 """
 
@@ -103,7 +177,7 @@ def main() -> None:
         layout="wide",
     )
 
-    st.markdown(_TABLE_CSS, unsafe_allow_html=True)
+    st.markdown(_GLOBAL_CSS, unsafe_allow_html=True)
 
     # Reset graph-module caches once per Streamlit session so the LLM client
     # picks up the latest env-var configuration (timeout, model, etc.).

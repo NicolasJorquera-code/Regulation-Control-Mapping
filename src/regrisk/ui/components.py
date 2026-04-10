@@ -232,3 +232,253 @@ def build_partial_results(assessments: list[dict], classified: list[dict]) -> No
     st.session_state["scored_risks"] = []
     st.session_state["compliance_matrix"] = {"rows": []}
     st.session_state["risk_register"] = {}
+
+
+# ---------------------------------------------------------------------------
+# New components — progressive-disclosure UI
+# ---------------------------------------------------------------------------
+
+_CRITICALITY_DOT: dict[str, str] = {
+    "High": "🔴",
+    "Medium": "🟡",
+    "Low": "⚪",
+}
+
+_RISK_BADGE_CSS: dict[str, str] = {
+    "Critical": "risk-critical",
+    "High": "risk-high",
+    "Medium": "risk-medium",
+    "Low": "risk-low",
+}
+
+_COVERAGE_HTML: dict[str, str] = {
+    "Covered": '<span class="coverage-covered">✅ Covered</span>',
+    "Partially Covered": '<span class="coverage-partial">⚠️ Partial</span>',
+    "Not Covered": '<span class="coverage-gap">❌ Gap</span>',
+}
+
+
+def format_citation(citation: str) -> str:
+    """Abbreviate a CFR citation for badge display. E.g. '12 CFR 252.34(a)(1)(i)' → '§252.34(a)(1)(i)'."""
+    if not citation:
+        return ""
+    # Strip the '12 CFR ' prefix if present
+    c = citation.strip()
+    for prefix in ("12 CFR ", "17 CFR "):
+        if c.startswith(prefix):
+            c = "§" + c[len(prefix):]
+            break
+    return c
+
+
+def criticality_dot(tier: str) -> str:
+    """Return emoji dot for a criticality tier."""
+    return _CRITICALITY_DOT.get(tier, "⚪")
+
+
+def category_pill_html(category: str) -> str:
+    """Return an HTML pill badge for an obligation category."""
+    bg = CATEGORY_BG.get(category, "#E2E3E5")
+    from html import escape
+    return f'<span class="category-pill" style="background:{bg}">{escape(category)}</span>'
+
+
+def citation_badge_html(citation: str) -> str:
+    """Return an HTML monospace badge for a citation."""
+    from html import escape
+    short = format_citation(citation)
+    return f'<span class="citation-badge">{escape(short)}</span>'
+
+
+def coverage_indicator_html(status: str) -> str:
+    """Return HTML for a coverage status indicator."""
+    return _COVERAGE_HTML.get(status, f'<span>{status}</span>')
+
+
+def risk_score_badge_html(rating: str, score: int | None = None) -> str:
+    """Return HTML for a risk rating badge with optional numeric score."""
+    from html import escape
+    css_class = _RISK_BADGE_CSS.get(rating, "risk-low")
+    score_text = f" ({score})" if score is not None else ""
+    return f'<span class="{css_class}">{escape(rating)}{score_text}</span>'
+
+
+def format_confidence(conf: float) -> str:
+    """Return colored HTML for a confidence value."""
+    if conf >= 0.8:
+        css = "conf-high"
+    elif conf >= 0.5:
+        css = "conf-medium"
+    else:
+        css = "conf-low"
+    return f'<span class="{css}">{conf:.2f}</span>'
+
+
+def render_obligation_card(ob: dict, idx: int, selected_idx: int, key_prefix: str = "ob") -> bool:
+    """Render a collapsed obligation card. Returns True if this card was clicked."""
+    citation = format_citation(ob.get("citation", ""))
+    category = ob.get("obligation_category", "")
+    crit = ob.get("criticality_tier", "")
+    abstract = ob.get("abstract", "") or ""
+    truncated = (abstract[:80] + "…") if len(abstract) > 80 else abstract
+
+    is_selected = idx == selected_idx
+
+    border_style = "border-left: 3px solid #1E88E5;" if is_selected else ""
+    bg_style = "background-color: #f8f9ff;" if is_selected else ""
+
+    cat_bg = CATEGORY_BG.get(category, "#E2E3E5")
+    crit_dot = criticality_dot(crit)
+
+    with st.container(border=True):
+        clicked = st.button(
+            f"**`{citation}`**  {crit_dot}  {category}",
+            key=f"{key_prefix}_card_{idx}",
+            use_container_width=True,
+        )
+        st.caption(truncated)
+    return clicked
+
+
+def render_obligation_detail(ob: dict) -> None:
+    """Render the full detail view for a selected obligation."""
+    citation = ob.get("citation", "")
+    category = ob.get("obligation_category", "")
+    crit = ob.get("criticality_tier", "")
+    crit_dot = criticality_dot(crit)
+
+    st.markdown(f"### `{format_citation(citation)}`")
+    cat_bg = CATEGORY_BG.get(category, "#E2E3E5")
+    st.markdown(
+        f'{crit_dot} **{crit}** &nbsp; '
+        f'<span class="category-pill" style="background:{cat_bg}">{category}</span>',
+        unsafe_allow_html=True,
+    )
+
+    # Subpart / section breadcrumb
+    parts = []
+    if ob.get("subpart"):
+        parts.append(ob["subpart"])
+    if ob.get("section_citation"):
+        parts.append(ob["section_citation"])
+    if ob.get("section_title"):
+        parts.append(ob["section_title"])
+    if parts:
+        st.caption(" → ".join(parts))
+
+    # Regulatory text
+    text = ob.get("text", "") or ob.get("abstract", "")
+    if text:
+        st.markdown("**Regulatory Text**")
+        st.markdown(
+            f'<div class="obligation-detail">{text}</div>',
+            unsafe_allow_html=True,
+        )
+
+    # Abstract (if different from text)
+    abstract = ob.get("abstract", "")
+    full_text = ob.get("text", "")
+    if abstract and full_text and abstract != full_text:
+        st.markdown("**Abstract**")
+        st.info(abstract)
+
+    # Classification details
+    st.markdown("**Classification**")
+    rel_type = ob.get("relationship_type", "N/A")
+    rationale = ob.get("classification_rationale", "")
+    st.markdown(f"**Category:** {category} &nbsp;|&nbsp; **Relationship:** {rel_type}")
+    if rationale:
+        st.markdown(f"*{rationale}*")
+
+
+def render_mapping_chip(mapping: dict) -> None:
+    """Render a single APQC mapping as a compact chip inside a container."""
+    process_name = mapping.get("apqc_process_name", "")
+    hierarchy_id = mapping.get("apqc_hierarchy_id", "")
+    rel_type = mapping.get("relationship_type", "")
+    confidence = mapping.get("confidence", 0)
+    detail = mapping.get("relationship_detail", "")
+
+    with st.container(border=True):
+        cols = st.columns([3, 1, 1])
+        with cols[0]:
+            st.markdown(f"**{process_name}**")
+            st.caption(f"`{hierarchy_id}` · {rel_type}")
+        with cols[1]:
+            conf_color = "#2e7d32" if confidence >= 0.8 else "#f57f17" if confidence >= 0.5 else "#c62828"
+            st.markdown(f"**<span style='color:{conf_color}'>{confidence:.2f}</span>**",
+                        unsafe_allow_html=True)
+        with cols[2]:
+            pass
+        if detail:
+            st.caption(detail)
+
+
+def render_coverage_indicator(status: str) -> None:
+    """Render a coverage status indicator using st.markdown."""
+    st.markdown(coverage_indicator_html(status), unsafe_allow_html=True)
+
+
+def render_risk_score_cell(rating: str, impact: int = 0, frequency: int = 0) -> None:
+    """Render a risk score badge with impact × frequency detail."""
+    score = impact * frequency
+    st.markdown(risk_score_badge_html(rating, score if score else None), unsafe_allow_html=True)
+    if impact and frequency:
+        st.caption(f"Impact: {impact} × Freq: {frequency}")
+
+
+def render_filter_bar(
+    df: pd.DataFrame,
+    total_count: int,
+    key_prefix: str,
+    show_category: bool = True,
+    show_criticality: bool = True,
+    show_subpart: bool = True,
+    show_coverage: bool = False,
+) -> pd.DataFrame:
+    """Render a horizontal filter bar and return the filtered DataFrame."""
+    num_cols = sum([show_category, show_criticality, show_subpart, show_coverage])
+    if num_cols == 0:
+        return df
+
+    cols = st.columns(num_cols + 1)  # Extra column for count display
+    col_idx = 0
+
+    filtered = df.copy()
+
+    if show_category and "obligation_category" in df.columns:
+        with cols[col_idx]:
+            options = sorted(df["obligation_category"].unique())
+            selected = st.multiselect("Category", options=options, key=f"{key_prefix}_cat_f")
+            if selected:
+                filtered = filtered[filtered["obligation_category"].isin(selected)]
+        col_idx += 1
+
+    if show_criticality and "criticality_tier" in df.columns:
+        with cols[col_idx]:
+            selected = st.multiselect("Criticality", options=["High", "Medium", "Low"],
+                                      key=f"{key_prefix}_crit_f")
+            if selected:
+                filtered = filtered[filtered["criticality_tier"].isin(selected)]
+        col_idx += 1
+
+    if show_subpart and "subpart" in df.columns:
+        with cols[col_idx]:
+            options = sorted(df["subpart"].dropna().unique())
+            selected = st.multiselect("Subpart", options=options, key=f"{key_prefix}_sub_f")
+            if selected:
+                filtered = filtered[filtered["subpart"].isin(selected)]
+        col_idx += 1
+
+    if show_coverage and "overall_coverage" in df.columns:
+        with cols[col_idx]:
+            options = sorted(df["overall_coverage"].unique())
+            selected = st.multiselect("Coverage", options=options, key=f"{key_prefix}_cov_f")
+            if selected:
+                filtered = filtered[filtered["overall_coverage"].isin(selected)]
+        col_idx += 1
+
+    with cols[col_idx]:
+        st.metric("Showing", f"{len(filtered)} of {total_count}")
+
+    return filtered
