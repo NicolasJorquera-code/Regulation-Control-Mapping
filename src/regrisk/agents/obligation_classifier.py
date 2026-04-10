@@ -98,17 +98,22 @@ Classify ALL {len(obligations)} obligations. Return one classification per oblig
             parsed = self.parse_json(raw)
             classifications = parsed.get("classifications", [])
             if classifications:
-                # Enrich with section metadata
+                # Enrich with section metadata + original obligation fields
                 for c in classifications:
                     c.setdefault("section_citation", section_citation)
                     c.setdefault("section_title", section_title)
                     c.setdefault("subpart", subpart)
-                    # Map citation to abstract
+                    # Map source obligation fields onto classification
                     for ob in obligations:
                         ob_cit = ob.get("citation", "") if isinstance(ob, dict) else ob.citation
                         if ob_cit == c.get("citation"):
-                            ob_abs = ob.get("abstract", "") if isinstance(ob, dict) else ob.abstract
-                            c.setdefault("abstract", ob_abs)
+                            _get = ob.get if isinstance(ob, dict) else (lambda k, d="": getattr(ob, k, d))
+                            c.setdefault("abstract", _get("abstract", ""))
+                            c.setdefault("text", _get("text", ""))
+                            c.setdefault("status", _get("status", ""))
+                            c.setdefault("effective_date", _get("effective_date", ""))
+                            c.setdefault("applicability", _get("applicability", ""))
+                            c.setdefault("link", _get("link", ""))
                             break
                 return {"classifications": classifications}
 
@@ -158,9 +163,24 @@ Classify ALL {len(obligations)} obligations. Return one classification per oblig
                 cat, rel, crit = "Not Assigned", "N/A", "Low"
                 rationale = "No clear actionable requirement identified."
 
+            # Extract additional metadata from source obligation
+            if isinstance(ob, dict):
+                ob_text = ob.get("text", "")
+                ob_status = ob.get("status", "")
+                ob_eff = ob.get("effective_date", "")
+                ob_app = ob.get("applicability", "")
+                ob_link = ob.get("link", "")
+            else:
+                ob_text = ob.text
+                ob_status = ob.status
+                ob_eff = ob.effective_date
+                ob_app = ob.applicability
+                ob_link = ob.link
+
             results.append({
                 "citation": cit,
                 "abstract": abstract,
+                "text": ob_text,
                 "section_citation": section_citation,
                 "section_title": section_title,
                 "subpart": subpart,
@@ -168,5 +188,9 @@ Classify ALL {len(obligations)} obligations. Return one classification per oblig
                 "relationship_type": rel,
                 "criticality_tier": crit,
                 "classification_rationale": rationale,
+                "status": ob_status,
+                "effective_date": ob_eff,
+                "applicability": ob_app,
+                "link": ob_link,
             })
         return results

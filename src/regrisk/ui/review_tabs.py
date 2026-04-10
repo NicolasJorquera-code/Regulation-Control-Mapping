@@ -83,6 +83,23 @@ def render_classification_review_tab() -> None:
     df = pd.DataFrame(classified)
     total_count = len(df)
 
+    # ── Summary statistics strip ──
+    from collections import Counter
+    cat_counts = Counter(ob.get("obligation_category", "Not Assigned") for ob in classified)
+    crit_counts = Counter(ob.get("criticality_tier", "Unrated") for ob in classified)
+
+    # Category breakdown
+    cat_order = ["Controls", "Documentation", "Attestation", "General Awareness", "Not Assigned"]
+    cat_cols = st.columns(len(cat_order) + 3)  # +3 for criticality tiers
+    for i, cat in enumerate(cat_order):
+        count = cat_counts.get(cat, 0)
+        cat_cols[i].metric(cat, count)
+    # Criticality breakdown
+    for j, tier in enumerate(["High", "Medium", "Low"]):
+        count = crit_counts.get(tier, 0)
+        cat_cols[len(cat_order) + j].metric(f"{criticality_dot(tier)} {tier}", count)
+    st.divider()
+
     # ── Filter bar ──
     df_filtered = render_filter_bar(
         df, total_count, key_prefix="tab2",

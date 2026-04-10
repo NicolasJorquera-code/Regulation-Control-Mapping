@@ -319,34 +319,41 @@ def render_obligation_card(ob: dict, idx: int, selected_idx: int, key_prefix: st
     citation = format_citation(ob.get("citation", ""))
     category = ob.get("obligation_category", "")
     crit = ob.get("criticality_tier", "")
-    abstract = ob.get("abstract", "") or ""
-    truncated = (abstract[:80] + "…") if len(abstract) > 80 else abstract
+    rel_type = ob.get("relationship_type", "")
+    crit_dot = criticality_dot(crit)
 
-    is_selected = idx == selected_idx
-
-    border_style = "border-left: 3px solid #1E88E5;" if is_selected else ""
-    bg_style = "background-color: #f8f9ff;" if is_selected else ""
+    # Use real regulatory text for preview; fall back to abstract
+    preview_src = ob.get("text", "") or ob.get("abstract", "") or ""
+    truncated = (preview_src[:100] + "…") if len(preview_src) > 100 else preview_src
 
     cat_bg = CATEGORY_BG.get(category, "#E2E3E5")
-    crit_dot = criticality_dot(crit)
 
     with st.container(border=True):
         clicked = st.button(
-            f"**`{citation}`**  {crit_dot}  {category}",
+            f"**`{citation}`**  {crit_dot}",
             key=f"{key_prefix}_card_{idx}",
             use_container_width=True,
         )
-        st.caption(truncated)
+        st.markdown(
+            f'<span class="category-pill" style="background:{cat_bg};font-size:0.75rem">{category}</span>'
+            f'{"  ·  " + rel_type if rel_type and rel_type != "N/A" else ""}',
+            unsafe_allow_html=True,
+        )
+        if truncated:
+            st.caption(truncated)
     return clicked
 
 
 def render_obligation_detail(ob: dict) -> None:
     """Render the full detail view for a selected obligation."""
+    from html import escape as _esc
+
     citation = ob.get("citation", "")
     category = ob.get("obligation_category", "")
     crit = ob.get("criticality_tier", "")
     crit_dot = criticality_dot(crit)
 
+    # ── Header ──
     st.markdown(f"### `{format_citation(citation)}`")
     cat_bg = CATEGORY_BG.get(category, "#E2E3E5")
     st.markdown(
@@ -355,7 +362,7 @@ def render_obligation_detail(ob: dict) -> None:
         unsafe_allow_html=True,
     )
 
-    # Subpart / section breadcrumb
+    # ── Breadcrumb ──
     parts = []
     if ob.get("subpart"):
         parts.append(ob["subpart"])
@@ -366,29 +373,46 @@ def render_obligation_detail(ob: dict) -> None:
     if parts:
         st.caption(" → ".join(parts))
 
-    # Regulatory text
-    text = ob.get("text", "") or ob.get("abstract", "")
-    if text:
+    # ── Regulatory Text (real text from Column R, fallback to abstract) ──
+    reg_text = ob.get("text", "") or ob.get("abstract", "")
+    if reg_text:
         st.markdown("**Regulatory Text**")
         st.markdown(
-            f'<div class="obligation-detail">{text}</div>',
+            f'<div class="obligation-detail">{_esc(reg_text)}</div>',
             unsafe_allow_html=True,
         )
 
-    # Abstract (if different from text)
-    abstract = ob.get("abstract", "")
-    full_text = ob.get("text", "")
-    if abstract and full_text and abstract != full_text:
-        st.markdown("**Abstract**")
-        st.info(abstract)
+    # ── Classification ──
+    with st.container(border=True):
+        st.markdown("**Classification Details**")
+        c1, c2, c3 = st.columns(3)
+        c1.markdown(f"**Category**  \n{category}")
+        rel_type = ob.get("relationship_type", "N/A")
+        c2.markdown(f"**Relationship**  \n{rel_type}")
+        c3.markdown(f"**Criticality**  \n{crit_dot} {crit}")
 
-    # Classification details
-    st.markdown("**Classification**")
-    rel_type = ob.get("relationship_type", "N/A")
-    rationale = ob.get("classification_rationale", "")
-    st.markdown(f"**Category:** {category} &nbsp;|&nbsp; **Relationship:** {rel_type}")
-    if rationale:
-        st.markdown(f"*{rationale}*")
+        rationale = ob.get("classification_rationale", "")
+        if rationale:
+            with st.expander("Rationale"):
+                st.markdown(rationale)
+
+    # ── Regulatory Metadata ──
+    status = ob.get("status", "")
+    eff_date = ob.get("effective_date", "")
+    applicability = ob.get("applicability", "")
+    link = ob.get("link", "")
+    has_meta = any([status, eff_date, applicability, link])
+
+    if has_meta:
+        with st.expander("📋 Regulatory Metadata"):
+            if status:
+                st.markdown(f"**Status:** {status}")
+            if eff_date and str(eff_date) not in ("NaT", "nan", ""):
+                st.markdown(f"**Effective Date:** {eff_date}")
+            if applicability:
+                st.markdown(f"**Applicability:** {applicability}")
+            if link:
+                st.markdown(f"**Source:** [{_esc(link[:60])}…]({link})" if len(link) > 60 else f"**Source:** [{_esc(link)}]({link})")
 
 
 def render_mapping_chip(mapping: dict) -> None:
