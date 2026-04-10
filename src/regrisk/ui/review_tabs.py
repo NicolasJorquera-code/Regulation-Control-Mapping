@@ -25,6 +25,7 @@ from regrisk.graphs.assess_graph import (
 )
 from regrisk.tracing.db import TraceDB
 from regrisk.tracing.listener import SQLiteTraceListener
+from regrisk.ui.progress import StreamlitProgressListener
 from regrisk.ui.checkpoint import (
     STAGE_ASSESSED,
     STAGE_ASSESS_PARTIAL,
@@ -310,19 +311,25 @@ def _run_mapping() -> None:
         "map_idx": 0,
     }
 
-    with st.spinner("Running APQC mapping…"):
-        try:
-            trace_db = _get_trace_db()
-            run_id = _new_run_id()
-            trace_db.insert_run(run_id, regulation_name=st.session_state.get("regulation_name", ""), graph_name="assess-mapping")
-            trace_listener = SQLiteTraceListener(trace_db, run_id)
-            emitter.on(trace_listener)
+    trace_db = _get_trace_db()
+    run_id = _new_run_id()
+    trace_db.insert_run(run_id, regulation_name=st.session_state.get("regulation_name", ""), graph_name="assess-mapping")
+    trace_listener = SQLiteTraceListener(trace_db, run_id)
+    emitter.on(trace_listener)
 
+    progress_bar = st.progress(0, text="Initializing APQC mapping…")
+    with st.status("APQC Mapping Pipeline", expanded=True) as status:
+        progress_listener = StreamlitProgressListener(progress_bar, status, "assess")
+        emitter.on(progress_listener)
+        try:
             graph = build_assess_graph(trace_db=trace_db, run_id=run_id)
             result = graph.invoke(input_state)
+            status.update(label="Mapping complete!", state="complete", expanded=False)
         except Exception as exc:
+            status.update(label="Mapping failed", state="error")
             st.error(f"Mapping pipeline failed: {type(exc).__name__}: {exc}")
             return
+    progress_bar.progress(100, text="Mapping complete!")
 
     st.session_state["obligation_mappings"] = result.get("obligation_mappings", [])
     st.session_state["assess_result"] = result
@@ -371,17 +378,22 @@ def _run_assessment() -> None:
         "map_idx": 0,
     }
 
-    with st.spinner("Running full assessment pipeline…"):
-        try:
-            trace_db = _get_trace_db()
-            run_id = _new_run_id()
-            trace_db.insert_run(run_id, regulation_name=st.session_state.get("regulation_name", ""), graph_name="assess-full")
-            trace_listener = SQLiteTraceListener(trace_db, run_id)
-            emitter.on(trace_listener)
+    trace_db = _get_trace_db()
+    run_id = _new_run_id()
+    trace_db.insert_run(run_id, regulation_name=st.session_state.get("regulation_name", ""), graph_name="assess-full")
+    trace_listener = SQLiteTraceListener(trace_db, run_id)
+    emitter.on(trace_listener)
 
+    progress_bar = st.progress(0, text="Initializing assessment pipeline…")
+    with st.status("Assessment Pipeline", expanded=True) as status:
+        progress_listener = StreamlitProgressListener(progress_bar, status, "assess")
+        emitter.on(progress_listener)
+        try:
             graph = build_assess_graph(trace_db=trace_db, run_id=run_id)
             result = graph.invoke(input_state)
+            status.update(label="Assessment complete!", state="complete", expanded=False)
         except Exception as exc:
+            status.update(label="Assessment failed", state="error")
             partial = get_partial_assessments()
             if partial:
                 st.session_state["coverage_assessments"] = partial
@@ -393,6 +405,7 @@ def _run_assessment() -> None:
                 )
             st.error(f"Assessment pipeline failed: {type(exc).__name__}: {exc}")
             return
+    progress_bar.progress(100, text="Assessment complete!")
 
     st.session_state["assess_result"] = result
     st.session_state["obligation_mappings"] = result.get("obligation_mappings", [])

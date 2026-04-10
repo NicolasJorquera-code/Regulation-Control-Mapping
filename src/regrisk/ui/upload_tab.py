@@ -26,6 +26,7 @@ from regrisk.ingest.control_loader import load_and_merge_controls
 from regrisk.ingest.regulation_parser import group_obligations, parse_regulation_excel
 from regrisk.tracing.db import TraceDB
 from regrisk.tracing.listener import SQLiteTraceListener
+from regrisk.ui.progress import StreamlitProgressListener
 from regrisk.ui.checkpoint import (
     STAGE_ASSESSED,
     STAGE_ASSESS_PARTIAL,
@@ -216,14 +217,66 @@ def _load_demo_data() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Post-classification summary
+# ---------------------------------------------------------------------------
+
+def _render_classification_summary(classified: list[dict[str, Any]]) -> None:
+    """Render a summary panel showing classification results on Tab 1."""
+    from collections import Counter
+
+    reg_name = st.session_state.get("regulation_name", "Unknown Regulation")
+    total = len(classified)
+
+    cat_counts = Counter(ob.get("obligation_category", "Not Assigned") for ob in classified)
+    crit_counts = Counter(ob.get("criticality_tier", "Unrated") for ob in classified)
+
+    with st.container(border=True):
+        st.subheader(f"✅ Classification Complete — {reg_name}")
+
+        # ── Top-level metrics ──
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Total Obligations", total)
+        m2.metric("Categories", len(cat_counts))
+        m3.metric("Criticality Tiers", len(crit_counts))
+
+        # ── Category breakdown ──
+        cat_col, crit_col = st.columns(2)
+        with cat_col:
+            st.markdown("**Obligation Categories**")
+            for cat, count in sorted(cat_counts.items(), key=lambda x: -x[1]):
+                pct = count / total * 100 if total else 0
+                st.markdown(f"- **{cat}**: {count} ({pct:.0f}%)")
+
+        with crit_col:
+            st.markdown("**Criticality Tiers**")
+            for tier, count in sorted(crit_counts.items(), key=lambda x: -x[1]):
+                pct = count / total * 100 if total else 0
+                st.markdown(f"- **{tier}**: {count} ({pct:.0f}%)")
+
+        st.info(
+            "📋 Review results in the **🏷️ Classification Review** tab, "
+            "then approve to continue to APQC mapping."
+        )
+
+
+# ---------------------------------------------------------------------------
 # Tab renderer
 # ---------------------------------------------------------------------------
 
 def render_upload_tab() -> None:
     """Render the Upload & Configure tab."""
 
-    # ── Demo Mode Banner ──
-    if not st.session_state.get("classified_obligations"):
+    classified = st.session_state.get("classified_obligations", [])
+
+    # ── One-time success toast after classification completes ──
+    if st.session_state.pop("classification_just_completed", False):
+        st.success(f"Classification complete! {len(classified)} obligations classified.")
+
+    # ── Post-classification summary ──
+    if classified:
+        _render_classification_summary(classified)
+    else:
+        # ── Demo Mode Banner ──
         cp_info = _find_best_demo_checkpoint()
         if cp_info:
             with st.container(border=True):
@@ -249,8 +302,8 @@ def render_upload_tab() -> None:
     apqc_file = None
     uploaded_controls: list[Any] | None = None
 
-    with st.container(border=True):
-        st.subheader("📂 Data Sources")
+    _ds_expanded = not bool(classified)
+    with st.expander("📂 Data Sources", expanded=_ds_expanded):
 
         if reg_path:
             try:
@@ -294,8 +347,7 @@ def render_upload_tab() -> None:
     reg_path_for_scan: str | None = reg_path
 
     # ── Panel B: Run Scope ──
-    with st.container(border=True):
-        st.subheader("🎯 Run Scope")
+    with st.expander("🎯 Run Scope", expanded=_ds_expanded):
 
         all_groups: list[dict] = []
         subpart_options: list[str] = []
@@ -394,26 +446,46 @@ def render_upload_tab() -> None:
     # ── Resume from Checkpoint ──
     render_checkpoint_load([STAGE_CLASSIFIED, STAGE_MAPPED, STAGE_ASSESSED, STAGE_ASSESS_PARTIAL], "tab1")
 
-    # ── Launch ──
-    with st.container(border=True):
-        st.subheader("🚀 Launch Classification")
+    # ── Launch / Re-run ──
+    if classified:
+        with st.expander("🔄 Re-run Classification", expanded=False):
+            st.caption("This will discard current classification results and re-run the pipeline.")
+            has_reg = bool(reg_path or reg_file)
+            has_apqc = bool(apqc_path or apqc_file)
+            ready = has_reg and has_apqc
 
-        has_reg = bool(reg_path or reg_file)
-        has_apqc = bool(apqc_path or apqc_file)
-        ready = has_reg and has_apqc
+            if not ready:
+                st.warning("Please provide Regulation and APQC files to proceed.")
 
-        if not ready:
-            st.warning("Please provide Regulation and APQC files to proceed.")
+            if st.button("🔄 Re-run Classification", type="secondary", disabled=not ready,
+                         width='stretch'):
+                if reg_path and apqc_path:
+                    _run_classification_from_paths(
+                        reg_path, apqc_path, controls_dir,
+                        scope_config,
+                    )
+                else:
+                    _run_classification(reg_file, apqc_file, uploaded_controls, scope_config)
+    else:
+        with st.container(border=True):
+            st.subheader("🚀 Launch Classification")
 
-        if st.button("🚀 Start Classification", type="primary", disabled=not ready,
-                     width='stretch'):
-            if reg_path and apqc_path:
-                _run_classification_from_paths(
-                    reg_path, apqc_path, controls_dir,
-                    scope_config,
-                )
-            else:
-                _run_classification(reg_file, apqc_file, uploaded_controls, scope_config)
+            has_reg = bool(reg_path or reg_file)
+            has_apqc = bool(apqc_path or apqc_file)
+            ready = has_reg and has_apqc
+
+            if not ready:
+                st.warning("Please provide Regulation and APQC files to proceed.")
+
+            if st.button("🚀 Start Classification", type="primary", disabled=not ready,
+                         width='stretch'):
+                if reg_path and apqc_path:
+                    _run_classification_from_paths(
+                        reg_path, apqc_path, controls_dir,
+                        scope_config,
+                    )
+                else:
+                    _run_classification(reg_file, apqc_file, uploaded_controls, scope_config)
 
 
 # ---------------------------------------------------------------------------
@@ -478,14 +550,20 @@ def _invoke_classify_graph(input_state: dict) -> None:
     emitter = get_classify_emitter()
     emitter.on(trace_listener)
 
-    with st.spinner("Running classification pipeline…"):
+    progress_bar = st.progress(0, text="Initializing classification pipeline…")
+    with st.status("Classification Pipeline", expanded=True) as status:
+        progress_listener = StreamlitProgressListener(progress_bar, status, "classify")
+        emitter.on(progress_listener)
         try:
             graph = build_classify_graph(trace_db=trace_db, run_id=run_id)
             result = graph.invoke(input_state)
+            status.update(label="Classification complete!", state="complete", expanded=False)
         except Exception as exc:
+            status.update(label="Classification failed", state="error")
             trace_db.update_run_status(run_id, "failed")
             st.error(f"Classification pipeline failed: {type(exc).__name__}: {exc}")
             return
+    progress_bar.progress(100, text="Classification complete!")
 
     st.session_state["classify_result"] = result
     st.session_state["classified_obligations"] = result.get("classified_obligations", [])
@@ -499,5 +577,5 @@ def _invoke_classify_graph(input_state: dict) -> None:
 
     save_checkpoint(STAGE_CLASSIFIED, dict(st.session_state))
 
-    st.success(f"Classification complete! {len(st.session_state['classified_obligations'])} obligations classified.")
+    st.session_state["classification_just_completed"] = True
     st.rerun()
