@@ -7,11 +7,25 @@ Each rule produces a specific failure code for targeted feedback.
 
 from __future__ import annotations
 
-VALID_CATEGORIES = {"Attestation", "Documentation", "Controls", "General Awareness", "Not Assigned"}
-VALID_RELATIONSHIP_TYPES = {"Requires Existence", "Constrains Execution", "Requires Evidence", "Sets Frequency", "N/A"}
-VALID_COVERAGE_STATUSES = {"Covered", "Partially Covered", "Not Covered"}
-VALID_SEMANTIC_MATCHES = {"Full", "Partial", "None"}
-VALID_RELATIONSHIP_MATCHES = {"Satisfied", "Partial", "Not Satisfied"}
+from regrisk.core.constants import (
+    OBLIGATION_CATEGORIES,
+    RELATIONSHIP_TYPES,
+    COVERAGE_STATUSES,
+    SEMANTIC_MATCHES,
+    RELATIONSHIP_MATCHES,
+    CRITICALITY_TIERS,
+    REL_NA,
+    ACTIONABLE_CATEGORIES,
+)
+
+# Re-export from core.scoring so existing callers keep working.
+from regrisk.core.scoring import derive_inherent_rating  # noqa: F401
+
+VALID_CATEGORIES = OBLIGATION_CATEGORIES
+VALID_RELATIONSHIP_TYPES = RELATIONSHIP_TYPES
+VALID_COVERAGE_STATUSES = COVERAGE_STATUSES
+VALID_SEMANTIC_MATCHES = SEMANTIC_MATCHES
+VALID_RELATIONSHIP_MATCHES = RELATIONSHIP_MATCHES
 
 
 def validate_classification(c: dict) -> tuple[bool, list[str]]:
@@ -21,15 +35,15 @@ def validate_classification(c: dict) -> tuple[bool, list[str]]:
     if c.get("obligation_category") not in VALID_CATEGORIES:
         failures.append("INVALID_CATEGORY")
 
-    if c.get("obligation_category") in {"Controls", "Documentation", "Attestation"}:
-        if c.get("relationship_type") not in (VALID_RELATIONSHIP_TYPES - {"N/A"}):
+    if c.get("obligation_category") in ACTIONABLE_CATEGORIES:
+        if c.get("relationship_type") not in (VALID_RELATIONSHIP_TYPES - {REL_NA}):
             failures.append("MISSING_RELATIONSHIP_TYPE")
-    elif c.get("obligation_category") in {"General Awareness", "Not Assigned"}:
-        if c.get("relationship_type") not in {"N/A", "", None}:
+    elif c.get("obligation_category") in (OBLIGATION_CATEGORIES - ACTIONABLE_CATEGORIES):
+        if c.get("relationship_type") not in {REL_NA, "", None}:
             # Warn but don't fail — just note it
             pass
 
-    if c.get("criticality_tier") not in {"High", "Medium", "Low"}:
+    if c.get("criticality_tier") not in CRITICALITY_TIERS:
         failures.append("INVALID_CRITICALITY")
 
     if not c.get("citation"):
@@ -94,15 +108,3 @@ def validate_risk(r: dict) -> tuple[bool, list[str]]:
             failures.append(f"INVALID_{field_name.upper()} ({val})")
 
     return (len(failures) == 0, failures)
-
-
-def derive_inherent_rating(impact: int, frequency: int) -> str:
-    """Derive inherent risk rating from impact × frequency."""
-    score = impact * frequency
-    if score >= 12:
-        return "Critical"
-    if score >= 8:
-        return "High"
-    if score >= 4:
-        return "Medium"
-    return "Low"

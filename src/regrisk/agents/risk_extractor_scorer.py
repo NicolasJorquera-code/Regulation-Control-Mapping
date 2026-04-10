@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from regrisk.agents.base import AgentContext, BaseAgent, register_agent
-from regrisk.validation.validator import derive_inherent_rating
+from regrisk.agents.base import AgentContext, BaseAgent
+from regrisk.core.scoring import derive_inherent_rating
 
 _SYSTEM_PROMPT_TEMPLATE = """\
 You are a senior risk analyst at a large financial institution.
@@ -67,7 +67,6 @@ def _format_scale(scale: dict[int, dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
-@register_agent
 class RiskExtractorAndScorerAgent(BaseAgent):
     """Extracts and scores risks for uncovered obligations."""
 

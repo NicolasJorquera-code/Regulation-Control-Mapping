@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from regrisk.agents.base import AgentContext, BaseAgent, register_agent
+from regrisk.agents.base import AgentContext, BaseAgent
 
 _SYSTEM_PROMPT = """\
 You are evaluating whether existing internal controls adequately cover a specific regulatory obligation.
@@ -47,7 +47,6 @@ Respond ONLY with JSON:
 """
 
 
-@register_agent
 class CoverageAssessorAgent(BaseAgent):
     """Evaluates control coverage for a mapped obligation."""
 

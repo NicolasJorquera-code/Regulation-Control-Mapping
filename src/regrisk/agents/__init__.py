@@ -1,1 +1,1 @@
-"""Agents layer — LLM-powered agents with deterministic fallbacks."""
+"""Agents layer — LLM-powered classification, mapping, assessment, and scoring agents."""

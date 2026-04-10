@@ -1,8 +1,7 @@
 """
 Base agent infrastructure — the contract every agent implements.
 
-Copied from the skeleton project. Provides BaseAgent ABC, AgentContext,
-register_agent decorator, call_llm, call_llm_with_tools, parse_json.
+Provides BaseAgent ABC, AgentContext, call_llm, call_llm_with_tools, parse_json.
 """
 
 from __future__ import annotations
@@ -18,19 +17,6 @@ from typing import Any, Callable
 from regrisk.core.transport import AsyncTransportClient
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Agent registry (populated by @register_agent)
-# ---------------------------------------------------------------------------
-
-AGENT_REGISTRY: dict[str, type["BaseAgent"]] = {}
-
-
-def register_agent(cls: type["BaseAgent"]) -> type["BaseAgent"]:
-    """Class decorator — registers an agent subclass by its class name."""
-    AGENT_REGISTRY[cls.__name__] = cls
-    return cls
 
 
 # ---------------------------------------------------------------------------

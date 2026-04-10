@@ -1,1 +1,1 @@
-"""Graphs layer — LangGraph state machines for the pipeline."""
+"""Graphs layer — LangGraph state machines for classify and assess pipelines."""

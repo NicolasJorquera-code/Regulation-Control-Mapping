@@ -1,1 +1,1 @@
-"""Export layer — Excel workbook generation and review import/export."""
+"""Export layer — Excel workbook generation, review import/export, and formatting."""

@@ -9,10 +9,6 @@ class IngestError(RegRiskError):
     """Data ingestion failed — file not found, parse error, or schema mismatch."""
 
 
-class AgentError(RegRiskError):
-    """An agent failed to produce a valid result."""
-
-
 class TransportError(RegRiskError):
     """An LLM API call failed after all retries."""
 

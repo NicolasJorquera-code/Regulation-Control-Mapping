@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from regrisk.agents.base import AgentContext, BaseAgent, register_agent
+from regrisk.agents.base import AgentContext, BaseAgent
 
 _SYSTEM_PROMPT_TEMPLATE = """\
 You are mapping regulatory obligations to business processes using the APQC Process Classification Framework (PCF).
@@ -66,7 +66,6 @@ _KEYWORD_APQC_MAP: dict[str, list[tuple[str, str]]] = {
 }
 
 
-@register_agent
 class APQCMapperAgent(BaseAgent):
     """Maps obligations to APQC processes."""
 

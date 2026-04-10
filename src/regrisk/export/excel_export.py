@@ -7,9 +7,12 @@ and intermediate review files with approve/reject columns.
 
 from __future__ import annotations
 
+import io
 from typing import Any
 
 import pandas as pd
+
+from regrisk.export.formatting import display_col_name as _display_col_name
 
 
 def export_gap_report(
@@ -18,8 +21,8 @@ def export_gap_report(
     mappings: list[dict[str, Any]],
     assessments: list[dict[str, Any]],
     risks: list[dict[str, Any]],
-    path: str,
-) -> str:
+    path: str | io.BytesIO,
+) -> str | io.BytesIO:
     """Export a multi-sheet Excel workbook with full pipeline results.
 
     Sheets: Summary, Classified Obligations, APQC Mappings,
@@ -59,7 +62,8 @@ def export_gap_report(
                 "subpart", "abstract", "classification_rationale",
             ]
             cols_present = [c for c in cols_order if c in df_classified.columns]
-            df_classified[cols_present].to_excel(
+            df_out = df_classified[cols_present].rename(columns=_display_col_name)
+            df_out.to_excel(
                 writer, sheet_name="Classified Obligations", index=False,
             )
 
@@ -71,19 +75,22 @@ def export_gap_report(
                 "relationship_type", "relationship_detail", "confidence",
             ]
             cols_present = [c for c in cols_order if c in df_mappings.columns]
-            df_mappings[cols_present].to_excel(
+            df_out = df_mappings[cols_present].rename(columns=_display_col_name)
+            df_out.to_excel(
                 writer, sheet_name="APQC Mappings", index=False,
             )
 
         # Sheet 4: Coverage Assessment
         if assessments:
-            df_assess = pd.DataFrame(assessments)
+            df_assess = pd.DataFrame(assessments).rename(columns=_display_col_name)
             df_assess.to_excel(writer, sheet_name="Coverage Assessment", index=False)
 
         # Sheet 5: Gaps
         gaps = gap_report.get("gaps", [])
         if gaps:
-            pd.DataFrame(gaps).to_excel(writer, sheet_name="Gaps", index=False)
+            pd.DataFrame(gaps).rename(columns=_display_col_name).to_excel(
+                writer, sheet_name="Gaps", index=False,
+            )
         else:
             pd.DataFrame({"Note": ["No gaps found"]}).to_excel(
                 writer, sheet_name="Gaps", index=False,
@@ -99,7 +106,8 @@ def export_gap_report(
                 "coverage_status", "impact_rationale", "frequency_rationale",
             ]
             cols_present = [c for c in cols_order if c in df_risks.columns]
-            df_risks[cols_present].to_excel(
+            df_out = df_risks[cols_present].rename(columns=_display_col_name)
+            df_out.to_excel(
                 writer, sheet_name="Risk Register", index=False,
             )
         else:
@@ -110,18 +118,7 @@ def export_gap_report(
     return path
 
 
-def export_compliance_matrix(matrix: dict[str, Any], path: str) -> str:
-    """Export the compliance matrix as a flat Excel table."""
-    rows = matrix.get("rows", [])
-    if rows:
-        df = pd.DataFrame(rows)
-    else:
-        df = pd.DataFrame({"Note": ["No matrix data"]})
-    df.to_excel(path, index=False, engine="openpyxl")
-    return path
-
-
-def export_for_review(data: list[dict[str, Any]], stage: str, path: str) -> str:
+def export_for_review(data: list[dict[str, Any]], stage: str, path: str | io.BytesIO) -> str | io.BytesIO:
     """Export intermediate results for human review.
 
     Adds an 'approved' column (default True) that the human can toggle.

@@ -74,24 +74,41 @@ src/regrisk/
 │   ├── apqc_mapper.py
 │   ├── coverage_assessor.py
 │   └── risk_extractor_scorer.py
-├── core/                # Config, models, events, transport
+├── core/                # Config, models, events, constants, transport
 │   ├── config.py        # PipelineConfig from YAML
+│   ├── constants.py     # Canonical string constants (categories, statuses, etc.)
 │   ├── events.py        # EventEmitter with domain events
 │   ├── models.py        # Frozen Pydantic domain models
+│   ├── scoring.py       # Pure business-logic scoring (impact × frequency)
 │   └── transport.py     # AsyncTransportClient (OpenAI-compatible)
 ├── export/              # Excel export utilities
-│   └── excel_export.py
+│   ├── excel_export.py
+│   └── formatting.py    # Shared display column name formatting
 ├── graphs/              # LangGraph state machines
 │   ├── classify_graph.py   # Graph 1: Ingest + Classify
 │   ├── assess_graph.py     # Graph 2: Map + Assess + Score
 │   ├── classify_state.py   # ClassifyState TypedDict
-│   └── assess_state.py     # AssessState TypedDict
+│   ├── assess_state.py     # AssessState TypedDict
+│   └── graph_infra.py      # Shared graph infrastructure (caches, emitter)
 ├── ingest/              # Deterministic data loaders
 │   ├── regulation_parser.py
 │   ├── apqc_loader.py
-│   └── control_loader.py
+│   ├── control_loader.py
+│   └── utils.py         # Shared ingest utilities (clean_str)
+├── tracing/             # SQLite-backed execution tracing
+│   ├── db.py            # TraceDB — run/event/node/LLM-call storage
+│   ├── decorators.py    # @trace_node decorator
+│   ├── listener.py      # SQLiteTraceListener (EventEmitter → DB)
+│   └── transport_wrapper.py  # TracingTransportClient (wraps LLM calls)
 ├── ui/                  # Streamlit 5-tab application
-│   └── app.py
+│   ├── app.py           # Entry point — page config, tabs, status bar
+│   ├── components.py    # Shared UI helpers (HTML table, checkpoints, etc.)
+│   ├── upload_tab.py    # Tab 1: Upload & Configure
+│   ├── review_tabs.py   # Tabs 2 & 3: Classification & Mapping Review
+│   ├── results_tab.py   # Tab 4: Coverage, risk heatmap, gap analysis
+│   ├── traceability_tab.py  # Tab 5: Execution traces & data lineage
+│   ├── checkpoint.py    # Checkpoint save/load/list
+│   └── session_keys.py  # Session state key catalog
 └── validation/          # Deterministic validators
     └── validator.py
 ```

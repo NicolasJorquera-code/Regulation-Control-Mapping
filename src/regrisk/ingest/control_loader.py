@@ -14,16 +14,7 @@ import pandas as pd
 
 from regrisk.core.models import ControlRecord
 from regrisk.exceptions import IngestError
-
-
-def _clean_str(val: object) -> str:
-    """Convert a cell value to a clean string, handling NaN."""
-    if val is None:
-        return ""
-    s = str(val).strip()
-    if s.lower() == "nan":
-        return ""
-    return s
+from regrisk.ingest.utils import clean_str as _clean_str
 
 
 def discover_control_files(directory: str, pattern: str = "section_*__controls.xlsx") -> list[str]:

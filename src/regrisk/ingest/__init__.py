@@ -1,1 +1,1 @@
-"""Ingest layer — deterministic data loading from Excel files."""
+"""Ingest layer — deterministic data loading from Excel (regulation, APQC, controls)."""

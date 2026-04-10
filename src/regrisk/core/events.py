@@ -7,10 +7,13 @@ for the regulatory obligation mapping pipeline.
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Protocol
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +96,7 @@ class EventEmitter:
             try:
                 listener(event)
             except Exception as exc:  # noqa: BLE001
-                print(f"[EventEmitter] listener error: {exc}")
+                logger.warning("EventEmitter listener error: %s", exc)
 
     def stage_started(self, stage: str, run_id: str = "", **data: Any) -> None:
         self.emit(PipelineEvent(EventType.STAGE_STARTED, stage=stage, run_id=run_id, data=data))
@@ -103,13 +106,3 @@ class EventEmitter:
 
     def progress(self, message: str, run_id: str = "", **data: Any) -> None:
         self.emit(PipelineEvent(EventType.PROGRESS, message=message, run_id=run_id, data=data))
-
-
-# ---------------------------------------------------------------------------
-# Built-in listener for CLI / debugging
-# ---------------------------------------------------------------------------
-
-def cli_listener(event: PipelineEvent) -> None:
-    """Simple stdout printer — attach with ``emitter.on(cli_listener)``."""
-    ts = time.strftime("%H:%M:%S", time.localtime(event.timestamp))
-    print(f"[{ts}] {event.event_type.value}: {event.message or event.stage}")

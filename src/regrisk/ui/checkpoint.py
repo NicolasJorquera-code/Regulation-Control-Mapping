@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 STAGE_CLASSIFIED = "classified"
 STAGE_MAPPED = "mapped"
 STAGE_ASSESSED = "assessed"
+STAGE_ASSESS_PARTIAL = "assess_partial"
 
 # Default checkpoint directory (project-root/data/checkpoints)
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -63,12 +64,29 @@ _STAGE_KEYS: dict[str, list[str]] = {
         "compliance_matrix",
         "risk_register",
     ],
+    STAGE_ASSESS_PARTIAL: [
+        "classified_obligations",
+        "obligation_groups",
+        "apqc_nodes",
+        "controls",
+        "regulation_name",
+        "pipeline_config",
+        "risk_taxonomy",
+        "llm_enabled",
+        "obligation_mappings",
+        "coverage_assessments",
+        "gap_report",
+        "scored_risks",
+        "compliance_matrix",
+        "risk_register",
+    ],
 }
 
 _STAGE_LABELS: dict[str, str] = {
     STAGE_CLASSIFIED: "Classification",
     STAGE_MAPPED: "APQC Mapping",
     STAGE_ASSESSED: "Full Assessment",
+    STAGE_ASSESS_PARTIAL: "Partial Assessment (interrupted)",
 }
 
 

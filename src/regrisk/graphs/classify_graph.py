@@ -30,7 +30,8 @@ from regrisk.core.config import (
 from regrisk.core.events import EventEmitter, EventType, PipelineEvent
 from regrisk.core.transport import build_client_from_env
 from regrisk.graphs.classify_state import ClassifyState
-from regrisk.tracing.decorators import trace_node, set_current_trace_context
+from regrisk.graphs.graph_infra import GraphInfra
+from regrisk.tracing.decorators import trace_node
 from regrisk.tracing.transport_wrapper import TracingTransportClient
 from regrisk.ingest.apqc_loader import load_apqc_hierarchy
 from regrisk.ingest.control_loader import discover_control_files, load_and_merge_controls
@@ -39,64 +40,27 @@ from regrisk.validation.validator import validate_classification
 
 
 # ---------------------------------------------------------------------------
-# Module-level singletons (reused across node invocations)
+# Module-level infrastructure (reused across node invocations)
 # ---------------------------------------------------------------------------
 
-_emitter: EventEmitter = EventEmitter()
-_llm_client_cache: Any = None
-_agent_cache: dict[str, Any] = {}
-_event_loop: asyncio.AbstractEventLoop | None = None
+_infra = GraphInfra()
+
+_AGENT_CLASSES: dict[str, type] = {
+    "classifier": ObligationClassifierAgent,
+}
 
 
 def set_emitter(emitter: EventEmitter) -> None:
-    global _emitter
-    _emitter = emitter
+    _infra.set_emitter(emitter)
 
 
 def get_emitter() -> EventEmitter:
-    return _emitter
-
-
-def _emit(event_type: EventType, message: str = "", **data: Any) -> None:
-    _emitter.emit(PipelineEvent(event_type=event_type, message=message, data=data))
-
-
-def _get_loop() -> asyncio.AbstractEventLoop:
-    global _event_loop
-    if _event_loop is None or _event_loop.is_closed():
-        _event_loop = asyncio.new_event_loop()
-    return _event_loop
-
-
-def _build_context(max_tokens: int = 8000) -> AgentContext:
-    global _llm_client_cache
-    if _llm_client_cache is None:
-        _llm_client_cache = build_client_from_env()
-    model = "gpt-4o"
-    if _llm_client_cache:
-        model = _llm_client_cache.model
-    return AgentContext(client=_llm_client_cache, model=model, max_tokens=max_tokens)
-
-
-def _get_agent(name: str, context: AgentContext) -> Any:
-    if name not in _agent_cache:
-        agents = {
-            "classifier": ObligationClassifierAgent,
-        }
-        cls = agents[name]
-        _agent_cache[name] = cls(context)
-    return _agent_cache[name]
+    return _infra.get_emitter()
 
 
 def reset_caches() -> None:
     """Reset all module-level caches (for test isolation)."""
-    global _llm_client_cache, _agent_cache, _event_loop, _emitter
-    _llm_client_cache = None
-    _agent_cache = {}
-    if _event_loop and not _event_loop.is_closed():
-        _event_loop.close()
-    _event_loop = None
-    _emitter = EventEmitter()
+    _infra.reset_caches()
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +69,7 @@ def reset_caches() -> None:
 
 def init_node(state: ClassifyState) -> dict[str, Any]:
     """Load config, risk taxonomy, detect LLM availability."""
-    _emit(EventType.PIPELINE_STARTED, "Classification pipeline started")
+    _infra.emit_event(EventType.PIPELINE_STARTED, "Classification pipeline started")
 
     config_path = state.get("config_path") or str(default_config_path())
     config = load_config(config_path)
@@ -116,9 +80,9 @@ def init_node(state: ClassifyState) -> dict[str, Any]:
     except Exception:
         taxonomy = {}
 
-    context = _build_context()
+    context = _infra.build_agent_context()
 
-    _emit(EventType.STAGE_COMPLETED, "Init complete", llm_enabled=context.client is not None)
+    _infra.emit_event(EventType.STAGE_COMPLETED, "Init complete", llm_enabled=context.client is not None)
 
     return {
         "pipeline_config": config.model_dump(),
@@ -129,7 +93,7 @@ def init_node(state: ClassifyState) -> dict[str, Any]:
 
 def ingest_node(state: ClassifyState) -> dict[str, Any]:
     """Parse regulation, APQC hierarchy, and control files."""
-    _emit(EventType.STAGE_STARTED, "Ingesting data")
+    _infra.emit_event(EventType.STAGE_STARTED, "Ingesting data")
 
     reg_path = state.get("regulation_path", "")
     apqc_path = state.get("apqc_path", "")
@@ -183,7 +147,7 @@ def ingest_node(state: ClassifyState) -> dict[str, Any]:
         errors.append(f"Control load error: {exc}")
         control_dicts = []
 
-    _emit(
+    _infra.emit_event(
         EventType.INGEST_COMPLETED,
         f"Ingested {obligations_count} obligations ({len(groups_dicts)} groups), {len(apqc_dicts)} APQC nodes, {len(control_dicts)} controls",
     )
@@ -211,12 +175,12 @@ def classify_group_node(state: ClassifyState) -> dict[str, Any]:
     total = len(groups)
     section_cit = group.get("section_citation", "")
 
-    _emit(EventType.ITEM_STARTED, f"Classifying {section_cit} ({idx + 1}/{total})")
+    _infra.emit_event(EventType.ITEM_STARTED, f"Classifying {section_cit} ({idx + 1}/{total})")
 
-    context = _build_context()
-    agent = _get_agent("classifier", context)
+    context = _infra.build_agent_context()
+    agent = _infra.get_agent("classifier", _AGENT_CLASSES, context)
 
-    loop = _get_loop()
+    loop = _infra.get_or_create_event_loop()
     result = loop.run_until_complete(
         agent.execute(
             group=group,
@@ -234,7 +198,7 @@ def classify_group_node(state: ClassifyState) -> dict[str, Any]:
         if not passed:
             errors.append(f"Classification validation for {c.get('citation', '?')}: {failures}")
 
-    _emit(EventType.GROUP_CLASSIFIED, f"Classified {len(classifications)} obligations in {section_cit}")
+    _infra.emit_event(EventType.GROUP_CLASSIFIED, f"Classified {len(classifications)} obligations in {section_cit}")
 
     return {
         "classified_obligations": classifications,
@@ -255,7 +219,7 @@ def end_classify_node(state: ClassifyState) -> dict[str, Any]:
     classified = state.get("classified_obligations", [])
     total = state.get("total_obligations", 0)
 
-    _emit(
+    _infra.emit_event(
         EventType.PIPELINE_COMPLETED,
         f"Classification complete: {len(classified)} obligations classified out of {total}",
     )
@@ -280,7 +244,7 @@ def build_classify_graph(trace_db=None, run_id: str = ""):
     """
     # If tracing is enabled, also wrap the transport client
     if trace_db and run_id:
-        _install_tracing_transport(trace_db, run_id)
+        _infra.install_tracing_transport(trace_db, run_id)
 
     def _wrap(name, fn):
         if trace_db and run_id:
@@ -298,16 +262,3 @@ def build_classify_graph(trace_db=None, run_id: str = ""):
     graph.add_conditional_edges("classify_group", has_more_classify_groups)
     graph.add_edge("end_classify", END)
     return graph.compile()
-
-
-def _install_tracing_transport(trace_db, run_id: str) -> None:
-    """Replace the cached LLM client with a tracing wrapper."""
-    global _llm_client_cache
-    if _llm_client_cache is None:
-        _llm_client_cache = build_client_from_env()
-    if _llm_client_cache and not isinstance(_llm_client_cache, TracingTransportClient):
-        _llm_client_cache = TracingTransportClient(_llm_client_cache, trace_db, run_id)
-    # Also update any already-cached agents so they use the wrapped client
-    for agent in _agent_cache.values():
-        if hasattr(agent, "context") and agent.context.client is not _llm_client_cache:
-            agent.context.client = _llm_client_cache

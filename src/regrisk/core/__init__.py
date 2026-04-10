@@ -1,1 +1,1 @@
-"""Core layer — config, models, events, and LLM transport."""
+"""Core layer — config, models, events, constants, and LLM transport."""

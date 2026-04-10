@@ -20,6 +20,7 @@
 11. [UI (Streamlit)](#11-ui-streamlit)
 12. [Validation](#12-validation)
 13. [Project Structure](#13-project-structure)
+14. [Frontend Tab Details](#14-frontend-tab-details)
 
 ---
 
@@ -69,54 +70,52 @@ Provider detection order: `ICA_API_KEY` → `OPENAI_API_KEY` → deterministic f
 
 ## 2. High-Level Architecture
 
-```mermaid
-flowchart TB
-    subgraph Inputs
-        REG[/"Regulation Excel<br/>(693 obligations)"/]
-        APQC[/"APQC Template Excel<br/>(1,803 process nodes)"/]
-        CTRL[/"Control Dataset<br/>(520+ controls)"/]
-        CFG[/"config/default.yaml<br/>config/risk_taxonomy.json"/]
-    end
-
-    subgraph Graph1["Graph 1 — Classification"]
-        INIT[init] --> INGEST[ingest]
-        INGEST --> CLASSIFY["classify_group<br/>(loop × N groups)"]
-        CLASSIFY --> END_CL[end_classify]
-    end
-
-    subgraph Review["Human Review (Streamlit Tab 2)"]
-        APPROVE["Analyst reviews &<br/>approves classifications"]
-    end
-
-    subgraph Graph2["Graph 2 — Assessment"]
-        MAP["map_group<br/>(loop × N groups)"] --> PREP_A[prepare_assessment]
-        PREP_A --> ASSESS["assess_coverage<br/>(loop × N items)"]
-        ASSESS --> PREP_R[prepare_risks]
-        PREP_R --> SCORE["extract_and_score<br/>(loop × N gaps)"]
-        SCORE --> FINAL[finalize]
-    end
-
-    subgraph Outputs
-        GAP[/"Gap Report"/]
-        MATRIX[/"Compliance Matrix"/]
-        RISK[/"Risk Register"/]
-        EXCEL[/"Excel Export<br/>(6 sheets)"/]
-        TRACE[/"SQLite Trace DB"/]
-    end
-
-    REG --> INIT
-    APQC --> INIT
-    CTRL --> INIT
-    CFG --> INIT
-
-    END_CL --> APPROVE
-    APPROVE --> MAP
-
-    FINAL --> GAP
-    FINAL --> MATRIX
-    FINAL --> RISK
-    FINAL --> EXCEL
-    FINAL --> TRACE
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                 INPUTS                                    │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌────────────┐ ┌─────────────┐ │
+│  │ Regulation Excel │ │ APQC Template    │ │  Control   │ │   Config    │ │
+│  │ (693 obligations)│ │ (1,803 nodes)    │ │  Dataset   │ │ default.yaml│ │
+│  └────────┬─────────┘ └────────┬─────────┘ │ (520+ ctrls│ │ taxonomy.json│
+│           │                    │           └──────┬─────┘ └──────┬──────┘ │
+└───────────┼────────────────────┼──────────────────┼──────────────┼────────┘
+            │                    │                  │              │
+            └──────────┬─────────┴──────────────────┘──────────────┘
+                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     GRAPH 1 — Classification                              │
+│                                                                           │
+│   init ──▶ ingest ──▶ classify_group (loop × N groups) ──▶ end_classify   │
+│                                                                           │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   HUMAN REVIEW (Streamlit Tab 2)                          │
+│                                                                           │
+│              Analyst reviews & approves classifications                   │
+│                                                                           │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     GRAPH 2 — Assessment                                  │
+│                                                                           │
+│   map_group ──▶ prepare_assessment ──▶ assess_coverage ──▶ prepare_risks  │
+│  (loop × N)                            (loop × N items)                   │
+│                                                                           │
+│      ──▶ extract_and_score (loop × N gaps) ──▶ finalize                   │
+│                                                                           │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                OUTPUTS                                    │
+│  ┌────────────┐ ┌──────────────────┐ ┌──────────────┐ ┌───────────────┐   │
+│  │ Gap Report │ │ Compliance Matrix│ │ Risk Register│ │ Excel Export  │   │
+│  └────────────┘ └──────────────────┘ └──────────────┘ │  (6 sheets)   │   │
+│                                                       └───────────────┘   │
+│                                      ┌────────────────┐                   │
+│                                      │ SQLite Trace DB│                   │
+│                                      └────────────────┘                   │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architectural Decisions
@@ -133,15 +132,21 @@ flowchart TB
 **Source:** `src/regrisk/graphs/classify_graph.py`
 **State:** `src/regrisk/graphs/classify_state.py` → `ClassifyState`
 
-```mermaid
-stateDiagram-v2
-    [*] --> init
-    init --> ingest
-    ingest --> classify_group
-    classify_group --> has_more_groups
-    has_more_groups --> classify_group : more groups
-    has_more_groups --> end_classify : all done
-    end_classify --> [*]
+```
+  ┌───────┐     ┌────────┐     ┌────────────────┐     ┌─────────────────┐
+  │ START │────▶│  init  │────▶│     ingest     │────▶│ classify_group  │
+  └───────┘     └────────┘     └────────────────┘     └────────┬────────┘
+                                                               │
+                                                               ▼
+                                                      ┌─────────────────┐
+                                              ┌──yes──│ has_more_groups? │
+                                              │       └────────┬────────┘
+                                              │                │ no
+                                              ▼                ▼
+                                    ┌─────────────────┐  ┌──────────────┐  ┌───────┐
+                                    │ classify_group  │  │ end_classify │─▶│  END  │
+                                    └─────────────────┘  └──────────────┘  └───────┘
+                                         (loops back)
 ```
 
 ### Nodes
@@ -172,24 +177,35 @@ Errors:       errors (list, reducer=add)
 **Source:** `src/regrisk/graphs/assess_graph.py`
 **State:** `src/regrisk/graphs/assess_state.py` → `AssessState`
 
-```mermaid
-stateDiagram-v2
-    [*] --> map_group
-    map_group --> has_more_map_groups
-    has_more_map_groups --> map_group : more groups
-    has_more_map_groups --> prepare_assessment : all mapped
-
-    prepare_assessment --> assess_coverage
-    assess_coverage --> has_more_assessments
-    has_more_assessments --> assess_coverage : more items
-    has_more_assessments --> prepare_risks : all assessed
-
-    prepare_risks --> extract_and_score
-    extract_and_score --> has_more_gaps
-    has_more_gaps --> extract_and_score : more gaps
-    has_more_gaps --> finalize : all scored
-
-    finalize --> [*]
+```
+  ┌───────┐     ┌───────────┐     ┌──────────────────────┐
+  │ START │────▶│ map_group │────▶│ has_more_map_groups? │──── yes ──▶ (back to map_group)
+  └───────┘     └───────────┘     └──────────┬───────────┘
+                                             │ no
+                                             ▼
+                              ┌──────────────────────┐     ┌──────────────────┐
+                              │  prepare_assessment  │────▶│  assess_coverage │
+                              └──────────────────────┘     └────────┬─────────┘
+                                                                    │
+                                                                    ▼
+                                                          ┌────────────────────────┐
+                                                          │ has_more_assessments?  │── yes ──▶ (back to assess_coverage)
+                                                          └──────────┬─────────────┘
+                                                                     │ no
+                                                                     ▼
+                                                          ┌────────────────┐     ┌───────────────────┐
+                                                          │ prepare_risks  │────▶│ extract_and_score │
+                                                          └────────────────┘     └─────────┬─────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                                ┌─────────────────┐
+                                                                                │ has_more_gaps?  │── yes ──▶ (back to extract_and_score)
+                                                                                └────────┬────────┘
+                                                                                         │ no
+                                                                                         ▼
+                                                                                ┌──────────┐     ┌───────┐
+                                                                                │ finalize │────▶│  END  │
+                                                                                └──────────┘     └───────┘
 ```
 
 ### Nodes
@@ -458,49 +474,51 @@ Agents are registered via the `@register_agent` decorator into a global `AGENT_R
 
 ### End-to-End Sequence
 
-```mermaid
-sequenceDiagram
-    participant User as Analyst (UI)
-    participant G1 as Graph 1 (Classify)
-    participant HR as Human Review
-    participant G2 as Graph 2 (Assess)
-    participant DB as SQLite Traces
-
-    User->>G1: Upload regulation + APQC + controls
-    
-    Note over G1: init: load config & taxonomy
-    Note over G1: ingest: parse Excel → 89 groups
-    
-    loop For each obligation group (~89×)
-        G1->>G1: classify_group → ObligationClassifierAgent
-    end
-    
-    G1->>HR: classified_obligations (693 items)
-    
-    HR->>User: Display in Tab 2 (color-coded table)
-    User->>HR: Review, approve/reject
-    HR->>G2: approved_obligations
-    
-    loop For each group (~89×)
-        G2->>G2: map_group → APQCMapperAgent
-    end
-    
-    Note over G2: prepare_assessment: build control index
-    
-    loop For each (obligation, mapping) pair (~1,000×)
-        G2->>G2: assess_coverage → CoverageAssessorAgent
-    end
-    
-    Note over G2: prepare_risks: filter to gaps
-    
-    loop For each gap (~500×)
-        G2->>G2: extract_and_score → RiskExtractorAndScorerAgent
-    end
-    
-    Note over G2: finalize: assemble reports
-    
-    G2->>User: Gap Report + Compliance Matrix + Risk Register
-    G2->>DB: Full trace (events, nodes, LLM calls)
+```
+  Analyst (UI)          Graph 1 (Classify)       Human Review          Graph 2 (Assess)       SQLite Traces
+  ────────────          ──────────────────        ────────────          ────────────────       ─────────────
+       │                        │                      │                      │                     │
+       │── Upload reg+APQC+ctrl▶│                      │                      │                     │
+       │                        │                      │                      │                     │
+       │                   init: load config            │                      │                     │
+       │                   & taxonomy                   │                      │                     │
+       │                        │                      │                      │                     │
+       │                   ingest: parse Excel          │                      │                     │
+       │                   → 89 groups                  │                      │                     │
+       │                        │                      │                      │                     │
+       │                   ┌────┤ For each obligation group (~89×)             │                     │
+       │                   │    │ classify_group → ObligationClassifierAgent   │                     │
+       │                   └───▶│                      │                      │                     │
+       │                        │                      │                      │                     │
+       │                        │── classified (693) ─▶│                      │                     │
+       │                        │                      │                      │                     │
+       │◀── Display Tab 2 ──────┼──────────────────────│                      │                     │
+       │── Review/approve ─────▶│                      │                      │                     │
+       │                        │                      │── approved ─────────▶│                     │
+       │                        │                      │                      │                     │
+       │                        │                      │  ┌────┤ For each group (~89×)              │
+       │                        │                      │  │    │ map_group → APQCMapperAgent        │
+       │                        │                      │  └───▶│                                    │
+       │                        │                      │       │                                    │
+       │                        │                      │  prepare_assessment:                       │
+       │                        │                      │  build control index                       │
+       │                        │                      │       │                                    │
+       │                        │                      │  ┌────┤ For each (oblg, mapping) (~1,000×)  │
+       │                        │                      │  │    │ assess_coverage → CoverageAssessor  │
+       │                        │                      │  └───▶│                                    │
+       │                        │                      │       │                                    │
+       │                        │                      │  prepare_risks:                            │
+       │                        │                      │  filter to gaps                            │
+       │                        │                      │       │                                    │
+       │                        │                      │  ┌────┤ For each gap (~500×)                │
+       │                        │                      │  │    │ extract_and_score → RiskScorer      │
+       │                        │                      │  └───▶│                                    │
+       │                        │                      │       │                                    │
+       │                        │                      │  finalize: assemble reports                │
+       │                        │                      │       │                                    │
+       │◀── Gap Report + Compliance Matrix ────────────┼───────│                                    │
+       │    + Risk Register                            │       │── Full trace ─────────────────────▶│
+       │                        │                      │       │                                    │
 ```
 
 ### How State Bridges the Two Graphs
@@ -841,23 +859,28 @@ score < 4  → Low
 │   │
 │   ├── core/
 │   │   ├── config.py                # PipelineConfig (Pydantic), YAML/JSON loaders
+│   │   ├── constants.py             # Canonical string constants (categories, statuses)
 │   │   ├── events.py                # EventType enum, PipelineEvent, EventEmitter
 │   │   ├── models.py                # All Pydantic models (frozen, immutable)
+│   │   ├── scoring.py               # Pure business-logic scoring (impact × frequency)
 │   │   └── transport.py             # AsyncTransportClient (httpx), provider auto-detect
 │   │
 │   ├── export/
-│   │   └── excel_export.py          # Excel report generation (6-sheet workbook)
+│   │   ├── excel_export.py          # Excel report generation (6-sheet workbook)
+│   │   └── formatting.py            # Shared display column name formatting
 │   │
 │   ├── graphs/
 │   │   ├── classify_graph.py        # Graph 1 builder: init → ingest → classify (loop) → end
 │   │   ├── classify_state.py        # ClassifyState TypedDict
 │   │   ├── assess_graph.py          # Graph 2 builder: map → assess → score → finalize
-│   │   └── assess_state.py          # AssessState TypedDict
+│   │   ├── assess_state.py          # AssessState TypedDict
+│   │   └── graph_infra.py           # Shared graph infrastructure (caches, emitter)
 │   │
 │   ├── ingest/
 │   │   ├── regulation_parser.py     # Parse regulation Excel → Obligation → ObligationGroup
 │   │   ├── apqc_loader.py           # Parse APQC Excel → APQCNode hierarchy
-│   │   └── control_loader.py        # Discover, merge, index control files
+│   │   ├── control_loader.py        # Discover, merge, index control files
+│   │   └── utils.py                 # Shared ingest utilities (clean_str)
 │   │
 │   ├── tracing/
 │   │   ├── db.py                    # TraceDB: SQLite wrapper (4 tables, WAL mode)
@@ -866,8 +889,14 @@ score < 4  → Low
 │   │   └── transport_wrapper.py     # TracingTransportClient (captures LLM calls)
 │   │
 │   ├── ui/
-│   │   ├── app.py                   # Streamlit 5-tab application
-│   │   └── checkpoint.py            # Save/load/list checkpoint JSON files
+│   │   ├── app.py                   # Entry point — page config, tabs, status bar
+│   │   ├── components.py            # Shared UI helpers (HTML table, checkpoints, etc.)
+│   │   ├── upload_tab.py            # Tab 1: Upload & Configure
+│   │   ├── review_tabs.py           # Tabs 2 & 3: Classification & Mapping Review
+│   │   ├── results_tab.py           # Tab 4: Coverage, risk heatmap, gap analysis
+│   │   ├── traceability_tab.py      # Tab 5: Execution traces & data lineage
+│   │   ├── checkpoint.py            # Save/load/list checkpoint JSON files
+│   │   └── session_keys.py          # Session state key catalog
 │   │
 │   └── validation/
 │       └── validator.py             # Deterministic artifact validators
@@ -884,6 +913,398 @@ score < 4  → Low
 ├── pyproject.toml                   # Dependencies, project metadata, entry points
 └── README.md                        # Quick-start guide
 ```
+
+---
+
+## 14. Frontend Tab Details
+
+This section provides a detailed walkthrough of the three primary review/output tabs in the Streamlit UI — how each column is populated, the decision logic the pipeline uses (both LLM and deterministic), and how the data tables are rendered.
+
+---
+
+### 14.1 Classification Review Tab (Tab 2)
+
+**Source:** `render_classification_review_tab()` in `src/regrisk/ui/review_tabs.py`
+
+After Graph 1 completes, this tab displays the 32 classified obligations in a scrollable, color-coded HTML table with category and criticality filters.
+
+#### Columns Displayed
+
+| Column | Description |
+|--------|-------------|
+| `citation` | CFR section reference (e.g. "12 CFR 252.34(a)(1)(i)") |
+| `obligation_category` | One of 5 categories — color-coded with background highlighting |
+| `relationship_type` | One of 4 relationship types or "N/A" |
+| `criticality_tier` | High / Medium / Low |
+| `section_citation` | Parent section reference |
+| `subpart` | Regulation subpart label |
+| `classification_rationale` | Free-text explanation of why the classification was chosen |
+
+#### Category Color Coding
+
+| Category | Background Colour |
+|----------|-------------------|
+| Controls | Light blue (`#CCE5FF`) |
+| Documentation | Light green (`#D4EDDA`) |
+| Attestation | Light purple (`#E2D5F1`) |
+| General Awareness | Light grey (`#E2E3E5`) |
+| Not Assigned | Light red (`#F8D7DA`) |
+
+#### How `obligation_category` Is Chosen
+
+The `ObligationClassifierAgent` classifies each obligation into exactly one of five categories. The agent uses two paths — an LLM primary path and a deterministic keyword-based fallback.
+
+**LLM path:** The system prompt instructs the LLM to act as a regulatory compliance analyst and select the single best-fitting category based on these definitions:
+
+| Category | When to Assign |
+|----------|---------------|
+| **Attestation** | Requires senior management sign-off, certification, or board approval |
+| **Documentation** | Requires maintenance of written policies, procedures, plans, or records |
+| **Controls** | Requires evidence of operating processes, controls, systems, or monitoring |
+| **General Awareness** | Is principle-based, definitional, or provides general authority with no explicit implementation requirement |
+| **Not Assigned** | Is a general requirement not directly actionable |
+
+**Deterministic fallback:** When the LLM is unavailable or its response fails to parse, the agent falls back to a keyword cascade applied against the combined text `"{title_level_3} {title_level_4} {title_level_5} {abstract}"` (lowercased). The first matching rule wins:
+
+```
+Input: combined = (title_level_3 + title_level_4 + title_level_5 + abstract).lower()
+
+├─ "definition" | "authority" | "purpose" | "scope" found?
+│  └─ YES → General Awareness
+│
+├─ "must" | "shall" | "require" | "ensure" | "maintain" found?
+│  └─ YES → Controls
+│
+├─ "report" | "submit" | "disclose" | "document" | "record" found?
+│  └─ YES → Documentation
+│
+├─ "approve" | "attest" | "certif" | "board" found?
+│  └─ YES → Attestation
+│
+└─ No match → Not Assigned
+```
+
+#### How `relationship_type` Is Chosen
+
+The relationship type describes *how* the obligation constrains the organisation. It is only applicable for actionable categories (Attestation, Documentation, Controls); non-actionable categories receive "N/A".
+
+**LLM path:** The system prompt defines four relationship types:
+
+| Relationship Type | Meaning |
+|-------------------|---------|
+| **Requires Existence** | A specific function, committee, role, or process must exist |
+| **Constrains Execution** | Imposes requirements on HOW a process must be performed (e.g. board approval, independence, specific methodology) |
+| **Requires Evidence** | Documentation, reports, or records must be produced and maintained |
+| **Sets Frequency** | An activity must be performed at a specified interval (e.g. "at least quarterly", "annually") |
+
+**Deterministic fallback:** Each category maps to a fixed relationship type — no keyword matching is performed for this field:
+
+| Category | Relationship Type |
+|----------|-------------------|
+| Attestation | Requires Existence |
+| Documentation | Requires Evidence |
+| Controls | Constrains Execution |
+| General Awareness | N/A |
+| Not Assigned | N/A |
+
+#### How `criticality_tier` Is Chosen
+
+Criticality reflects the severity of a regulatory violation.
+
+**LLM path:** The system prompt defines:
+
+| Tier | Meaning |
+|------|---------|
+| **High** | Violation would likely trigger enforcement action, consent order, or MRA |
+| **Medium** | Violation would result in supervisory criticism or examination findings |
+| **Low** | Violation would be noted as an observation or best-practice gap |
+
+**Deterministic fallback:** Each category maps to a fixed criticality tier:
+
+| Category | Criticality Tier |
+|----------|------------------|
+| Attestation | High |
+| Controls | High |
+| Documentation | Medium |
+| General Awareness | Low |
+| Not Assigned | Low |
+
+#### How `classification_rationale` Is Generated
+
+**LLM path:** The LLM writes a free-text rationale explaining its classification decision, e.g. *"Requires the board to approve liquidity risk tolerance annually, imposing a specific governance constraint on the risk management process."*
+
+**Deterministic fallback:** A fixed rationale string is assigned based on which keyword group matched:
+
+| Matched Keywords | Rationale |
+|------------------|-----------|
+| definition / authority / purpose / scope | "Contains definitional or authority language." |
+| must / shall / require / ensure / maintain | "Contains mandatory control language." |
+| report / submit / disclose / document / record | "Contains documentation or reporting language." |
+| approve / attest / certif / board | "Contains attestation or board approval language." |
+| No match | "No clear actionable requirement identified." |
+
+#### UI Interaction
+
+- **Filters:** The tab provides two multi-select filters — one for `obligation_category` (populated from unique values in the data) and one for `criticality_tier` (hardcoded: High, Medium, Low). Filters are applied with `df[df[col].isin(selected)]`.
+- **Export for review:** Downloads an Excel file with an added `approved` column (default `True`). Analysts can set rows to `False` to exclude them from the next phase.
+- **Import reviewed:** Reads back the Excel, filters to `approved == True`, and stores the approved set for Graph 2.
+- **Approve button:** "Approve and Continue to Mapping" triggers Graph 2 with the approved obligations.
+
+---
+
+### 14.2 Mapping Review Tab (Tab 3)
+
+**Source:** `render_mapping_review_tab()` in `src/regrisk/ui/review_tabs.py`
+
+After the mapping phase of Graph 2 completes, this tab displays every obligation-to-APQC-process mapping in a scrollable HTML table.
+
+#### Columns Displayed
+
+| Column | Description |
+|--------|-------------|
+| `citation` | CFR section reference |
+| `apqc_hierarchy_id` | APQC Process Classification Framework ID (e.g. "11.1.1") |
+| `apqc_process_name` | Full name of the APQC process (e.g. "Establish enterprise risk framework") |
+| `relationship_type` | One of the 4 relationship types |
+| `relationship_detail` | Specific description of what the regulation requires of the process |
+| `confidence` | Numeric score (0.0 – 1.0) indicating mapping confidence |
+
+#### How `apqc_hierarchy_id` Is Chosen
+
+Each obligation is mapped to 1–5 APQC processes at a configured depth (default: level 3, format `X.Y.Z`).
+
+**LLM path:** The system prompt provides the full APQC hierarchy as an indented text representation (built by `build_apqc_summary()` in `src/regrisk/ingest/apqc_loader.py`, truncated to 15,000 characters). The hierarchy is filtered to `apqc_mapping_depth` (default 3). The LLM is instructed to select the 1–`max_apqc_mappings_per_obligation` (default 5) most relevant processes, preferring specific processes over general ones. Example: "11.1.1 Establish enterprise risk framework" is preferred over "11.0 Manage Enterprise Risk."
+
+**Deterministic fallback:** A hardcoded keyword-to-APQC lookup table maps terms found in `"{section_title} {abstract}"` (lowercased) to APQC IDs. The first matching keyword is used:
+
+| Keyword | APQC ID(s) | Process Name(s) |
+|---------|------------|-----------------|
+| `liquidity` | 9.7.1 | Manage treasury operations |
+| `capital` | 9.5.1 | Manage capital structure |
+| `stress test` | 9.7.1, 11.1.1 | Manage treasury operations, Establish enterprise risk framework |
+| `risk committee` | 11.1.1 | Establish enterprise risk framework |
+| `risk management` | 11.1.1 | Establish enterprise risk framework |
+| `credit` | 9.6.1 | Manage credit |
+| `counterparty` | 9.6.1 | Manage credit |
+| `compliance` | 11.2.1 | Manage regulatory compliance |
+| `audit` | 11.3.1 | Manage internal audit |
+| `report` | 11.2.1 | Manage regulatory compliance |
+| `governance` | 11.1.1 | Establish enterprise risk framework |
+| `board` | 11.1.1 | Establish enterprise risk framework |
+| `foreign` | 11.2.1 | Manage regulatory compliance |
+| `debt` | 9.5.1 | Manage capital structure |
+| `resolution` | 11.1.1 | Establish enterprise risk framework |
+| `contingency` | 9.7.1 | Manage treasury operations |
+| *(no match)* | 11.1.1 | Establish enterprise risk framework *(default fallback)* |
+
+#### How `apqc_process_name` Is Chosen
+
+The process name is always paired with the hierarchy ID. In the LLM path, the model extracts both from the provided hierarchy. In the deterministic path, the name is hardcoded alongside the ID in the lookup table.
+
+#### How `relationship_type` Is Chosen
+
+**LLM path:** The LLM selects one of the four relationship types (Requires Existence, Constrains Execution, Requires Evidence, Sets Frequency) based on what the obligation requires of the mapped APQC process.
+
+**Deterministic fallback:** Copied from the obligation's existing `relationship_type` (set during classification). If missing, defaults to "Constrains Execution".
+
+#### How `relationship_detail` Is Chosen
+
+**LLM path:** The LLM generates a specific sentence describing *what* the regulation requires *of* the mapped process. The system prompt emphasises specificity — e.g. *"Board must approve acceptable level of liquidity risk at least annually"* rather than *"relates to risk management"*.
+
+**Deterministic fallback:** Generates a template string: `"Deterministic mapping based on keyword '{keyword}' in obligation text."` If no keyword matched: `"Default mapping — no specific keyword match found."`
+
+#### How `confidence` Is Scored
+
+**LLM path:** The LLM assigns a confidence score between 0.0 and 1.0 reflecting how well the obligation maps to the selected APQC process. High-confidence mappings (e.g. 0.92) indicate strong, specific alignment.
+
+**Deterministic fallback:**
+
+| Match Type | Confidence |
+|------------|------------|
+| Keyword match | 0.5 |
+| Default fallback (no keyword match) | 0.3 |
+
+#### UI Interaction
+
+- **Table rendering:** Same scrollable HTML table component as Tab 2 (sticky header, hover highlight, text wrapping).
+- **Export / Import:** Download the mappings as an Excel file for review; upload a reviewed file to replace the current mappings.
+
+---
+
+### 14.3 Results Tab (Tab 4)
+
+**Source:** `render_results_tab()` in `src/regrisk/ui/results_tab.py`
+
+After the full assessment pipeline (mapping → coverage assessment → risk scoring → finalize) completes, this tab presents the consolidated results across four visual components.
+
+#### Component 1: Coverage Summary Cards
+
+Three side-by-side metric cards showing:
+
+| Card | Content |
+|------|---------|
+| ✅ **Covered** | Count and percentage of obligations with full coverage |
+| ⚠️ **Partially Covered** | Count and percentage with partial coverage |
+| ❌ **Not Covered** | Count and percentage with no coverage |
+
+These values are drawn from `gap_report["coverage_summary"]`, which aggregates the `overall_coverage` field from all coverage assessments.
+
+#### Component 2: Risk Heatmap (Impact × Frequency)
+
+A 4×4 matrix rendered with `matplotlib`:
+
+- **X-axis (Frequency):** Remote (1), Unlikely (2), Possible (3), Likely (4)
+- **Y-axis (Impact):** Minor (1), Moderate (2), Major (3), Severe (4)
+- **Cell value:** Count of risks at that (impact, frequency) intersection
+- **Cell colour:** Based on the product `impact × frequency`:
+
+| Score Range | Colour | Risk Level |
+|-------------|--------|------------|
+| 1–3 | Green | Low |
+| 4–7 | Yellow | Medium |
+| 8–11 | Orange | High |
+| 12–16 | Red | Critical |
+
+#### Component 3: Gap Analysis Table
+
+Displays all coverage assessments where `overall_coverage ≠ "Covered"`.
+
+| Column | Description | How It Is Determined |
+|--------|-------------|----------------------|
+| `citation` | Obligation CFR reference | Carried from the classified obligation |
+| `apqc_hierarchy_id` | APQC process the obligation was mapped to | Set during mapping phase (see §14.2) |
+| `control_id` | Internal control evaluated (or empty if none found) | Found by `find_controls_for_apqc()` — exact + descendant match on APQC hierarchy ID |
+| `overall_coverage` | "Not Covered" or "Partially Covered" | Derived from the three-layer evaluation below |
+| `semantic_match` | "Full", "Partial", or "None" | LLM evaluates whether the control's description substantively addresses the obligation |
+| `relationship_match` | "Satisfied", "Partial", or "Not Satisfied" | LLM evaluates whether the control satisfies the obligation's specific relationship type |
+
+**Three-Layer Coverage Evaluation** (performed by `CoverageAssessorAgent`):
+
+| Layer | What It Evaluates | How |
+|-------|-------------------|-----|
+| **1. Structural Match** | Do the control and obligation share an APQC node? | Pre-computed — controls are found by matching `hierarchy_id` (exact or prefix/descendant). If no controls exist at the APQC node, the result is immediately "Not Covered". |
+| **2. Semantic Match** | Does the control's description, purpose, and action substantively address the obligation? | LLM examines the control's `full_description`, `who`, `what`, `when`, `where`, `why`, and `evidence` fields against the obligation's abstract. Rates as Full (directly addresses the requirement), Partial (related but incomplete), or None (unrelated). |
+| **3. Relationship Match** | Does the control satisfy the obligation's specific constraint type? | LLM checks the control against the obligation's `relationship_type`. E.g. if the obligation "Sets Frequency" (quarterly), does the control operate at that frequency? Rates as Satisfied, Partial, or Not Satisfied. |
+
+**Overall Coverage Derivation:**
+
+| Condition | Rating |
+|-----------|--------|
+| Semantic = Full **AND** Relationship = Satisfied | **Covered** |
+| Semantic = Partial **OR** Relationship = Partial | **Partially Covered** |
+| Semantic = None **OR** Relationship = Not Satisfied **OR** no controls | **Not Covered** |
+
+**Deterministic fallback:** If no candidate controls exist → "Not Covered" (no LLM call needed). If a candidate control exists but the LLM is unavailable → "Partially Covered" with Semantic = "Partial", Relationship = "Partial".
+
+#### Component 4: Risk Register Table
+
+Displays all extracted and scored risks for obligations that have coverage gaps.
+
+| Column | Description | How It Is Determined |
+|--------|-------------|----------------------|
+| `risk_id` | Sequential risk identifier (e.g. "RISK-001") | Generated incrementally during the risk extraction loop using a running counter |
+| `source_citation` | Obligation that produced this risk | Carried from the gap obligation |
+| `risk_description` | 25–50 word description of what could go wrong | LLM generates, validated to 20–60 word range |
+| `risk_category` | Top-level risk category from the taxonomy | LLM selects from 8 categories: Credit Risk, Operational Risk, Market Risk, Compliance Risk, Strategic Risk, Reputational Risk, Interest Rate Risk, Liquidity Risk |
+| `impact_rating` | 1–4 severity scale | LLM scores with rationale (see scale below) |
+| `frequency_rating` | 1–4 likelihood scale | LLM scores with rationale (see scale below) |
+| `inherent_risk_rating` | "Critical", "High", "Medium", or "Low" | Derived from `impact_rating × frequency_rating` |
+| `coverage_status` | "Not Covered" or "Partially Covered" | Carried from the coverage assessment |
+
+**Impact Scale:**
+
+| Rating | Label | Description |
+|--------|-------|-------------|
+| 1 | Minor | < 5% annual pre-tax income, non-critical activity |
+| 2 | Moderate | 5–25% impact, < 1 day disruption, localised media |
+| 3 | Major | 1–2 quarters impact, partial failure, national media |
+| 4 | Severe | ≥ 2 quarters, critical failure, cease-and-desist |
+
+**Frequency Scale:**
+
+| Rating | Label | Description |
+|--------|-------|-------------|
+| 1 | Remote | Once every 3+ years |
+| 2 | Unlikely | Once every 1–3 years |
+| 3 | Possible | Once per year |
+| 4 | Likely | Once per quarter or more |
+
+**Inherent Risk Rating:**
+
+$$\text{risk\_score} = \text{impact\_rating} \times \text{frequency\_rating}$$
+
+| Score | Rating |
+|-------|--------|
+| ≥ 12 | Critical |
+| 8–11 | High |
+| 4–7 | Medium |
+| 1–3 | Low |
+
+**Deterministic fallback** (when LLM is unavailable): Scores are based on the obligation's `criticality_tier`:
+
+| Criticality Tier | Impact Rating | Frequency Rating | Inherent Risk |
+|-------------------|---------------|------------------|---------------|
+| High | 3 | 2 | Medium (6) |
+| Medium | 2 | 2 | Medium (4) |
+| Low | 1 | 1 | Low (1) |
+
+#### Data Assembly: The Finalize Node
+
+The `finalize_node` in `src/regrisk/graphs/assess_graph.py` assembles three final data structures from the accumulated pipeline state:
+
+**Gap Report** — aggregates classification counts, coverage summary, and the filtered gap list:
+```python
+{
+    "regulation_name": "...",
+    "total_obligations": len(approved),
+    "classified_counts": {"Controls": N, "Documentation": N, ...},
+    "mapped_obligation_count": count_of_unique_mapped_citations,
+    "coverage_summary": {"Covered": N, "Partially Covered": N, "Not Covered": N},
+    "gaps": [list of assessments where overall_coverage ∈ {"Not Covered", "Partially Covered"}]
+}
+```
+
+**Compliance Matrix** — a flat table joining each obligation → its APQC mappings → its coverage assessment → its risks:
+```python
+{
+    "rows": [
+        {
+            "citation": "12 CFR 252.34(a)(1)(i)",
+            "obligation_category": "Controls",
+            "criticality_tier": "High",
+            "apqc_hierarchy_id": "11.1.1",
+            "apqc_process_name": "Establish enterprise risk framework",
+            "control_id": "CTRL-001",
+            "overall_coverage": "Partially Covered",
+            "risk_ids": ["RISK-001", "RISK-002"]
+        }
+    ]
+}
+```
+
+**Risk Register** — the full scored risk list with distribution statistics:
+```python
+{
+    "scored_risks": [...],
+    "total_risks": N,
+    "risk_distribution": {"Compliance Risk": N, "Operational Risk": N, ...},
+    "critical_count": N,
+    "high_count": N
+}
+```
+
+#### Excel Export
+
+The "Download Full Report" button generates a 6-sheet Excel workbook via `export_gap_report()`:
+
+| Sheet | Contents |
+|-------|----------|
+| **Summary** | Key metrics — regulation name, total obligations, category counts, coverage distribution |
+| **Classified Obligations** | citation, obligation_category, relationship_type, criticality_tier, section_citation, section_title, subpart, abstract, classification_rationale |
+| **APQC Mappings** | citation, apqc_hierarchy_id, apqc_process_name, relationship_type, relationship_detail, confidence |
+| **Coverage Assessment** | citation, apqc_hierarchy_id, control_id, structural_match, semantic_match, semantic_rationale, relationship_match, relationship_rationale, overall_coverage |
+| **Gaps** | Same columns as Coverage Assessment, filtered to gaps only |
+| **Risk Register** | risk_id, source_citation, source_apqc_id, risk_description, risk_category, sub_risk_category, impact_rating, frequency_rating, inherent_risk_rating, coverage_status, impact_rationale, frequency_rationale |
 
 ---
 

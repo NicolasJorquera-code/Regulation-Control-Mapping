@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from regrisk.agents.base import AgentContext, BaseAgent, register_agent
+from regrisk.agents.base import AgentContext, BaseAgent
 
 _SYSTEM_PROMPT = """\
 You are a regulatory compliance analyst specializing in regulatory change management for financial institutions.
@@ -51,7 +51,6 @@ Respond ONLY with JSON:
 """
 
 
-@register_agent
 class ObligationClassifierAgent(BaseAgent):
     """Classifies obligations in a section group."""
 

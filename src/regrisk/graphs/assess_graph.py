@@ -34,77 +34,49 @@ from regrisk.agents.base import AgentContext
 from regrisk.agents.coverage_assessor import CoverageAssessorAgent
 from regrisk.agents.risk_extractor_scorer import RiskExtractorAndScorerAgent
 from regrisk.core.events import EventEmitter, EventType, PipelineEvent
+from regrisk.core.models import APQCNode, ControlRecord
 from regrisk.core.transport import build_client_from_env
 from regrisk.graphs.assess_state import AssessState
-from regrisk.tracing.decorators import trace_node, set_current_trace_context
+from regrisk.graphs.graph_infra import GraphInfra
+from regrisk.tracing.decorators import trace_node
 from regrisk.tracing.transport_wrapper import TracingTransportClient
 from regrisk.ingest.apqc_loader import build_apqc_summary
 from regrisk.ingest.control_loader import build_control_index, find_controls_for_apqc
-from regrisk.core.models import APQCNode
-from regrisk.validation.validator import derive_inherent_rating, validate_coverage, validate_mapping, validate_risk
+from regrisk.validation.validator import validate_coverage, validate_mapping, validate_risk
 
 
 # ---------------------------------------------------------------------------
-# Module-level singletons
+# Module-level infrastructure
 # ---------------------------------------------------------------------------
 
-_emitter: EventEmitter = EventEmitter()
-_llm_client_cache: Any = None
-_agent_cache: dict[str, Any] = {}
-_event_loop: asyncio.AbstractEventLoop | None = None
+_infra = GraphInfra()
+_partial_assessments: list[dict] = []
+
+_AGENT_CLASSES: dict[str, type] = {
+    "mapper": APQCMapperAgent,
+    "assessor": CoverageAssessorAgent,
+    "risk_scorer": RiskExtractorAndScorerAgent,
+}
 
 
 def set_emitter(emitter: EventEmitter) -> None:
-    global _emitter
-    _emitter = emitter
+    _infra.set_emitter(emitter)
 
 
 def get_emitter() -> EventEmitter:
-    return _emitter
+    return _infra.get_emitter()
 
 
-def _emit(event_type: EventType, message: str = "", **data: Any) -> None:
-    _emitter.emit(PipelineEvent(event_type=event_type, message=message, data=data))
-
-
-def _get_loop() -> asyncio.AbstractEventLoop:
-    global _event_loop
-    if _event_loop is None or _event_loop.is_closed():
-        _event_loop = asyncio.new_event_loop()
-    return _event_loop
-
-
-def _build_context(max_tokens: int = 8000) -> AgentContext:
-    global _llm_client_cache
-    if _llm_client_cache is None:
-        _llm_client_cache = build_client_from_env()
-    model = "gpt-4o"
-    if _llm_client_cache:
-        model = _llm_client_cache.model
-    return AgentContext(client=_llm_client_cache, model=model, max_tokens=max_tokens)
-
-
-def _get_agent(name: str, context: AgentContext) -> Any:
-    if name not in _agent_cache:
-        agents = {
-            "mapper": APQCMapperAgent,
-            "assessor": CoverageAssessorAgent,
-            "risk_scorer": RiskExtractorAndScorerAgent,
-        }
-        cls = agents[name]
-        _agent_cache[name] = cls(context)
-    return _agent_cache[name]
+def get_partial_assessments() -> list[dict]:
+    """Return coverage assessments accumulated so far (survives graph failure)."""
+    return list(_partial_assessments)
 
 
 def reset_caches() -> None:
-    """Reset all module-level caches (for test isolation)."""
-    global _llm_client_cache, _agent_cache, _event_loop, _emitter
-    _llm_client_cache = None
-    _agent_cache = {}
-    if _event_loop and not _event_loop.is_closed():
-        _event_loop.close()
-    _event_loop = None
-    _emitter = EventEmitter()
+    """Reset all module-level caches (for test isolation and between runs)."""
+    global _partial_assessments
+    _partial_assessments = []
+    _infra.reset_caches()
 
 
 # ---------------------------------------------------------------------------
@@ -123,10 +95,10 @@ def map_group_node(state: AssessState) -> dict[str, Any]:
     total = len(groups)
     section_cit = group.get("section_citation", "")
 
-    _emit(EventType.ITEM_STARTED, f"Mapping {section_cit} ({idx + 1}/{total})")
+    _infra.emit_event(EventType.ITEM_STARTED, f"Mapping {section_cit} ({idx + 1}/{total})")
 
-    context = _build_context()
-    agent = _get_agent("mapper", context)
+    context = _infra.build_agent_context()
+    agent = _infra.get_agent("mapper", _AGENT_CLASSES, context)
 
     # Build APQC summary from nodes in state
     apqc_node_dicts = state.get("apqc_nodes", [])
@@ -134,7 +106,7 @@ def map_group_node(state: AssessState) -> dict[str, Any]:
     config = state.get("pipeline_config", {})
     apqc_summary = build_apqc_summary(apqc_nodes, max_depth=config.get("apqc_mapping_depth", 3))
 
-    loop = _get_loop()
+    loop = _infra.get_or_create_event_loop()
     result = loop.run_until_complete(
         agent.execute(
             obligations=group.get("obligations", []),
@@ -155,7 +127,7 @@ def map_group_node(state: AssessState) -> dict[str, Any]:
         if not passed:
             errors.append(f"Mapping validation for {m.get('citation', '?')}: {failures}")
 
-    _emit(EventType.MAPPING_COMPLETED, f"Mapped {len(mappings)} obligations in {section_cit}")
+    _infra.emit_event(EventType.MAPPING_COMPLETED, f"Mapped {len(mappings)} obligations in {section_cit}")
 
     return {
         "obligation_mappings": mappings,
@@ -172,12 +144,12 @@ def has_more_map_groups(state: AssessState) -> str:
 
 def prepare_assessment_node(state: AssessState) -> dict[str, Any]:
     """Build assessment items: (obligation, mapping, candidate controls)."""
-    _emit(EventType.STAGE_STARTED, "Preparing coverage assessment")
+    _infra.emit_event(EventType.STAGE_STARTED, "Preparing coverage assessment")
 
     mappings = state.get("obligation_mappings", [])
     control_dicts = state.get("controls", [])
     control_index = build_control_index(
-        [__import__("regrisk.core.models", fromlist=["ControlRecord"]).ControlRecord(**c) for c in control_dicts]
+        [ControlRecord(**c) for c in control_dicts]
     ) if control_dicts else {}
 
     # Build a lookup from citation to obligation data
@@ -212,7 +184,7 @@ def prepare_assessment_node(state: AssessState) -> dict[str, Any]:
             "candidate_controls": candidate_dicts,
         })
 
-    _emit(EventType.STAGE_COMPLETED, f"Prepared {len(assess_items)} assessment items")
+    _infra.emit_event(EventType.STAGE_COMPLETED, f"Prepared {len(assess_items)} assessment items")
 
     return {
         "assess_items": assess_items,
@@ -232,16 +204,16 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     total = len(items)
     citation = item.get("obligation", {}).get("citation", "")
 
-    _emit(EventType.ITEM_STARTED, f"Assessing coverage ({idx + 1}/{total}): {citation}")
+    _infra.emit_event(EventType.ITEM_STARTED, f"Assessing coverage ({idx + 1}/{total}): {citation}")
 
     candidates = item.get("candidate_controls", [])
     obligation = item.get("obligation", {})
     apqc_id = item.get("apqc_hierarchy_id", "")
     apqc_name = item.get("apqc_process_name", "")
 
-    context = _build_context(max_tokens=2048)
-    agent = _get_agent("assessor", context)
-    loop = _get_loop()
+    context = _infra.build_agent_context(max_tokens=2048)
+    agent = _infra.get_agent("assessor", _AGENT_CLASSES, context)
+    loop = _infra.get_or_create_event_loop()
 
     if not candidates:
         # No candidates → deterministic Not Covered
@@ -292,7 +264,10 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     if not passed:
         errors.append(f"Coverage validation for {citation}: {failures}")
 
-    _emit(EventType.COVERAGE_ASSESSED, f"Coverage for {citation}: {assessment.get('overall_coverage', '?')}")
+    _infra.emit_event(EventType.COVERAGE_ASSESSED, f"Coverage for {citation}: {assessment.get('overall_coverage', '?')}")
+
+    # Track for partial-checkpoint recovery on failure
+    _partial_assessments.append(assessment)
 
     return {
         "coverage_assessments": [assessment],
@@ -309,12 +284,12 @@ def has_more_assessments(state: AssessState) -> str:
 
 def prepare_risks_node(state: AssessState) -> dict[str, Any]:
     """Filter assessments to only Not Covered and Partially Covered."""
-    _emit(EventType.STAGE_STARTED, "Preparing risk extraction")
+    _infra.emit_event(EventType.STAGE_STARTED, "Preparing risk extraction")
 
     assessments = state.get("coverage_assessments", [])
     gaps = [a for a in assessments if a.get("overall_coverage") in ("Not Covered", "Partially Covered")]
 
-    _emit(EventType.STAGE_COMPLETED, f"Found {len(gaps)} coverage gaps requiring risk extraction")
+    _infra.emit_event(EventType.STAGE_COMPLETED, f"Found {len(gaps)} coverage gaps requiring risk extraction")
 
     return {
         "gap_obligations": gaps,
@@ -334,7 +309,7 @@ def extract_and_score_node(state: AssessState) -> dict[str, Any]:
     total = len(gaps)
     citation = gap.get("citation", "")
 
-    _emit(EventType.ITEM_STARTED, f"Extracting risks ({idx + 1}/{total}): {citation}")
+    _infra.emit_event(EventType.ITEM_STARTED, f"Extracting risks ({idx + 1}/{total}): {citation}")
 
     # Find the obligation data
     approved = state.get("approved_obligations", [])
@@ -344,9 +319,9 @@ def extract_and_score_node(state: AssessState) -> dict[str, Any]:
             ob_data = ob
             break
 
-    context = _build_context(max_tokens=4096)
-    agent = _get_agent("risk_scorer", context)
-    loop = _get_loop()
+    context = _infra.build_agent_context(max_tokens=4096)
+    agent = _infra.get_agent("risk_scorer", _AGENT_CLASSES, context)
+    loop = _infra.get_or_create_event_loop()
 
     # Count existing risks for sequential ID
     existing_risks = state.get("scored_risks", [])
@@ -374,7 +349,7 @@ def extract_and_score_node(state: AssessState) -> dict[str, Any]:
         if not passed:
             errors.append(f"Risk validation for {citation}: {failures}")
 
-    _emit(EventType.RISK_SCORED, f"Scored {len(risks)} risks for {citation}")
+    _infra.emit_event(EventType.RISK_SCORED, f"Scored {len(risks)} risks for {citation}")
 
     return {
         "scored_risks": risks,
@@ -391,7 +366,7 @@ def has_more_gaps(state: AssessState) -> str:
 
 def finalize_node(state: AssessState) -> dict[str, Any]:
     """Assemble final reports."""
-    _emit(EventType.STAGE_STARTED, "Finalizing reports")
+    _infra.emit_event(EventType.STAGE_STARTED, "Finalizing reports")
 
     approved = state.get("approved_obligations", [])
     mappings = state.get("obligation_mappings", [])
@@ -472,7 +447,7 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
         "high_count": high_count,
     }
 
-    _emit(
+    _infra.emit_event(
         EventType.PIPELINE_COMPLETED,
         f"Finalized: {len(assessments)} assessments, {len(gaps)} gaps, {len(risks)} risks",
     )
@@ -500,7 +475,7 @@ def build_assess_graph(trace_db=None, run_id: str = ""):
         Unique identifier for this pipeline run (used for tracing).
     """
     if trace_db and run_id:
-        _install_tracing_transport(trace_db, run_id)
+        _infra.install_tracing_transport(trace_db, run_id)
 
     def _wrap(name, fn):
         if trace_db and run_id:
@@ -522,15 +497,3 @@ def build_assess_graph(trace_db=None, run_id: str = ""):
     graph.add_conditional_edges("extract_and_score", has_more_gaps)
     graph.add_edge("finalize", END)
     return graph.compile()
-
-
-def _install_tracing_transport(trace_db, run_id: str) -> None:
-    """Replace the cached LLM client with a tracing wrapper."""
-    global _llm_client_cache
-    if _llm_client_cache is None:
-        _llm_client_cache = build_client_from_env()
-    if _llm_client_cache and not isinstance(_llm_client_cache, TracingTransportClient):
-        _llm_client_cache = TracingTransportClient(_llm_client_cache, trace_db, run_id)
-    for agent in _agent_cache.values():
-        if hasattr(agent, "context") and agent.context.client is not _llm_client_cache:
-            agent.context.client = _llm_client_cache

@@ -12,6 +12,7 @@ import pandas as pd
 
 from regrisk.core.models import Obligation, ObligationGroup
 from regrisk.exceptions import IngestError
+from regrisk.ingest.utils import clean_str as _clean_str
 
 
 # Columns we extract from the regulation Excel
@@ -32,16 +33,6 @@ _COLUMN_MAP: dict[str, str] = {
     "Applicability": "applicability",
     "Mandate Citation": "mandate_citation",
 }
-
-
-def _clean_str(val: object) -> str:
-    """Convert a cell value to a clean string, handling NaN and 'nan'."""
-    if val is None:
-        return ""
-    s = str(val).strip()
-    if s.lower() == "nan":
-        return ""
-    return s
 
 
 def parse_regulation_excel(path: str) -> tuple[str, list[Obligation]]:

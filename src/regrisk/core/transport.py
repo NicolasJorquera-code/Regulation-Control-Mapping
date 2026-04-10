@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import random
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -38,7 +39,8 @@ class AsyncTransportClient:
     provider: str = "openai"
     ica_tool_calling: bool = False
     timeout_seconds: int = 120
-    max_retries: int = 3
+    max_retries: int = 5
+    max_backoff: int = 60
 
     _client: httpx.AsyncClient | None = field(default=None, repr=False)
     _resolved_url: str | None = field(default=None, repr=False)
@@ -96,7 +98,19 @@ class AsyncTransportClient:
                     )
 
                     if resp.status_code == 404:
+                        if self._resolved_url:
+                            # URL previously worked — treat as transient error
+                            last_exc = TransportError(f"Transient 404 from {url}")
+                            if is_last_attempt:
+                                logger.error("Transient 404 — retries exhausted for resolved URL %s", url)
+                                break
+                            wait = min(2 ** attempt * 3, self.max_backoff)
+                            wait *= 0.5 + random.random() * 0.5
+                            logger.warning("Transient 404 from resolved URL, retry in %.1fs (attempt %d/%d)", wait, attempt + 1, self.max_retries)
+                            await asyncio.sleep(wait)
+                            continue
                         logger.warning("404 from %s — skipping to next candidate", url)
+                        last_exc = TransportError(f"404 from {url}")
                         break  # try next URL
                     if resp.status_code in (401, 403):
                         raise TransportError(f"Auth failure ({resp.status_code}): {resp.text[:200]}")
@@ -107,8 +121,9 @@ class AsyncTransportClient:
                         if is_last_attempt:
                             last_exc = TransportError(f"Rate limited after {self.max_retries} attempts")
                             break  # try next URL if any
-                        wait = 2 ** attempt
-                        logger.warning("Rate limited, retry in %ds (attempt %d/%d)", wait, attempt + 1, self.max_retries)
+                        wait = min(2 ** attempt, self.max_backoff)
+                        wait *= 0.5 + random.random() * 0.5  # jitter
+                        logger.warning("Rate limited, retry in %.1fs (attempt %d/%d)", wait, attempt + 1, self.max_retries)
                         await asyncio.sleep(wait)
                         last_exc = TransportError(f"Rate limited (attempt {attempt + 1})")
                         continue
@@ -120,8 +135,11 @@ class AsyncTransportClient:
                         if is_last_attempt:
                             logger.error("Server error %d — retries exhausted: %s", resp.status_code, snippet)
                             break
-                        wait = 2 ** attempt
-                        logger.warning("Server error %d, retry in %ds (attempt %d/%d): %s", resp.status_code, wait, attempt + 1, self.max_retries, snippet)
+                        # 524 = Cloudflare origin timeout — server needs more recovery time
+                        base_wait = 10 if resp.status_code == 524 else 2 ** attempt
+                        wait = min(base_wait * (attempt + 1), self.max_backoff)
+                        wait *= 0.5 + random.random() * 0.5  # jitter
+                        logger.warning("Server error %d, retry in %.1fs (attempt %d/%d): %s", resp.status_code, wait, attempt + 1, self.max_retries, snippet)
                         await asyncio.sleep(wait)
                         continue
                     if resp.status_code >= 400:
@@ -166,8 +184,9 @@ class AsyncTransportClient:
                     if is_last_attempt:
                         logger.error("Timeout on final attempt for %s: %s", url, exc)
                         break
-                    wait = 2 ** attempt
-                    logger.warning("Timeout (attempt %d/%d) for %s, retry in %ds", attempt + 1, self.max_retries, url, wait)
+                    wait = min(2 ** attempt * 5, self.max_backoff)
+                    wait *= 0.5 + random.random() * 0.5
+                    logger.warning("Timeout (attempt %d/%d) for %s, retry in %.1fs", attempt + 1, self.max_retries, url, wait)
                     await asyncio.sleep(wait)
 
                 except httpx.RequestError as exc:
@@ -178,8 +197,9 @@ class AsyncTransportClient:
                     if is_last_attempt:
                         logger.error("Connection error on final attempt for %s: %s", url, exc)
                         break
-                    wait = 2 ** attempt
-                    logger.warning("Connection error (attempt %d/%d) for %s, retry in %ds: %s", attempt + 1, self.max_retries, url, wait, exc)
+                    wait = min(2 ** attempt, self.max_backoff)
+                    wait *= 0.5 + random.random() * 0.5
+                    logger.warning("Connection error (attempt %d/%d) for %s, retry in %.1fs: %s", attempt + 1, self.max_retries, url, wait, exc)
                     await asyncio.sleep(wait)
 
         logger.error("All LLM attempts exhausted. Last error: %s", last_exc)
@@ -235,7 +255,9 @@ def build_client_from_env(
     ica_base = os.environ.get("ICA_BASE_URL")
     if ica_key and ica_base:
         ica_timeout = int(os.environ.get("ICA_TIMEOUT", "300"))
-        logger.info("Detected ICA provider: base_url=%s timeout=%ds", ica_base, ica_timeout)
+        ica_retries = int(os.environ.get("ICA_MAX_RETRIES", "5"))
+        ica_max_backoff = int(os.environ.get("ICA_MAX_BACKOFF", "60"))
+        logger.info("Detected ICA provider: base_url=%s timeout=%ds retries=%d", ica_base, ica_timeout, ica_retries)
         ica_model = model_override or os.environ.get(
             "ICA_MODEL_ID", "anthropic.claude-sonnet-4-5-20250929-v1:0"
         )
@@ -249,6 +271,8 @@ def build_client_from_env(
             provider="ica",
             ica_tool_calling=ica_tool_calling,
             timeout_seconds=ica_timeout,
+            max_retries=ica_retries,
+            max_backoff=ica_max_backoff,
         )
 
     # --- OpenAI ---
