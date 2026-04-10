@@ -100,8 +100,6 @@ def render_modular_tab() -> None:
             encoding="utf-8",
         )
         config_path = tmp
-    elif selected_path:
-        config_path = selected_path
 
     if config_path is None:
         return
