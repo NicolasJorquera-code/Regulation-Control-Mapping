@@ -2,6 +2,15 @@
 
 Consolidates taxonomy, section profiles, placement/methods, standards, and
 frequency rules into one validated Pydantic model loaded from a single YAML.
+
+.. note::
+   **TODO — Config convergence**: ``DomainConfig`` (this module) and
+   ``RunConfig`` (``core/models.py``) serve similar purposes for different
+   pipelines. ``DomainConfig`` powers the ControlForge Modular graph;
+   ``RunConfig`` powers the legacy orchestrator. When the orchestrator is
+   deprecated, evaluate whether ``RunConfig`` fields (scope, sizing,
+   transport, output) should be absorbed into ``DomainConfig`` to create a
+   single unified configuration model.
 """
 
 from __future__ import annotations

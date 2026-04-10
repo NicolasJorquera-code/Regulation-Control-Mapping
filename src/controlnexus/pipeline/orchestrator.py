@@ -1,4 +1,16 @@
-"""Core pipeline orchestrator.
+"""Core pipeline orchestrator (legacy).
+
+.. deprecated::
+   This module is the **legacy** control-generation pipeline. It is being
+   replaced by ``graphs/forge_modular_graph.py`` (the ControlForge Modular
+   graph). Both coexist during the transition:
+
+   - **Legacy ControlForge tab** (``ui/controlforge_tab.py``) uses this
+     ``Orchestrator`` class.
+   - **ControlForge Modular tab** (``ui/modular_tab.py``) uses the
+     LangGraph-based ``build_forge_graph()`` pipeline.
+
+   When the legacy tab is retired, this module can be removed.
 
 Coordinates the full control-generation pipeline: hierarchy loading, scope
 selection, target sizing, deterministic mapping, 3-phase control building

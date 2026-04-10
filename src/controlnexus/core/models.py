@@ -163,7 +163,15 @@ class OutputConfig(BaseModel):
 
 
 class RunConfig(BaseModel):
-    """Top-level configuration for a single ControlNexus run."""
+    """Top-level configuration for a single ControlNexus run.
+
+    .. note::
+       **TODO — Config convergence**: This model drives the legacy
+       ``pipeline/orchestrator.py``. The modern ControlForge Modular graph
+       uses ``DomainConfig`` (``core/domain_config.py``) instead. When the
+       orchestrator is deprecated, evaluate whether ``RunConfig`` fields
+       should be absorbed into ``DomainConfig``.
+    """
 
     run_id: str
     description: str | None = None
