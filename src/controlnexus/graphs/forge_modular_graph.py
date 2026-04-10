@@ -10,7 +10,6 @@ and falls back to the deterministic path on any error.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import time
@@ -19,10 +18,17 @@ from typing import Annotated, Any, Callable, TypedDict
 
 from langgraph.graph import END, StateGraph
 
-from controlnexus.agents.base import AgentContext, BaseAgent
 from controlnexus.core.domain_config import DomainConfig, load_domain_config
-from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
-from controlnexus.core.transport import build_client_from_env
+from controlnexus.core.events import EventType
+from controlnexus.graphs.graph_infra import (
+    _emit_event,
+    _get_agent,
+    _get_client,
+    _run_async_in_loop,
+    get_emitter,
+    reset_caches,
+    set_emitter,
+)
 from controlnexus.graphs.state import add as _add
 from controlnexus.graphs.forge_modular_helpers import (
     assign_control_ids,
@@ -102,25 +108,8 @@ def _ica_xml_mode(state: dict[str, Any]) -> bool:
     return state.get("provider") == "ica" and state.get("ica_tool_calling") is True
 
 
-# ── Event infrastructure ─────────────────────────────────────────────────────
-
-_emitter: EventEmitter = EventEmitter()
-
-
-def set_emitter(emitter: EventEmitter) -> None:
-    """Set the module-level emitter (called by UI layer before graph run)."""
-    global _emitter
-    _emitter = emitter
-
-
-def get_emitter() -> EventEmitter:
-    """Return the current module-level emitter."""
-    return _emitter
-
-
-def _emit(event_type: EventType, message: str = "", **data: Any) -> None:
-    """Convenience: emit an event on the module-level emitter."""
-    _emitter.emit(PipelineEvent(event_type=event_type, message=message, data=data))
+# Backward-compatible aliases for external consumers
+reset_llm_cache = reset_caches
 
 
 def _emitting_tool_executor(
@@ -130,12 +119,12 @@ def _emitting_tool_executor(
     """Wrap a tool executor to emit TOOL_CALLED / TOOL_COMPLETED events."""
 
     def wrapper(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        _emit(EventType.TOOL_CALLED, f"{tool_name}({json.dumps(arguments, default=str)[:120]})", tool=tool_name)
+        _emit_event(EventType.TOOL_CALLED, f"{tool_name}({json.dumps(arguments, default=str)[:120]})", tool=tool_name)
         t0 = time.monotonic()
         result = base_executor(tool_name, arguments)
         elapsed = time.monotonic() - t0
         log.append({"tool": tool_name, "args": arguments, "elapsed": round(elapsed, 3)})
-        _emit(EventType.TOOL_COMPLETED, f"{tool_name} ({elapsed:.2f}s)", tool=tool_name, elapsed=elapsed)
+        _emit_event(EventType.TOOL_COMPLETED, f"{tool_name} ({elapsed:.2f}s)", tool=tool_name, elapsed=elapsed)
         return result
 
     return wrapper
@@ -200,7 +189,7 @@ def init_node(state: ForgeState) -> dict[str, Any]:
     assignments = build_assignment_matrix(domain_config, target, dist_cfg)
     logger.info("init_node: built %d assignments for target_count=%d", len(assignments), target)
 
-    _emit(
+    _emit_event(
         EventType.PIPELINE_STARTED,
         f"{domain_config.name}, target={target}",
         config_name=domain_config.name,
@@ -233,7 +222,7 @@ def select_node(state: ForgeState) -> dict[str, Any]:
     assignment = assignments[idx]
     ctrl_type = assignment.get("control_type", "")
     section = assignment.get("section_id", "")
-    _emit(
+    _emit_event(
         EventType.CONTROL_STARTED,
         f"{ctrl_type} in {section}",
         index=idx + 1,
@@ -248,69 +237,6 @@ def select_node(state: ForgeState) -> dict[str, Any]:
     }
 
 
-# ── LLM helpers ───────────────────────────────────────────────────────────────
-
-# Module-level caches so the transport client is built once and each agent
-# keeps its call_count across controls (producing "LLM call #1", "#2", …).
-# A dedicated event loop is kept alive so the async httpx connection pool
-# doesn't break between node calls (asyncio.run() would close the loop each
-# time, killing the TCP connections).
-_llm_client_cache: dict[str, Any] = {}  # {"client": AsyncTransportClient | None}
-_agent_cache: dict[str, BaseAgent] = {}  # {"SpecAgent": agent, ...}
-_event_loop: asyncio.AbstractEventLoop | None = None
-
-
-def _get_loop() -> asyncio.AbstractEventLoop:
-    """Return a persistent event loop for LLM calls."""
-    global _event_loop
-    if _event_loop is None or _event_loop.is_closed():
-        _event_loop = asyncio.new_event_loop()
-    return _event_loop
-
-
-def _run_async(coro: Any) -> Any:
-    """Run an async coroutine on the persistent event loop."""
-    return _get_loop().run_until_complete(coro)
-
-
-def _get_client() -> Any | None:
-    """Return the cached transport client, building it once."""
-    if "client" not in _llm_client_cache:
-        _llm_client_cache["client"] = build_client_from_env()
-    return _llm_client_cache["client"]
-
-
-def _get_agent(name: str) -> BaseAgent | None:
-    """Return a cached BaseAgent wrapper with the given display *name*.
-
-    Returns ``None`` when no LLM credentials are available.
-    """
-    client = _get_client()
-    if client is None:
-        return None
-
-    if name not in _agent_cache:
-
-        class _Proxy(BaseAgent):
-            async def execute(self, **kwargs: Any) -> dict[str, Any]:
-                raise NotImplementedError  # we use call_llm directly
-
-        ctx = AgentContext(client=client, model=client.model)
-        _agent_cache[name] = _Proxy(ctx, name=name)
-
-    return _agent_cache[name]
-
-
-def reset_llm_cache() -> None:
-    """Clear the module-level LLM caches (useful between test runs)."""
-    global _event_loop
-    if _event_loop is not None and not _event_loop.is_closed():
-        _event_loop.close()
-    _event_loop = None
-    _llm_client_cache.clear()
-    _agent_cache.clear()
-
-
 # ── Agent nodes ───────────────────────────────────────────────────────────────
 
 
@@ -322,7 +248,7 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
     if not state.get("llm_enabled"):
         return {"current_spec": build_deterministic_spec(assignment, config)}
 
-    _emit(EventType.AGENT_STARTED, "SpecAgent")
+    _emit_event(EventType.AGENT_STARTED, "SpecAgent")
     t0 = time.monotonic()
     tool_log: list[dict[str, Any]] = []
     provider = state.get("provider", "ica")
@@ -361,14 +287,14 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
         ]
 
         if _ica_xml_mode(state):
-            response = _run_async(
+            response = _run_async_in_loop(
                 agent.call_llm_with_xml_tools(
                     messages,
                     emitting_executor,
                 )
             )
         else:
-            response = _run_async(
+            response = _run_async_in_loop(
                 agent.call_llm_with_tools(
                     messages,
                     tools,
@@ -381,7 +307,7 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
         result = agent.parse_json(text)
 
         elapsed = time.monotonic() - t0
-        _emit(
+        _emit_event(
             EventType.AGENT_COMPLETED,
             f"SpecAgent ({elapsed:.1f}s, {n_tools} tool calls)",
             agent="SpecAgent",
@@ -392,7 +318,7 @@ def spec_node(state: ForgeState) -> dict[str, Any]:
     except Exception:
         logger.warning("spec_node LLM failed — falling back to deterministic", exc_info=True)
         elapsed = time.monotonic() - t0
-        _emit(
+        _emit_event(
             EventType.AGENT_FAILED,
             f"SpecAgent failed ({elapsed:.1f}s) — deterministic fallback",
             agent="SpecAgent",
@@ -409,7 +335,7 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
     if not state.get("llm_enabled"):
         return {"current_narrative": build_deterministic_narrative(spec, config)}
 
-    _emit(EventType.AGENT_STARTED, "NarrativeAgent")
+    _emit_event(EventType.AGENT_STARTED, "NarrativeAgent")
     t0 = time.monotonic()
     tool_log: list[dict[str, Any]] = []
     provider = state.get("provider", "ica")
@@ -450,14 +376,14 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
         ]
 
         if _ica_xml_mode(state):
-            response = _run_async(
+            response = _run_async_in_loop(
                 agent.call_llm_with_xml_tools(
                     messages,
                     emitting_executor,
                 )
             )
         else:
-            response = _run_async(
+            response = _run_async_in_loop(
                 agent.call_llm_with_tools(
                     messages,
                     tools,
@@ -470,7 +396,7 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
         result = agent.parse_json(text)
 
         elapsed = time.monotonic() - t0
-        _emit(
+        _emit_event(
             EventType.AGENT_COMPLETED,
             f"NarrativeAgent ({elapsed:.1f}s, {n_tools} tool calls)",
             agent="NarrativeAgent",
@@ -481,7 +407,7 @@ def narrative_node(state: ForgeState) -> dict[str, Any]:
     except Exception:
         logger.warning("narrative_node LLM failed — falling back to deterministic", exc_info=True)
         elapsed = time.monotonic() - t0
-        _emit(
+        _emit_event(
             EventType.AGENT_FAILED,
             f"NarrativeAgent failed ({elapsed:.1f}s) — deterministic fallback",
             agent="NarrativeAgent",
@@ -513,12 +439,12 @@ def validate_node(state: ForgeState) -> dict[str, Any]:
     )
 
     if result.passed:
-        _emit(EventType.VALIDATION_PASSED, "Validation passed")
+        _emit_event(EventType.VALIDATION_PASSED, "Validation passed")
         return {"validation_passed": True, "validation_failures": [], "retry_appendix": ""}
 
     if retry_count >= 3:
         # Max retries — accept as-is
-        _emit(
+        _emit_event(
             EventType.VALIDATION_PASSED,
             f"Validation accepted after max retries (failures: {result.failures})",
             accepted_with_failures=True,
@@ -533,13 +459,13 @@ def validate_node(state: ForgeState) -> dict[str, Any]:
         min_words=config.narrative.word_count_min,
         max_words=config.narrative.word_count_max,
     )
-    _emit(
+    _emit_event(
         EventType.VALIDATION_FAILED,
         f"Validation failed (retry {retry_count + 1}/3): {result.failures}",
         failures=result.failures,
         retry=retry_count + 1,
     )
-    _emit(
+    _emit_event(
         EventType.AGENT_RETRY,
         f"NarrativeAgent retry {retry_count + 1}/3",
         agent="NarrativeAgent",
@@ -563,7 +489,7 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
         enriched = build_deterministic_enriched(spec, narrative, config)
         return {"current_enriched": enriched, "validation_passed": True}
 
-    _emit(EventType.AGENT_STARTED, "EnricherAgent")
+    _emit_event(EventType.AGENT_STARTED, "EnricherAgent")
     t0 = time.monotonic()
     tool_log: list[dict[str, Any]] = []
     provider = state.get("provider", "ica")
@@ -595,14 +521,14 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
         ]
 
         if _ica_xml_mode(state):
-            response = _run_async(
+            response = _run_async_in_loop(
                 agent.call_llm_with_xml_tools(
                     messages,
                     emitting_executor,
                 )
             )
         else:
-            response = _run_async(
+            response = _run_async_in_loop(
                 agent.call_llm_with_tools(
                     messages,
                     tools,
@@ -623,7 +549,7 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
 
         elapsed = time.monotonic() - t0
         rating = enriched.get("quality_rating", "")
-        _emit(
+        _emit_event(
             EventType.AGENT_COMPLETED,
             f"EnricherAgent ({elapsed:.1f}s, {n_tools} tool calls) — {rating}",
             agent="EnricherAgent",
@@ -635,7 +561,7 @@ def enrich_node(state: ForgeState) -> dict[str, Any]:
     except Exception:
         logger.warning("enrich_node LLM failed — falling back to deterministic", exc_info=True)
         elapsed = time.monotonic() - t0
-        _emit(
+        _emit_event(
             EventType.AGENT_FAILED,
             f"EnricherAgent failed ({elapsed:.1f}s) — deterministic fallback",
             agent="EnricherAgent",
@@ -650,7 +576,7 @@ def merge_node(state: ForgeState) -> dict[str, Any]:
     enriched = state["current_enriched"]
     rating = enriched.get("quality_rating", "")
     idx = state["current_idx"]
-    _emit(EventType.CONTROL_COMPLETED, f"Control {idx + 1} completed — {rating}", index=idx + 1, rating=rating)
+    _emit_event(EventType.CONTROL_COMPLETED, f"Control {idx + 1} completed — {rating}", index=idx + 1, rating=rating)
     return {
         "generated_records": [enriched],
         "current_idx": idx + 1,
@@ -664,7 +590,7 @@ def finalize_node(state: ForgeState) -> dict[str, Any]:
 
     final_records = assign_control_ids(records, config)
 
-    _emit(
+    _emit_event(
         EventType.PIPELINE_COMPLETED,
         f"Generated {len(final_records)} controls for {config.name}",
         total=len(final_records),
