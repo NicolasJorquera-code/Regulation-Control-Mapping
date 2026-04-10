@@ -11,6 +11,11 @@ from typing import Any
 
 from controlnexus.core.state import ValidationResult
 
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
 # Vague 'when' terms that should be replaced with specific frequencies
 VAGUE_WHEN_TERMS = ("periodic", "ad hoc", "as needed", "various", "as required", "on occasion")
 
@@ -94,6 +99,11 @@ _ACTION_VERB_RE = re.compile(
 
 # Noun-form suffixes — words ending in these are likely nouns, not action verbs
 _NOUN_SUFFIXES = ("tion", "ment", "ance", "ence", "ity", "ness", "ure")
+
+
+# ---------------------------------------------------------------------------
+# Validation engine
+# ---------------------------------------------------------------------------
 
 
 def validate(
@@ -183,6 +193,11 @@ def validate(
         failures=failures,
         word_count=word_count,
     )
+
+
+# ---------------------------------------------------------------------------
+# Retry guidance builder
+# ---------------------------------------------------------------------------
 
 
 def build_retry_appendix(

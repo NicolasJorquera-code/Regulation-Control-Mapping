@@ -21,6 +21,11 @@ _memory: Any = None  # ControlMemory instance, optional
 _bank_id: str = ""
 
 
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+
 def configure_tools(
     placement_config: dict[str, Any],
     section_profiles: dict[str, SectionProfile],
@@ -33,6 +38,11 @@ def configure_tools(
     _section_profiles = section_profiles
     _memory = memory
     _bank_id = bank_id
+
+
+# ---------------------------------------------------------------------------
+# Tool implementations
+# ---------------------------------------------------------------------------
 
 
 def taxonomy_validator(level_1: str, level_2: str) -> dict[str, Any]:

@@ -16,6 +16,11 @@ from controlnexus.memory.embedder import Embedder
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# ControlMemory
+# ---------------------------------------------------------------------------
+
+
 class ControlMemory:
     """Vector memory store for control descriptions.
 

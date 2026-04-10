@@ -12,6 +12,11 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+# ---------------------------------------------------------------------------
+# Section profile models
+# ---------------------------------------------------------------------------
+
+
 class RiskProfile(BaseModel):
     """Risk scoring for an APQC section."""
 
@@ -68,6 +73,11 @@ class SectionProfile(BaseModel):
     affinity: AffinityMatrix = Field(default_factory=AffinityMatrix)
     registry: DomainRegistry
     exemplars: list[ExemplarControl] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Run configuration models
+# ---------------------------------------------------------------------------
 
 
 class ScopeConfig(BaseModel):
@@ -165,6 +175,11 @@ class RunConfig(BaseModel):
     concurrency: ConcurrencyConfig
     output: OutputConfig
     traced_leaves: dict[str, str] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Taxonomy models
+# ---------------------------------------------------------------------------
 
 
 class TaxonomyItem(BaseModel):

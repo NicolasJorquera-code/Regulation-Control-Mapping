@@ -22,6 +22,11 @@ from controlnexus.exceptions import ExternalServiceException
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Transport client
+# ---------------------------------------------------------------------------
+
+
 @dataclass
 class AsyncTransportClient:
     """Async HTTP client for LLM chat completions.
@@ -147,6 +152,11 @@ class AsyncTransportClient:
         if self._client is not None:
             await self._client.aclose()
             self._client = None
+
+
+# ---------------------------------------------------------------------------
+# Client factory
+# ---------------------------------------------------------------------------
 
 
 def build_client_from_env(

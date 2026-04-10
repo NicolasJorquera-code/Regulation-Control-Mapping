@@ -50,6 +50,11 @@ from controlnexus.validation.validator import build_retry_appendix, validate
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Data classes
+# ---------------------------------------------------------------------------
+
+
 @dataclass
 class PlanningResult:
     """Results from a completed planning run."""
@@ -301,6 +306,8 @@ class Orchestrator:
             control_records=generated_records,
         )
 
+    # -- Input resolution ------------------------------------------------------
+
     def _resolve_template_path(self) -> Path:
         template_path = self.run_config.input.apqc_template
         if not template_path.is_absolute():
@@ -389,6 +396,8 @@ class Orchestrator:
             for key in order[:remainder]:
                 result[key] += 1
         return result
+
+    # -- Deterministic mapping --------------------------------------------------
 
     def _deterministic_map_with_bu(
         self,
@@ -749,6 +758,8 @@ class Orchestrator:
 
         return records, use_llm
 
+    # -- LLM enrichment --------------------------------------------------------
+
     async def _llm_enrich_single(
         self,
         item: dict[str, Any],
@@ -977,6 +988,11 @@ class Orchestrator:
             else:
                 selected_level_2 = allowed[0]
         return selected_level_1, selected_level_2
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
 
 
 def build_control_id(hierarchy_id: str, control_type: str, sequence: int) -> str:
