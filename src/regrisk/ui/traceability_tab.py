@@ -50,6 +50,10 @@ def render_traceability_tab() -> None:
 
     # ── Section A: Run Selector ──
     st.header("🔍 Execution Trace Viewer")
+    st.info(
+        "ℹ️ This tab provides **developer-level execution traces** for pipeline debugging "
+        "and audit. For compliance review, see **Tabs 2–4**."
+    )
     st.caption(
         "Every pipeline run is recorded to a local SQLite database at "
         "**data/traces.db**. You can also query it directly in a terminal: "
