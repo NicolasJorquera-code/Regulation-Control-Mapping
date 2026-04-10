@@ -235,7 +235,7 @@ def render_upload_tab() -> None:
                         f"*{cp_info['regulation_name']}* ({cp_info['stage_label']})"
                     )
                 with demo_cols[1]:
-                    if st.button("🎭 Load Demo Data", type="primary", use_container_width=True):
+                    if st.button("🎭 Load Demo Data", type="primary", width="stretch"):
                         _load_demo_data()
 
     # ── Panel A: Data Sources ──
@@ -257,7 +257,7 @@ def render_upload_tab() -> None:
                 total, cols, preview_df = _preview_regulation(reg_path)
                 with st.expander(f"📜 Regulation — {Path(reg_path).name} ({total:,} obligations)", expanded=False):
                     st.caption(f"Columns: {', '.join(cols)}")
-                    st.dataframe(preview_df, use_container_width=True, hide_index=True)
+                    st.dataframe(preview_df, width="stretch", hide_index=True)
             except Exception as exc:
                 st.warning(f"Could not preview regulation: {exc}")
         else:
@@ -269,7 +269,7 @@ def render_upload_tab() -> None:
                 total, cols, preview_df = _preview_apqc(apqc_path)
                 with st.expander(f"🗂️ APQC Hierarchy — {Path(apqc_path).name} ({total:,} nodes)", expanded=False):
                     st.caption(f"Columns: {', '.join(cols)}")
-                    st.dataframe(preview_df, use_container_width=True, hide_index=True)
+                    st.dataframe(preview_df, width="stretch", hide_index=True)
             except Exception as exc:
                 st.warning(f"Could not preview APQC: {exc}")
         else:
@@ -281,7 +281,7 @@ def render_upload_tab() -> None:
                 total, cols, preview_df = _preview_controls(tuple(control_files_list))
                 with st.expander(f"🛡️ Controls — {len(control_files_list)} file(s) ({total:,} controls)", expanded=False):
                     st.caption(f"Columns: {', '.join(cols)}")
-                    st.dataframe(preview_df, use_container_width=True, hide_index=True)
+                    st.dataframe(preview_df, width="stretch", hide_index=True)
             except Exception as exc:
                 st.warning(f"Could not preview controls: {exc}")
         else:

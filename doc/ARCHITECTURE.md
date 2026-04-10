@@ -9,18 +9,22 @@
 
 1. [System Overview](#1-system-overview)
 2. [High-Level Architecture](#2-high-level-architecture)
-3. [Graph 1 — Classification Pipeline](#3-graph-1--classification-pipeline)
-4. [Graph 2 — Assessment Pipeline](#4-graph-2--assessment-pipeline)
-5. [Agents](#5-agents)
-6. [Data Flow](#6-data-flow)
-7. [Data Models](#7-data-models)
-8. [Ingest Layer](#8-ingest-layer)
-9. [Configuration](#9-configuration)
-10. [Tracing & Observability](#10-tracing--observability)
-11. [UI (Streamlit)](#11-ui-streamlit)
-12. [Validation](#12-validation)
-13. [Project Structure](#13-project-structure)
-14. [Frontend Tab Details](#14-frontend-tab-details)
+3. [Graph Infrastructure](#3-graph-infrastructure)
+4. [Graph 1 — Classification Pipeline](#4-graph-1--classification-pipeline)
+5. [Graph 2 — Assessment Pipeline](#5-graph-2--assessment-pipeline)
+6. [Agents](#6-agents)
+7. [Data Flow](#7-data-flow)
+8. [Data Models](#8-data-models)
+9. [Ingest Layer](#9-ingest-layer)
+10. [Constants & Scoring](#10-constants--scoring)
+11. [Configuration](#11-configuration)
+12. [Tracing & Observability](#12-tracing--observability)
+13. [UI Architecture](#13-ui-architecture)
+14. [Validation](#14-validation)
+15. [Export Layer](#15-export-layer)
+16. [Project Structure](#16-project-structure)
+17. [Testing](#17-testing)
+18. [Frontend Tab Details](#18-frontend-tab-details)
 
 ---
 
@@ -52,10 +56,12 @@ The pipeline is built on **LangGraph** — a state-machine framework from the La
 | Orchestration | LangGraph ≥ 0.2, LangChain Core ≥ 0.3 |
 | LLM Transport | httpx (async), supports OpenAI and IBM Cloud AI (ICA) |
 | Data Validation | Pydantic v2 (frozen models) |
-| UI | Streamlit ≥ 1.35 |
-| Tracing | SQLite (stdlib `sqlite3`) |
+| UI | Streamlit ≥ 1.35 (modular multi-file tab architecture) |
+| Tracing | SQLite (stdlib `sqlite3`, WAL mode) |
 | Data I/O | pandas, openpyxl |
+| Visualisation | matplotlib (risk heatmap) |
 | Config | YAML (`default.yaml`) + JSON (`risk_taxonomy.json`) |
+| Environment | python-dotenv for `.env` loading |
 
 ### Dual-Mode Execution
 
@@ -123,11 +129,45 @@ Provider detection order: `ICA_API_KEY` → `OPENAI_API_KEY` → deterministic f
 - **Two graphs, not one.** The human review checkpoint between classification and assessment means the UI can save/load intermediate state and let analysts curate results before the expensive assessment phase runs.
 - **Loop-based processing.** Each graph uses conditional routing (`has_more_*` nodes) to iterate over items one at a time. This keeps memory bounded and enables per-item tracing.
 - **Reducer-based state accumulation.** List fields in state use `Annotated[list, operator.add]` so nodes can *append* results without replacing the entire list.
-- **Module-level caching.** The LLM client, agents, and event loop are cached at module scope — one instance per Streamlit session. This avoids recreating connections on every node invocation.
+- **GraphInfra singleton pattern.** Both graphs share a common `GraphInfra` class (`graphs/graph_infra.py`) that encapsulates module-level caches for the event emitter, LLM client, agent instances, and event loop. This eliminates duplication and ensures one-instance-per-session semantics.
+- **Centralised constants.** All domain string literals (categories, coverage statuses, relationship types, etc.) live in `core/constants.py` as a single source of truth. Validators, agents, graphs, and UI all import from here — no magic strings.
+- **Modular UI.** The Streamlit application is split across 7 files: a thin orchestrator (`app.py`) delegates to dedicated tab modules (`upload_tab.py`, `review_tabs.py`, `results_tab.py`, `traceability_tab.py`) with shared helpers in `components.py` and a session state key catalog in `session_keys.py`.
+- **Extracted scoring logic.** The `impact × frequency` → risk rating formula lives in `core/scoring.py` as a pure function, decoupled from both the agent and validator layers.
 
 ---
 
-## 3. Graph 1 — Classification Pipeline
+## 3. Graph Infrastructure
+
+**Source:** `src/regrisk/graphs/graph_infra.py`
+
+Both LangGraph pipelines share infrastructure for LLM client management, agent caching, event emission, and tracing. Rather than duplicating this in each graph module, the `GraphInfra` class centralises it.
+
+### GraphInfra Class
+
+```python
+class GraphInfra:
+    emitter: EventEmitter          # Fan-out event dispatcher
+    _llm_client_cache: AsyncTransportClient | None
+    _agent_cache: dict[str, Any]
+    _event_loop: asyncio.AbstractEventLoop | None
+```
+
+**Key methods:**
+
+| Method | Purpose |
+|--------|---------|
+| `build_agent_context()` | Builds an `AgentContext`, lazily creating and caching the LLM client. Reads the model name from the client or falls back to `DEFAULT_MODEL`. |
+| `get_agent(name, classes, ctx)` | Returns a cached agent instance, creating it on first access. |
+| `get_or_create_event_loop()` | Returns the cached `asyncio` event loop, creating a fresh one if the previous was closed. |
+| `emit_event(type, msg, **data)` | Convenience wrapper that builds a `PipelineEvent` and dispatches it. |
+| `install_tracing_transport(db, run_id)` | Wraps the cached LLM client in a `TracingTransportClient` and back-patches all already-cached agents so they use the wrapped client. |
+| `reset_caches()` | Clears all cached state (for test isolation and between pipeline runs). |
+
+Each graph module (`classify_graph.py`, `assess_graph.py`) creates its own `GraphInfra` instance and exposes `get_emitter()`, `set_emitter()`, and `reset_caches()` at module scope.
+
+---
+
+## 4. Graph 1 — Classification Pipeline
 
 **Source:** `src/regrisk/graphs/classify_graph.py`
 **State:** `src/regrisk/graphs/classify_state.py` → `ClassifyState`
@@ -172,7 +212,7 @@ Errors:       errors (list, reducer=add)
 
 ---
 
-## 4. Graph 2 — Assessment Pipeline
+## 5. Graph 2 — Assessment Pipeline
 
 **Source:** `src/regrisk/graphs/assess_graph.py`
 **State:** `src/regrisk/graphs/assess_state.py` → `AssessState`
@@ -237,7 +277,7 @@ Errors:       errors (reducer=add)
 
 ---
 
-## 5. Agents
+## 6. Agents
 
 All agents extend `BaseAgent` (in `src/regrisk/agents/base.py`), which provides:
 
@@ -249,7 +289,7 @@ Agents are registered via the `@register_agent` decorator into a global `AGENT_R
 
 ---
 
-### 5.1 ObligationClassifierAgent
+### 6.1 ObligationClassifierAgent
 
 **Source:** `src/regrisk/agents/obligation_classifier.py`
 
@@ -312,7 +352,7 @@ Agents are registered via the `@register_agent` decorator into a global `AGENT_R
 
 ---
 
-### 5.2 APQCMapperAgent
+### 6.2 APQCMapperAgent
 
 **Source:** `src/regrisk/agents/apqc_mapper.py`
 
@@ -352,7 +392,7 @@ Agents are registered via the `@register_agent` decorator into a global `AGENT_R
 
 ---
 
-### 5.3 CoverageAssessorAgent
+### 6.3 CoverageAssessorAgent
 
 **Source:** `src/regrisk/agents/coverage_assessor.py`
 
@@ -397,7 +437,7 @@ Agents are registered via the `@register_agent` decorator into a global `AGENT_R
 
 ---
 
-### 5.4 RiskExtractorAndScorerAgent
+### 6.4 RiskExtractorAndScorerAgent
 
 **Source:** `src/regrisk/agents/risk_extractor_scorer.py`
 
@@ -470,7 +510,7 @@ Agents are registered via the `@register_agent` decorator into a global `AGENT_R
 
 ---
 
-## 6. Data Flow
+## 7. Data Flow
 
 ### End-to-End Sequence
 
@@ -543,7 +583,7 @@ When a node returns `{"classified_obligations": [new_item]}`, LangGraph *appends
 
 ---
 
-## 7. Data Models
+## 8. Data Models
 
 All models are defined in `src/regrisk/core/models.py` using Pydantic v2 with `frozen=True` (immutable after creation).
 
@@ -575,13 +615,13 @@ All models are defined in `src/regrisk/core/models.py` using Pydantic v2 with `f
 
 ---
 
-## 8. Ingest Layer
+## 9. Ingest Layer
 
 **Source:** `src/regrisk/ingest/`
 
 The ingest layer converts raw Excel files into structured, validated Pydantic models. All ingest operations are **deterministic** — no LLM calls.
 
-### 8.1 Regulation Parser (`regulation_parser.py`)
+### 9.1 Regulation Parser (`regulation_parser.py`)
 
 - Reads the "Requirements" sheet from the regulation Excel file.
 - Validates that all 15 expected columns exist (Citation, Mandate Title, Abstract, Text, Status, Title Level 2–5, etc.).
@@ -589,25 +629,70 @@ The ingest layer converts raw Excel files into structured, validated Pydantic mo
 - Falls back to the "Text" column if "Abstract" is empty.
 - **`group_obligations()`** groups obligations by `(Citation Level 2, Citation Level 3)` — e.g. all obligations under "12 CFR 252 Subpart E § 252.34" become one group. For Regulation YY this produces ~89 groups.
 
-### 8.2 APQC Loader (`apqc_loader.py`)
+### 9.2 APQC Loader (`apqc_loader.py`)
 
 - Reads the "Combined" sheet from the APQC Excel template.
 - Computes `depth` from the hierarchy ID dot-count ("11.1.1" → depth 3).
 - Computes `parent_id` by stripping the last segment ("11.1.1" → "11.1").
 - **`build_apqc_summary()`** generates an indented text representation (2 spaces per level, filtered by `max_depth`) that is included in the APQCMapper's prompt.
 
-### 8.3 Control Loader (`control_loader.py`)
+### 9.3 Control Loader (`control_loader.py`)
 
 - **`discover_control_files()`** — globs for `section_*__controls.xlsx` files in the control dataset directory.
 - **`load_and_merge_controls()`** — reads each file, detects the correct sheet name, deduplicates by `control_id`, cleans NaN values.
 - **`build_control_index()`** — indexes controls by `hierarchy_id` into a dict for O(1) lookup.
 - **`find_controls_for_apqc()`** — returns controls whose `hierarchy_id` matches the APQC ID exactly or starts with it as a prefix (i.e. exact match + all descendants).
 
+### 9.4 Ingest Utilities (`ingest/utils.py`)
+
+Shared helper functions used across the ingest layer:
+
+- **`clean_str(val)`** — Converts a cell value to a clean string, handling `None`, `NaN`, and `"nan"` safely. Used by all three parsers during Excel ingestion.
+
 ---
 
-## 9. Configuration
+## 10. Constants & Scoring
 
-### 9.1 Pipeline Config (`config/default.yaml`)
+### 10.1 Constants (`core/constants.py`)
+
+A single-source-of-truth module for all domain string literals used across the pipeline. Every validator, agent, graph, and UI module imports from here rather than using bare strings. This eliminates typo-induced bugs and makes refactoring safe.
+
+**Constant groups:**
+
+| Group | Constants | Used By |
+|-------|-----------|---------|
+| Obligation Categories | `CATEGORY_ATTESTATION`, `CATEGORY_DOCUMENTATION`, `CATEGORY_CONTROLS`, `CATEGORY_GENERAL_AWARENESS`, `CATEGORY_NOT_ASSIGNED` + `OBLIGATION_CATEGORIES` frozenset | Classifier agent, validator, UI color coding |
+| Actionable Categories | `ACTIONABLE_CATEGORIES` frozenset | Graph 2 (only actionable obligations get mapped) |
+| Relationship Types | `REL_REQUIRES_EXISTENCE`, `REL_CONSTRAINS_EXECUTION`, `REL_REQUIRES_EVIDENCE`, `REL_SETS_FREQUENCY`, `REL_NA` + `RELATIONSHIP_TYPES` frozenset | Classifier, mapper, assessor agents, validator |
+| Criticality Tiers | `CRITICALITY_HIGH`, `CRITICALITY_MEDIUM`, `CRITICALITY_LOW` + `CRITICALITY_TIERS` frozenset | Classifier agent, validator, risk scorer |
+| Coverage Statuses | `COVERAGE_COVERED`, `COVERAGE_PARTIALLY_COVERED`, `COVERAGE_NOT_COVERED` + `COVERAGE_STATUSES` frozenset | Coverage assessor, finalize node, UI |
+| Semantic Matches | `SEMANTIC_FULL`, `SEMANTIC_PARTIAL`, `SEMANTIC_NONE` + `SEMANTIC_MATCHES` frozenset | Coverage assessor, validator |
+| Relationship Matches | `REL_MATCH_SATISFIED`, `REL_MATCH_PARTIAL`, `REL_MATCH_NOT_SATISFIED` + `RELATIONSHIP_MATCHES` frozenset | Coverage assessor, validator |
+| Risk Ratings | `RISK_CRITICAL`, `RISK_HIGH`, `RISK_MEDIUM`, `RISK_LOW` | Scoring module, validator, UI |
+| Defaults | `DEFAULT_MODEL` (`"gpt-4o"`), `DEFAULT_TRACE_DB_PATH` | GraphInfra, tracing |
+| Display Overrides | `COL_DISPLAY_OVERRIDES` dict | `export/formatting.py`, UI table rendering |
+
+### 10.2 Scoring (`core/scoring.py`)
+
+Pure business-logic module with no I/O or validation dependencies. Contains a single function:
+
+```python
+def derive_inherent_rating(impact: int, frequency: int) -> str:
+    """impact × frequency → Critical / High / Medium / Low"""
+    score = impact * frequency
+    if score >= 12: return "Critical"
+    if score >= 8:  return "High"
+    if score >= 4:  return "Medium"
+    return "Low"
+```
+
+This function is used by the `RiskExtractorAndScorerAgent` and re-exported by `validation/validator.py` for convenience. Extracting it into its own module breaks a coupling between the agent and validator layers.
+
+---
+
+## 11. Configuration
+
+### 11.1 Pipeline Config (`config/default.yaml`)
 
 Loaded by `src/regrisk/core/config.py` into a `PipelineConfig` Pydantic model.
 
@@ -629,7 +714,7 @@ Loaded by `src/regrisk/core/config.py` into a `PipelineConfig` Pydantic model.
 | `frequency_scale` | 1–4 | Frequency level definitions (Remote → Likely) |
 | `risk_id_prefix` | `"RISK"` | Prefix for generated risk IDs |
 
-### 9.2 Risk Taxonomy (`config/risk_taxonomy.json`)
+### 11.2 Risk Taxonomy (`config/risk_taxonomy.json`)
 
 Defines 8 top-level risk categories with sub-categories. The taxonomy is injected into the RiskExtractorAndScorerAgent's system prompt.
 
@@ -646,13 +731,13 @@ Defines 8 top-level risk categories with sub-categories. The taxonomy is injecte
 
 ---
 
-## 10. Tracing & Observability
+## 12. Tracing & Observability
 
 **Source:** `src/regrisk/tracing/`
 
 The tracing system provides LangSmith-like visibility using a local SQLite database — no external services required.
 
-### 10.1 Database Schema
+### 12.1 Database Schema
 
 The trace database lives at `data/traces.db` (WAL mode for concurrent reads). Four tables:
 
@@ -686,7 +771,7 @@ The trace database lives at `data/traces.db` (WAL mode for concurrent reads). Fo
                                          └──────────────────┘
 ```
 
-### 10.2 How Tracing Hooks Into the Pipeline
+### 12.2 How Tracing Hooks Into the Pipeline
 
 Three hooks capture data with minimal changes to existing code:
 
@@ -696,7 +781,7 @@ Three hooks capture data with minimal changes to existing code:
 
 3. **Transport Wrapper** (`tracing/transport_wrapper.py`) — `TracingTransportClient` wraps the `AsyncTransportClient`. Intercepts every `chat_completion()` call to capture the full system prompt, user prompt, response text, token counts, and latency. Reads the thread-local trace context to tag each call with its originating node and agent.
 
-### 10.3 Logging
+### 12.3 Logging
 
 Terminal output is enriched with context:
 
@@ -706,7 +791,7 @@ Terminal output is enriched with context:
 
 Noisy third-party loggers (httpx, httpcore, matplotlib, etc.) are silenced to keep output clean.
 
-### 10.4 Tab 5 Trace Viewer
+### 12.4 Tab 5 Trace Viewer
 
 The Streamlit UI (Tab 5) provides a graphical interface to the trace database:
 
@@ -720,13 +805,55 @@ The Streamlit UI (Tab 5) provides a graphical interface to the trace database:
 
 ---
 
-## 11. UI (Streamlit)
+## 13. UI Architecture
 
-**Source:** `src/regrisk/ui/app.py`
+**Source:** `src/regrisk/ui/`
 
-The UI is a 5-tab Streamlit application.
+The UI is a 5-tab Streamlit application that has been decomposed into a modular multi-file architecture. The original monolithic `app.py` (1,500+ lines) was refactored into a thin orchestrator with dedicated modules for each tab and shared helpers.
 
-### Tab 1: Upload & Configure
+### 13.1 Module Overview
+
+| File | Role | Key Exports |
+|------|------|-------------|
+| `app.py` | Entry point — page config, global CSS, tab orchestration, status bar | `main()` |
+| `session_keys.py` | Centralised catalog of all `st.session_state` key names | `SK` class |
+| `components.py` | Shared UI helpers — HTML table renderer, color coding, checkpoint widgets, file upload | `render_html_table()`, `CATEGORY_COLORS`, `apply_checkpoint()`, `pipeline_phase()`, `phase_badge()` |
+| `upload_tab.py` | Tab 1: Upload & Configure | `render_upload_tab()` |
+| `review_tabs.py` | Tabs 2 & 3: Classification Review, Mapping Review | `render_classification_review_tab()`, `render_mapping_review_tab()` |
+| `results_tab.py` | Tab 4: Results (coverage, heatmap, gaps, risk register, export) | `render_results_tab()` |
+| `traceability_tab.py` | Tab 5: Execution traces, LLM call inspector, data lineage | `render_traceability_tab()` |
+| `checkpoint.py` | Checkpoint save/load/list (JSON persistence) | `save_checkpoint()`, `load_checkpoint()`, `list_checkpoints()` |
+
+### 13.2 Session State Key Catalog (`session_keys.py`)
+
+All `st.session_state` keys are defined as constants in the `SK` class. Modules import `SK` instead of using bare strings, so typos are caught by the linter.
+
+**Key groups:**
+
+| Group | Keys |
+|-------|------|
+| Pipeline data | `CLASSIFY_RESULT`, `CLASSIFIED_OBLIGATIONS`, `OBLIGATION_GROUPS`, `APQC_NODES`, `CONTROLS`, `REGULATION_NAME`, `PIPELINE_CONFIG`, `RISK_TAXONOMY`, `LLM_ENABLED` |
+| Assessment data | `ASSESS_RESULT`, `OBLIGATION_MAPPINGS`, `COVERAGE_ASSESSMENTS`, `SCORED_RISKS`, `GAP_REPORT`, `COMPLIANCE_MATRIX`, `RISK_REGISTER` |
+| UI flags | `APPROVED_FOR_MAPPING`, `CACHES_INITIALISED` |
+| Tracing | `TRACE_DB`, `CURRENT_TRACE_RUN_ID` |
+
+### 13.3 Shared Components (`components.py`)
+
+Reusable UI building blocks shared across tabs:
+
+- **`render_html_table(df, columns, ...)`** — Renders a pandas DataFrame as a scrollable HTML table with sticky headers, hover highlighting, text wrapping, and optional per-row category color coding.
+- **`CATEGORY_COLORS` / `CATEGORY_BG`** — CSS colour maps for obligation categories (Controls → blue, Documentation → green, etc.).
+- **`pipeline_phase()`** — Inspects session state to determine the current pipeline stage (classified / mapped / assessed) for the status bar.
+- **`phase_badge(label, complete)`** — Renders a green ✅ or grey ⬜ badge for each pipeline phase in the status bar.
+- **`render_checkpoint_save(stage, key_prefix)`** — Save button widget that writes the current pipeline state to a checkpoint file.
+- **`render_checkpoint_load(allowed_stages, key_prefix)`** — Dropdown + load button that lists and restores available checkpoints.
+- **`apply_checkpoint(data)`** — Applies a loaded checkpoint dict into `st.session_state`.
+- **`save_uploaded_file(uploaded_file)`** — Writes a Streamlit `UploadedFile` to a temp path and returns the path.
+- **`build_partial_results(assessments, classified)`** — Assembles partial gap/compliance/risk reports from mid-run assessment data (used when resuming from interrupted checkpoints).
+
+### 13.4 Tab Summaries
+
+#### Tab 1: Upload & Configure (`upload_tab.py`)
 
 - Auto-detects data files from the `data/` folder (regulation Excel, APQC template, control dataset).
 - Manual file upload fallback.
@@ -736,53 +863,66 @@ The UI is a 5-tab Streamlit application.
 - Shows estimated LLM call count and detected provider (ICA / OpenAI / deterministic).
 - "Run Classification" button launches Graph 1.
 
-### Tab 2: Classification Review
+#### Tab 2: Classification Review (`review_tabs.py`)
 
-- Displays `classified_obligations` from Graph 1 in a color-coded, filterable dataframe.
+- Displays classified obligations in a color-coded, filterable HTML table.
 - **Export for review** — saves an Excel file with an "approved" column (default `True`).
-- **Import reviewed** — reads back the Excel, filters to `approved=True`, feeds the approved obligations into Graph 2.
-- "Run Mapping & Assessment" button launches Graph 2.
+- **Import reviewed** — reads back the Excel, filters to `approved=True`.
+- "Approve and Continue to Mapping" triggers Graph 2.
 
-### Tab 3: Mapping Review
+#### Tab 3: Mapping Review (`review_tabs.py`)
 
-- Displays `obligation_mappings` — citation, APQC process, confidence score, relationship detail.
-- Export/import for further review.
+- Displays obligation-to-APQC mappings (citation, APQC process, confidence, relationship detail).
+- Export/import for review.
 
-### Tab 4: Results
+#### Tab 4: Results (`results_tab.py`)
 
-- **Gap Report** summary — counts by category, coverage status distribution.
-- **Compliance Matrix** heatmap.
-- **Gap list** — obligations with gaps.
-- **Risk Register** — scored risks with distribution summary.
-- **Excel export** — download a comprehensive workbook (6 sheets).
+- Coverage summary cards (Covered / Partially Covered / Not Covered).
+- 4×4 risk heatmap (impact × frequency) rendered with matplotlib.
+- Gap analysis table.
+- Risk register table.
+- **Excel export** — download a comprehensive 6-sheet workbook.
 
-### Tab 5: Traceability
+#### Tab 5: Traceability (`traceability_tab.py`)
 
-- SQLite trace viewer (see Section 10.4).
-- Data lineage chain showing how each artifact connects.
+- Run selector dropdown listing all recorded trace runs.
+- Overview metrics (events, nodes, LLM calls, tokens, latency).
+- Event timeline table.
+- Node execution table + bar chart with per-node timing.
+- LLM call inspector with expandable full prompts and responses.
+- Token-by-node chart.
+- Maintenance controls (purge old runs, delete individual runs).
 
-### Checkpoint System
+### 13.5 Checkpoint System (`checkpoint.py`)
 
-**Source:** `src/regrisk/ui/checkpoint.py`
+Checkpoints persist pipeline state to JSON files so runs can be resumed after failures without re-executing expensive LLM calls.
 
-Checkpoints persist pipeline state to JSON files at three stages:
+**Stages:**
 
-| Stage | Label | What's Saved |
-|-------|-------|-------------|
-| `classified` | Classification | `classified_obligations`, `obligation_groups`, `regulation_name`, etc. |
-| `mapped` | APQC Mapping | All of the above + `obligation_mappings`, `mappable_groups` |
-| `assessed` | Full Assessment | All of the above + `coverage_assessments`, `scored_risks`, `gap_report`, `compliance_matrix`, `risk_register` |
+| Stage Constant | Label | What's Saved |
+|----------------|-------|-------------|
+| `STAGE_CLASSIFIED` | Classification | `classified_obligations`, `obligation_groups`, `regulation_name`, config, taxonomy, etc. (8 keys) |
+| `STAGE_MAPPED` | APQC Mapping | All of the above + `obligation_mappings` (9 keys) |
+| `STAGE_ASSESSED` | Full Assessment | All of the above + `coverage_assessments`, `scored_risks`, `gap_report`, `compliance_matrix`, `risk_register` (14 keys) |
+| `STAGE_ASSESS_PARTIAL` | Partial Assessment (interrupted) | Same keys as assessed — captures whatever was completed before an interruption |
 
-Checkpoint files are saved to `data/checkpoints/` with the naming pattern:
-```
-{stage}_{regulation_name}_{timestamp}.json
-```
+**File naming:** `{stage}_{sanitised_regulation_name}_{UTC_timestamp}.json`
 
-Each checkpoint includes a `_meta` dict with `stage`, `timestamp`, and `keys_saved`. Users can load any checkpoint to resume from that point.
+Example: `classified_Enhanced_Prudential_Standards__Regulatio_20260406T213526Z.json`
+
+**Checkpoint directory:** `data/checkpoints/`
+
+Each file includes a `_meta` dict with `stage`, `stage_label`, `regulation_name`, `timestamp`, and `keys_saved`.
+
+**Resume flow:**
+1. User selects a checkpoint from `render_checkpoint_load()`.
+2. `load_checkpoint()` parses the JSON.
+3. `apply_checkpoint()` writes all keys back into `st.session_state`.
+4. For partial assessment checkpoints, `build_partial_results()` assembles intermediate reports from whatever assessments completed before the interruption.
 
 ---
 
-## 12. Validation
+## 14. Validation
 
 **Source:** `src/regrisk/validation/validator.py`
 
@@ -834,7 +974,34 @@ score < 4  → Low
 
 ---
 
-## 13. Project Structure
+## 15. Export Layer
+
+**Source:** `src/regrisk/export/`
+
+### 15.1 Excel Export (`excel_export.py`)
+
+Generates the final multi-sheet Excel workbook and handles review file I/O:
+
+| Function | Purpose |
+|----------|---------|
+| `export_gap_report(gap_report, mappings, assessments, risks, classified)` | Builds a 6-sheet workbook (Summary, Classified Obligations, APQC Mappings, Coverage Assessment, Gaps, Risk Register) |
+| `export_for_review(classified_obligations)` | Creates an Excel file with an `approved` column for analyst review |
+| `import_reviewed(file)` | Reads back a reviewed Excel file and filters to `approved == True` |
+
+### 15.2 Display Formatting (`formatting.py`)
+
+Shared column formatting utility used by both the UI HTML table renderer and Excel export:
+
+```python
+def display_col_name(col: str) -> str:
+    """Convert snake_case → Title Case, with explicit overrides."""
+```
+
+The `COL_DISPLAY_OVERRIDES` dict (from `core/constants.py`) provides special-case names like `apqc_hierarchy_id` → `"APQC Hierarchy ID"` and `risk_id` → `"Risk ID"`.
+
+---
+
+## 16. Project Structure
 
 ```
 .
@@ -847,11 +1014,17 @@ score < 4  → Low
 │   └── Control Dataset/             # Input control Excel files
 │
 ├── doc/
-│   └── ARCHITECTURE.md              # ← You are here
+│   ├── ARCHITECTURE.md              # ← You are here
+│   ├── plan.md                      # Original implementation specification
+│   └── TEST_GAPS.md                 # Test coverage analysis and priorities
 │
 ├── src/regrisk/
+│   ├── __init__.py                  # Package root (__version__)
+│   ├── exceptions.py               # Exception hierarchy: RegRiskError → IngestError,
+│   │                                #   AgentError, TransportError, ValidationError
+│   │
 │   ├── agents/
-│   │   ├── base.py                  # BaseAgent ABC, AgentContext, call_llm, registry
+│   │   ├── base.py                  # BaseAgent ABC, AgentContext, call_llm, parse_json, registry
 │   │   ├── obligation_classifier.py # Phase 2: classify obligations by category/type/criticality
 │   │   ├── apqc_mapper.py           # Phase 3: map obligations to APQC processes
 │   │   ├── coverage_assessor.py     # Phase 4: evaluate control coverage (3-layer)
@@ -859,22 +1032,22 @@ score < 4  → Low
 │   │
 │   ├── core/
 │   │   ├── config.py                # PipelineConfig (Pydantic), YAML/JSON loaders
-│   │   ├── constants.py             # Canonical string constants (categories, statuses)
+│   │   ├── constants.py             # Canonical string constants — single source of truth
 │   │   ├── events.py                # EventType enum, PipelineEvent, EventEmitter
 │   │   ├── models.py                # All Pydantic models (frozen, immutable)
 │   │   ├── scoring.py               # Pure business-logic scoring (impact × frequency)
 │   │   └── transport.py             # AsyncTransportClient (httpx), provider auto-detect
 │   │
 │   ├── export/
-│   │   ├── excel_export.py          # Excel report generation (6-sheet workbook)
+│   │   ├── excel_export.py          # Excel report generation (6-sheet workbook) + review I/O
 │   │   └── formatting.py            # Shared display column name formatting
 │   │
 │   ├── graphs/
+│   │   ├── graph_infra.py           # GraphInfra class — shared caches, emitter, agent factory
 │   │   ├── classify_graph.py        # Graph 1 builder: init → ingest → classify (loop) → end
 │   │   ├── classify_state.py        # ClassifyState TypedDict
 │   │   ├── assess_graph.py          # Graph 2 builder: map → assess → score → finalize
-│   │   ├── assess_state.py          # AssessState TypedDict
-│   │   └── graph_infra.py           # Shared graph infrastructure (caches, emitter)
+│   │   └── assess_state.py          # AssessState TypedDict
 │   │
 │   ├── ingest/
 │   │   ├── regulation_parser.py     # Parse regulation Excel → Obligation → ObligationGroup
@@ -883,46 +1056,65 @@ score < 4  → Low
 │   │   └── utils.py                 # Shared ingest utilities (clean_str)
 │   │
 │   ├── tracing/
+│   │   ├── __init__.py              # Public API re-exports
 │   │   ├── db.py                    # TraceDB: SQLite wrapper (4 tables, WAL mode)
 │   │   ├── decorators.py            # trace_node decorator, thread-local context
 │   │   ├── listener.py              # SQLiteTraceListener (EventListener → SQLite)
 │   │   └── transport_wrapper.py     # TracingTransportClient (captures LLM calls)
 │   │
 │   ├── ui/
-│   │   ├── app.py                   # Entry point — page config, tabs, status bar
-│   │   ├── components.py            # Shared UI helpers (HTML table, checkpoints, etc.)
+│   │   ├── app.py                   # Entry point — page config, CSS, tab orchestration, status bar
+│   │   ├── session_keys.py          # SK class — session state key catalog
+│   │   ├── components.py            # Shared helpers: HTML table, color coding, checkpoint widgets
 │   │   ├── upload_tab.py            # Tab 1: Upload & Configure
 │   │   ├── review_tabs.py           # Tabs 2 & 3: Classification & Mapping Review
-│   │   ├── results_tab.py           # Tab 4: Coverage, risk heatmap, gap analysis
-│   │   ├── traceability_tab.py      # Tab 5: Execution traces & data lineage
-│   │   ├── checkpoint.py            # Save/load/list checkpoint JSON files
-│   │   └── session_keys.py          # Session state key catalog
+│   │   ├── results_tab.py           # Tab 4: Coverage, risk heatmap, gap analysis, export
+│   │   ├── traceability_tab.py      # Tab 5: Execution traces, LLM inspector, data lineage
+│   │   └── checkpoint.py            # Save/load/list checkpoint JSON files
 │   │
 │   └── validation/
-│       └── validator.py             # Deterministic artifact validators
+│       └── validator.py             # Deterministic artifact validators + derive_inherent_rating re-export
 │
 ├── tests/
-│   ├── conftest.py                  # Shared fixtures
+│   ├── conftest.py                  # Shared fixtures (mock transport, sample data)
 │   ├── test_classify_graph.py       # Graph 1 integration tests
 │   ├── test_assess_graph.py         # Graph 2 integration tests
 │   ├── test_ingest.py               # Ingest layer tests
 │   ├── test_models.py               # Pydantic model tests
 │   ├── test_tracing.py              # Tracing subsystem tests (20 tests)
-│   └── test_validator.py            # Validation tests
+│   └── test_validator.py            # Validation tests (22 tests)
 │
-├── pyproject.toml                   # Dependencies, project metadata, entry points
+├── pyproject.toml                   # Dependencies, project metadata
 └── README.md                        # Quick-start guide
 ```
 
 ---
 
-## 14. Frontend Tab Details
+## 17. Testing
+
+The test suite runs entirely without LLM API keys using mock transports and deterministic agent paths.
+
+| Test File | Modules Covered | Tests |
+|-----------|----------------|------:|
+| `test_validator.py` | `validation/validator.py`, `core/scoring.py` (via re-export) | 22 |
+| `test_tracing.py` | `tracing/db.py`, `tracing/listener.py`, `tracing/decorators.py` | 20 |
+| `test_models.py` | `core/models.py` | 18 |
+| `test_ingest.py` | `ingest/regulation_parser.py`, `ingest/apqc_loader.py`, `ingest/control_loader.py` | 8 |
+| `test_assess_graph.py` | `graphs/assess_graph.py`, `graphs/assess_state.py` | 6 |
+| `test_classify_graph.py` | `graphs/classify_graph.py`, `graphs/classify_state.py` | 4 |
+| **Total** | | **78** |
+
+Run with: `python -m pytest tests/ -v`
+
+---
+
+## 18. Frontend Tab Details
 
 This section provides a detailed walkthrough of the three primary review/output tabs in the Streamlit UI — how each column is populated, the decision logic the pipeline uses (both LLM and deterministic), and how the data tables are rendered.
 
 ---
 
-### 14.1 Classification Review Tab (Tab 2)
+### 18.1 Classification Review Tab (Tab 2)
 
 **Source:** `render_classification_review_tab()` in `src/regrisk/ui/review_tabs.py`
 
@@ -1052,7 +1244,7 @@ Criticality reflects the severity of a regulatory violation.
 
 ---
 
-### 14.2 Mapping Review Tab (Tab 3)
+### 18.2 Mapping Review Tab (Tab 3)
 
 **Source:** `render_mapping_review_tab()` in `src/regrisk/ui/review_tabs.py`
 
@@ -1131,7 +1323,7 @@ The process name is always paired with the hierarchy ID. In the LLM path, the mo
 
 ---
 
-### 14.3 Results Tab (Tab 4)
+### 18.3 Results Tab (Tab 4)
 
 **Source:** `render_results_tab()` in `src/regrisk/ui/results_tab.py`
 
@@ -1172,7 +1364,7 @@ Displays all coverage assessments where `overall_coverage ≠ "Covered"`.
 | Column | Description | How It Is Determined |
 |--------|-------------|----------------------|
 | `citation` | Obligation CFR reference | Carried from the classified obligation |
-| `apqc_hierarchy_id` | APQC process the obligation was mapped to | Set during mapping phase (see §14.2) |
+| `apqc_hierarchy_id` | APQC process the obligation was mapped to | Set during mapping phase (see §18.2) |
 | `control_id` | Internal control evaluated (or empty if none found) | Found by `find_controls_for_apqc()` — exact + descendant match on APQC hierarchy ID |
 | `overall_coverage` | "Not Covered" or "Partially Covered" | Derived from the three-layer evaluation below |
 | `semantic_match` | "Full", "Partial", or "None" | LLM evaluates whether the control's description substantively addresses the obligation |
