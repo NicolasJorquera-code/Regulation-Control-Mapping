@@ -9,10 +9,13 @@ Sub-tabs:
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any
 
 import streamlit as st
+
+logger = logging.getLogger(__name__)
 
 
 def render_controlforge() -> None:
@@ -90,6 +93,7 @@ def _render_section_profiles_subtab() -> None:
     try:
         profiles_data = _get_cached_profiles(str(config_dir))
     except Exception as e:
+        logger.exception("Failed to load section profiles")
         st.error(f"Failed to load section profiles: {e}")
         return
 
@@ -224,6 +228,7 @@ def _render_taxonomy_table(config_dir: Path) -> None:
     try:
         catalog_data = _get_cached_taxonomy(str(config_dir / "taxonomy.yaml"))
     except Exception as e:
+        logger.exception("Failed to load taxonomy")
         st.error(f"Failed to load taxonomy: {e}")
         return
 
@@ -240,6 +245,7 @@ def _render_business_units(config_dir: Path) -> None:
     try:
         catalog_data = _get_cached_taxonomy(str(config_dir / "taxonomy.yaml"))
     except Exception as e:
+        logger.exception("Failed to load business units")
         st.error(f"Failed to load business units: {e}")
         return
 
@@ -265,6 +271,7 @@ def _render_placement_methods_tree(config_dir: Path) -> None:
     try:
         pm_data = _get_cached_placement_methods(str(config_dir / "placement_methods.yaml"))
     except Exception as e:
+        logger.exception("Failed to load placement methods")
         st.error(f"Failed to load placement methods: {e}")
         return
 
@@ -292,6 +299,7 @@ def _render_standards(config_dir: Path) -> None:
     try:
         standards_data = _get_cached_standards(str(config_dir / "standards.yaml"))
     except Exception as e:
+        logger.exception("Failed to load standards")
         st.error(f"Failed to load standards: {e}")
         return
 
@@ -451,6 +459,7 @@ def _render_apqc_loader() -> None:
             st.session_state["cf_apqc_nodes"] = new_nodes
             st.rerun()
         except Exception as e:
+            logger.exception("Failed to parse uploaded file")
             st.error(f"Failed to parse uploaded file: {e}")
 
 
@@ -509,6 +518,7 @@ def _execute_pipeline(
         st.rerun()
 
     except Exception as e:
+        logger.exception("Pipeline execution failed")
         status.update(label="Pipeline Failed", state="error")
         st.error(f"Error: {e}")
         st.exception(e)

@@ -112,8 +112,3 @@ class EventEmitter:
                 data=data,
             )
         )
-
-
-def cli_listener(event: PipelineEvent) -> None:
-    """Simple listener that prints events for CLI verbose mode."""
-    print(f"[controlnexus] {event.message}")

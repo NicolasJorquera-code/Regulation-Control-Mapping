@@ -6,6 +6,7 @@ distribution weights, then generate controls via the modular graph.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
 from controlnexus.graphs.forge_modular_graph import build_forge_graph, set_emitter
 from controlnexus.ui.components.data_table import render_data_table
 
-
+logger = logging.getLogger(__name__)
 # ── Streamlit event listener ──────────────────────────────────────────────────
 
 
@@ -151,6 +152,7 @@ def render_modular_tab() -> None:
         config_data = _load_config(str(config_path))
         config = DomainConfig(**config_data)
     except Exception as e:
+        logger.exception("Config validation error")
         st.error(f"Config validation error: {e}")
         return
 

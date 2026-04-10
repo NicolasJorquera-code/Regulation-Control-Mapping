@@ -16,7 +16,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import re
 import time
 from collections import Counter
 from dataclasses import asdict, dataclass, field
@@ -31,6 +30,14 @@ from controlnexus.core.config import (
     load_standards,
     load_taxonomy_catalog,
 )
+from controlnexus.core.constants import (
+    FREQUENCY_ORDERED_RULES,
+    MAX_CONTROL_TARGET,
+    TYPE_CODE_MAP,
+    build_control_id as _build_control_id_from_code,
+    derive_frequency_from_when,
+    type_to_code,
+)
 from controlnexus.core.models import BusinessUnitProfile, RunConfig
 from controlnexus.core.state import FinalControlRecord, HierarchyNode
 from controlnexus.core.transport import build_client_from_env
@@ -40,70 +47,6 @@ from controlnexus.hierarchy.scope import build_section_breakdown, select_scope
 from controlnexus.validation.validator import build_retry_appendix, validate
 
 logger = logging.getLogger(__name__)
-
-MAX_CONTROL_TARGET = 10000
-
-TYPE_CODE_MAP = {
-    "Reconciliation": "REC",
-    "Authorization": "AUT",
-    "Verification and Validation": "VNV",
-    "Exception Reporting": "EXR",
-    "Segregation of Duties": "SOD",
-    "Documentation, Data, and Activity Completeness and Appropriateness Checks": "DOC",
-    "Internal and External Audits": "AUD",
-    "Automated Rules": "ARL",
-    "Training and Awareness Programs": "TRN",
-    "Risk Escalation Processes": "REP",
-    "System and Application Restrictions": "SAR",
-    "Data Security and Protection": "DSP",
-    "Third Party Due Diligence": "THR",
-    "Client Due Diligence and Transaction Monitoring": "CDM",
-    "Supervisory Review": "SVR",
-    "Surveillance": "SRV",
-    "Physical Safeguards": "PHY",
-    "Risk and Compliance Assessments": "RCA",
-    "Staffing and Resourcing Adequacy": "SRA",
-    "Business Continuity Planning and Awareness": "BCP",
-    "Crisis Management": "CRS",
-    "Technology Disaster Recovery": "TDR",
-    "Risk Limit Setting and Monitoring": "RLM",
-    "Change Management": "CHM",
-}
-
-FREQUENCY_ORDERED_RULES: list[tuple[str, tuple[str, ...]]] = [
-    ("Daily", ("daily", "every day", "each day", "per day", "day-end", "day end", "end of day", "eod")),
-    ("Weekly", ("weekly", "every week", "each week", "per week", "biweekly", "bi-weekly", "fortnight")),
-    (
-        "Monthly",
-        (
-            "monthly",
-            "every month",
-            "each month",
-            "per month",
-            "month-end",
-            "month end",
-            "eom",
-            "semi-monthly",
-            "semimonthly",
-        ),
-    ),
-    ("Quarterly", ("quarterly", "every quarter", "each quarter", "per quarter", "qtr", "quarter-end", "quarter end")),
-    ("Semi-Annual", ("semi-annual", "semi annual", "semiannual", "bi-annual", "biannual", "twice a year")),
-    ("Annual", ("annual", "annually", "yearly", "once a year", "each year", "per year")),
-]
-
-
-def _derive_frequency_from_when(when_text: Any) -> str:
-    """Derive a frequency label from a free-text 'when' field."""
-    if not when_text:
-        return "Other"
-    normalized = re.sub(r"\s+", " ", str(when_text).strip().lower())
-    if not normalized:
-        return "Other"
-    for frequency, keywords in FREQUENCY_ORDERED_RULES:
-        if any(keyword in normalized for keyword in keywords):
-            return frequency
-    return "Other"
 
 
 @dataclass
@@ -779,7 +722,7 @@ class Orchestrator:
                     who=narrative.get("who", item["role"]),
                     what=narrative.get("what", item["what_text"]),
                     when=narrative.get("when", item["trigger"]),
-                    frequency=_derive_frequency_from_when(narrative.get("when", item["trigger"])),
+                    frequency=derive_frequency_from_when(narrative.get("when", item["trigger"])),
                     where=narrative.get("where", item["system"]),
                     why=narrative.get("why", item["rationale"]),
                     full_description=enriched.get(
@@ -1027,22 +970,13 @@ class Orchestrator:
         return selected_level_1, selected_level_2
 
 
-def type_to_code(control_type: str) -> str:
-    """Convert a control type name to a 3-character uppercase code."""
-    if control_type in TYPE_CODE_MAP:
-        return TYPE_CODE_MAP[control_type]
-    cleaned = "".join(ch for ch in control_type if ch.isalpha() or ch == " ")
-    words = cleaned.split()
-    consonants = "".join(ch for ch in "".join(words).upper() if ch not in "AEIOU ")
-    return (consonants[:3] or "CTL").ljust(3, "X")
-
-
 def build_control_id(hierarchy_id: str, control_type: str, sequence: int) -> str:
-    """Build a deterministic control ID like ``CTRL-0501-RCN-001``."""
-    parts = hierarchy_id.split(".")
-    l1 = int(parts[0])
-    l2 = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
-    return f"CTRL-{l1:02d}{l2:02d}-{type_to_code(control_type)}-{sequence:03d}"
+    """Build a deterministic control ID like ``CTRL-0501-RCN-001``.
+
+    Thin wrapper over :func:`core.constants.build_control_id` that accepts a
+    control-type *name* instead of a pre-resolved 3-letter code.
+    """
+    return _build_control_id_from_code(hierarchy_id, type_to_code(control_type), sequence)
 
 
 def planning_result_to_dict(result: PlanningResult) -> dict[str, Any]:

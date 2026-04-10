@@ -25,6 +25,17 @@ TYPE_CODE_MAP: dict[str, str] = {
     "System and Application Restrictions": "SAR",
     "Data Security and Protection": "DSP",
     "Third Party Due Diligence": "THR",
+    "Client Due Diligence and Transaction Monitoring": "CDM",
+    "Supervisory Review": "SVR",
+    "Surveillance": "SRV",
+    "Physical Safeguards": "PHY",
+    "Risk and Compliance Assessments": "RCA",
+    "Staffing and Resourcing Adequacy": "SRA",
+    "Business Continuity Planning and Awareness": "BCP",
+    "Crisis Management": "CRS",
+    "Technology Disaster Recovery": "TDR",
+    "Risk Limit Setting and Monitoring": "RLM",
+    "Change Management": "CHM",
 }
 
 FREQUENCY_ORDERED_RULES: list[tuple[str, tuple[str, ...]]] = [
@@ -95,3 +106,18 @@ def build_control_id(hierarchy_id: str, type_code: str, sequence: int) -> str:
     l1 = int(parts[0]) if len(parts) > 0 and parts[0].isdigit() else 0
     l2 = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
     return f"CTRL-{l1:02d}{l2:02d}-{type_code}-{sequence:03d}"
+
+
+# ── Quality & affinity constants ──────────────────────────────────────────────
+
+QUALITY_RATINGS: tuple[str, ...] = (
+    "Strong",
+    "Effective",
+    "Satisfactory",
+    "Needs Improvement",
+    "Weak",
+)
+
+DEFAULT_QUALITY_RATING: str = "Satisfactory"
+
+AFFINITY_LEVELS: tuple[str, ...] = ("HIGH", "MEDIUM", "LOW", "NONE")

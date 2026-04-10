@@ -72,30 +72,37 @@ control_types:
     placement_categories: [Preventive]
 
   - name: Client Due Diligence and Transaction Monitoring
+    code: CDM
     definition: "Performing validation of client identity and documentation during onboarding, reviewing client transactions and activities for suspicious behaviors or anomalies, and periodically updating client risk profiles to refresh level of risk-based monitoring."
     placement_categories: [Preventive]
 
   - name: Surveillance
+    code: SRV
     definition: "Monitoring, scanning, or observing behaviors, activities, or other data signals subject to ongoing change and modification and usually performed on a real-time basis."
     placement_categories: [Detective]
 
   - name: Physical Safeguards
+    code: PHY
     definition: "Implementing physical tools, infrastructure, or devices that are used to safeguard and protect physical assets including buildings, property, equipment, or documents."
     placement_categories: [Preventive]
 
   - name: Business Continuity Planning and Awareness
+    code: BCP
     definition: "Development and maintenance of business protocols and processes to be deployed in the event of an outage or crisis including identification of critical functions or stakeholders needed for discharging and sustaining business continuity activities during an active crisis."
     placement_categories: [Contingency Planning]
 
   - name: Crisis Management
+    code: CRS
     definition: "Implementation of business contingency plan and activation of response and communication strategy to provide messaging to stakeholders as well as monitoring and reporting on status of crisis management plan progress and milestones."
     placement_categories: [Contingency Planning]
 
   - name: Technology Disaster Recovery
+    code: TDR
     definition: "Development and maintenance of technology recovery plan to identify key systems and technology requirements needed to sustain business activities during a crisis and interventions to restore access to and preserve key technology systems."
     placement_categories: [Contingency Planning]
 
   - name: Staffing and Resourcing Adequacy
+    code: SRA
     definition: "Conducting a staffing and skills assessment or other similar resourcing assessment to determine the required levels of employee and operational capacity to execute business functions and activities across the enterprise."
     placement_categories: [Preventive]
 
@@ -108,6 +115,7 @@ control_types:
     placement_categories: [Preventive]
 
   - name: Risk and Compliance Assessments
+    code: RCA
     definition: "Conduct Business Unit and enterprise-wide assessments to identify inherent risks associated with business processes, measure effectiveness of controls, determine residual risk ratings, and identify additional risk mitigation activities to be undertaken in response to residual risks and identified issues."
     placement_categories: [Preventive]
 

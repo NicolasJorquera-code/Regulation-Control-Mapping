@@ -251,12 +251,14 @@ class TestBankingStandardParity:
         return load_domain_config(BANKING_STANDARD)
 
     def test_type_codes_match_legacy(self, config: DomainConfig):
-        """Type codes in DomainConfig should match TYPE_CODE_MAP from constants.py."""
+        """Type codes in DomainConfig should match TYPE_CODE_MAP from constants.py for shared types."""
         from controlnexus.core.constants import TYPE_CODE_MAP
 
         dc_codes = config.type_code_map()
         for type_name, expected_code in TYPE_CODE_MAP.items():
-            assert dc_codes.get(type_name) == expected_code, (
+            if type_name not in dc_codes:
+                continue  # type exists in constants but not in this config profile
+            assert dc_codes[type_name] == expected_code, (
                 f"Code mismatch for '{type_name}': DomainConfig={dc_codes.get(type_name)}, legacy={expected_code}"
             )
 

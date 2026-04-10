@@ -23,6 +23,7 @@ from controlnexus.agents.base import AgentContext, BaseAgent
 from controlnexus.core.domain_config import DomainConfig, load_domain_config
 from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
 from controlnexus.core.transport import build_client_from_env
+from controlnexus.graphs.state import add as _add
 from controlnexus.graphs.forge_modular_helpers import (
     assign_control_ids,
     build_assignment_matrix,
@@ -138,13 +139,6 @@ def _emitting_tool_executor(
         return result
 
     return wrapper
-
-
-# ── Reducer ───────────────────────────────────────────────────────────────────
-
-
-def _add(left: list, right: list) -> list:
-    return left + right
 
 
 # ── State ─────────────────────────────────────────────────────────────────────
