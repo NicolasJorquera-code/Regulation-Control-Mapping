@@ -163,7 +163,7 @@ def render_checkpoint_load(allowed_stages: list[str], key_prefix: str) -> None:
                 st.info("No saved checkpoints found.")
             else:
                 options = {
-                    f"{c['stage_label']} — {c['regulation_name']} ({c['timestamp']})": c
+                    c.get("display", c["filename"]): c
                     for c in relevant
                 }
                 choice = st.selectbox("Select checkpoint", options=list(options.keys()),

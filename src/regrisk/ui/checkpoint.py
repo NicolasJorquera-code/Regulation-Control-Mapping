@@ -98,6 +98,23 @@ def stage_keys(stage: str) -> list[str]:
     return _STAGE_KEYS.get(stage, [])
 
 
+def _sanitise_name(name: str, max_len: int = 40) -> str:
+    """Sanitise a regulation name for use in filenames.
+
+    Truncates on a word boundary so names are never cut mid-word.
+    """
+    safe = "".join(c if c.isalnum() or c in "-_ " else "_" for c in name).strip()
+    safe = safe.replace(" ", "_")
+    if len(safe) <= max_len:
+        return safe
+    # Truncate at the last underscore before max_len
+    truncated = safe[:max_len]
+    last_sep = truncated.rfind("_")
+    if last_sep > 10:
+        truncated = truncated[:last_sep]
+    return truncated
+
+
 def save_checkpoint(
     stage: str,
     session_data: dict[str, Any],
@@ -110,11 +127,13 @@ def save_checkpoint(
     target_dir = directory or CHECKPOINT_DIR
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(timezone.utc)
+    ts_filename = now.strftime("%Y-%m-%d_%Hh%M")
+    ts_display = now.strftime("%Y-%m-%d %H:%M UTC")
     reg_name = session_data.get("regulation_name", "unknown")
-    # Sanitise for filename
-    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in reg_name)[:40]
-    filename = f"{stage}_{safe_name}_{ts}.json"
+    safe_name = _sanitise_name(reg_name)
+    stage_lbl = _STAGE_LABELS.get(stage, stage).replace(" ", "_")
+    filename = f"{stage_lbl}_{safe_name}_{ts_filename}.json"
     path = target_dir / filename
 
     keys = _STAGE_KEYS.get(stage, list(session_data.keys()))
@@ -123,7 +142,7 @@ def save_checkpoint(
             "stage": stage,
             "stage_label": _STAGE_LABELS.get(stage, stage),
             "regulation_name": reg_name,
-            "timestamp": ts,
+            "timestamp": ts_display,
             "keys_saved": keys,
         },
     }
@@ -166,13 +185,19 @@ def list_checkpoints(directory: Path | None = None) -> list[dict[str, Any]]:
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
             meta = data.get("_meta", {})
+            ts_raw = meta.get("timestamp", "?")
             results.append({
                 "path": p,
                 "filename": p.name,
                 "stage": meta.get("stage", "?"),
                 "stage_label": meta.get("stage_label", "?"),
                 "regulation_name": meta.get("regulation_name", "?"),
-                "timestamp": meta.get("timestamp", "?"),
+                "timestamp": ts_raw,
+                "display": (
+                    f"{meta.get('stage_label', '?')} · "
+                    f"{meta.get('regulation_name', '?')} · "
+                    f"{ts_raw}"
+                ),
             })
         except (json.JSONDecodeError, OSError):
             continue
