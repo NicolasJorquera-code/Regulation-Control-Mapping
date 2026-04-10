@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+
+from controlnexus.core.constants import DEFAULT_MODEL
 import os
 from dataclasses import dataclass, field
 from typing import Any
@@ -176,7 +178,7 @@ def build_client_from_env(
     # OpenAI
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com")
-    model_id = model_override or os.getenv("OPENAI_MODEL_ID", "gpt-4o")
+    model_id = model_override or os.getenv("OPENAI_MODEL_ID", DEFAULT_MODEL)
     if api_key:
         logger.info("LLM client configured (OpenAI): %s", base_url)
         return AsyncTransportClient(

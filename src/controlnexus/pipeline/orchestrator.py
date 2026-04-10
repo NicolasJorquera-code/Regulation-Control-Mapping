@@ -31,6 +31,7 @@ from controlnexus.core.config import (
     load_taxonomy_catalog,
 )
 from controlnexus.core.constants import (
+    DEFAULT_QUALITY_RATING,
     FREQUENCY_ORDERED_RULES,
     MAX_CONTROL_TARGET,
     TYPE_CODE_MAP,
@@ -626,7 +627,7 @@ class Orchestrator:
             }
             enriched = {
                 "refined_full_description": full_description,
-                "quality_rating": "Satisfactory",
+                "quality_rating": DEFAULT_QUALITY_RATING,
                 "rationale": "Baseline output (no LLM)",
             }
 
@@ -728,7 +729,7 @@ class Orchestrator:
                     full_description=enriched.get(
                         "refined_full_description", narrative.get("full_description", item["full_description"])
                     ),
-                    quality_rating=enriched.get("quality_rating", "Satisfactory"),
+                    quality_rating=enriched.get("quality_rating", DEFAULT_QUALITY_RATING),
                     validator_passed=validation_result.passed,
                     validator_retries=0,
                     validator_failures=validation_result.failures,

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from controlnexus.core.constants import DEFAULT_QUALITY_RATING
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -81,7 +83,7 @@ class EnrichmentResult(BaseModel):
     """Output of the EnricherAgent: refined prose + quality rating."""
 
     refined_full_description: str = ""
-    quality_rating: str = "Satisfactory"
+    quality_rating: str = DEFAULT_QUALITY_RATING
     rationale: str = ""
 
 
@@ -160,7 +162,7 @@ class FinalControlRecord(BaseModel):
     where: str = ""
     why: str = ""
     full_description: str = ""
-    quality_rating: str = "Satisfactory"
+    quality_rating: str = DEFAULT_QUALITY_RATING
     validator_passed: bool = True
     validator_retries: int = 0
     validator_failures: list[str] = Field(default_factory=list)

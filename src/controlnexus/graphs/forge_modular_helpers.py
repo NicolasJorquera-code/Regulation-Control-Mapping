@@ -12,6 +12,7 @@ import json
 import re
 from typing import Any
 
+from controlnexus.core.constants import DEFAULT_QUALITY_RATING
 from controlnexus.core.domain_config import DomainConfig
 
 
@@ -349,7 +350,7 @@ def build_deterministic_enriched(
         "where": narrative.get("where", ""),
         "why": narrative.get("why", ""),
         "full_description": narrative.get("full_description", ""),
-        "quality_rating": "Satisfactory",
+        "quality_rating": DEFAULT_QUALITY_RATING,
         "validator_passed": True,
         "validator_retries": 0,
         "validator_failures": [],

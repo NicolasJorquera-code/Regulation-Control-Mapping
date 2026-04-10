@@ -121,3 +121,7 @@ QUALITY_RATINGS: tuple[str, ...] = (
 DEFAULT_QUALITY_RATING: str = "Satisfactory"
 
 AFFINITY_LEVELS: tuple[str, ...] = ("HIGH", "MEDIUM", "LOW", "NONE")
+
+DEFAULT_MODEL: str = "gpt-4o"
+
+SEVERITY_LEVELS: tuple[str, ...] = ("critical", "high", "medium", "low")

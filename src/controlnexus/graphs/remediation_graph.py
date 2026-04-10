@@ -18,6 +18,8 @@ Flow:
 
 from __future__ import annotations
 
+from controlnexus.core.constants import DEFAULT_QUALITY_RATING
+
 import logging
 from typing import Any
 
@@ -162,7 +164,7 @@ def enricher_node(state: RemediationState) -> dict[str, Any]:
     return {
         "current_enriched": {
             **narrative,
-            "quality_rating": "Satisfactory",
+            "quality_rating": DEFAULT_QUALITY_RATING,
         },
     }
 
@@ -170,7 +172,7 @@ def enricher_node(state: RemediationState) -> dict[str, Any]:
 def quality_gate_node(state: RemediationState) -> dict[str, Any]:
     """Check quality rating and flag weak controls for adversarial review."""
     enriched = state.get("current_enriched", {})
-    rating = enriched.get("quality_rating", "Satisfactory")
+    rating = enriched.get("quality_rating", DEFAULT_QUALITY_RATING)
 
     if rating in ("Weak", "Needs Improvement"):
         return {"quality_gate_passed": False}

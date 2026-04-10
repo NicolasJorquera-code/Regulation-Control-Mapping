@@ -14,6 +14,8 @@ from typing import Any
 
 import openpyxl
 
+from controlnexus.core.constants import DEFAULT_QUALITY_RATING
+
 from controlnexus.core.state import FinalControlRecord
 
 logger = logging.getLogger(__name__)
@@ -125,7 +127,7 @@ def ingest_excel(path: Path | str) -> list[FinalControlRecord]:
                     frequency=str(get("frequency", "Other")),
                     where=str(get("where", "")),
                     why=str(get("why", "")),
-                    quality_rating=str(get("quality_rating", "Satisfactory")),
+                    quality_rating=str(get("quality_rating", DEFAULT_QUALITY_RATING)),
                     validator_passed=_coerce_bool(get("validator_passed", True)),
                     validator_retries=_coerce_int(get("validator_retries", 0)),
                     validator_failures=_parse_failures(get("validator_failures", "[]")),

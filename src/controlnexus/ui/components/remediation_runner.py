@@ -13,6 +13,7 @@ from typing import Any
 
 import streamlit as st
 
+from controlnexus.core.constants import DEFAULT_QUALITY_RATING
 from controlnexus.core.state import GapReport
 
 logger = logging.getLogger(__name__)
@@ -183,7 +184,7 @@ def _build_record(assignment: dict[str, Any], index: int) -> dict[str, Any]:
                 f"of control gaps, supporting ongoing compliance and effective "
                 f"risk mitigation across the control ecosystem."
             ),
-            "quality_rating": "Satisfactory",
+            "quality_rating": DEFAULT_QUALITY_RATING,
             "evidence": f"Updated control schedule showing {expected} frequency",
         }
 
@@ -212,7 +213,7 @@ def _build_record(assignment: dict[str, Any], index: int) -> dict[str, Any]:
                 f"sufficiency for audit and compliance review, supporting "
                 f"regulatory requirements and internal assurance processes."
             ),
-            "quality_rating": "Satisfactory",
+            "quality_rating": DEFAULT_QUALITY_RATING,
             "evidence": "Evidence package with artifact, sign-off, and retention details",
         }
 
@@ -242,7 +243,7 @@ def _build_record(assignment: dict[str, Any], index: int) -> dict[str, Any]:
                 f"supports the organization's risk management framework by "
                 f"providing timely detection of regulatory exposure."
             ),
-            "quality_rating": "Satisfactory",
+            "quality_rating": DEFAULT_QUALITY_RATING,
             "evidence": f"Quarterly compliance assessment report for {framework}",
         }
 
@@ -271,7 +272,7 @@ def _build_record(assignment: dict[str, Any], index: int) -> dict[str, Any]:
                 f"comprehensive risk coverage across all control dimensions "
                 f"for effective compliance and risk mitigation."
             ),
-            "quality_rating": "Satisfactory",
+            "quality_rating": DEFAULT_QUALITY_RATING,
             "evidence": f"Monthly {control_type} execution log with sign-off",
         }
 
@@ -496,7 +497,7 @@ def _render_excel_download(results: list[dict[str, Any]]) -> None:
                         where=rec.get("where", ""),
                         why=rec.get("why", ""),
                         full_description=rec.get("full_description", ""),
-                        quality_rating=rec.get("quality_rating", "Satisfactory"),
+                        quality_rating=rec.get("quality_rating", DEFAULT_QUALITY_RATING),
                         evidence=rec.get("evidence", ""),
                     )
                 )
