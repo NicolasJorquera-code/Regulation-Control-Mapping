@@ -14,6 +14,8 @@ Topology::
 from __future__ import annotations
 
 import asyncio
+import json
+import time
 from typing import Any
 
 from langgraph.graph import END, START, StateGraph
@@ -44,6 +46,8 @@ from regrisk.validation.validator import validate_classification
 # ---------------------------------------------------------------------------
 
 _infra = GraphInfra()
+_trace_db: Any = None
+_trace_run_id: str = ""
 
 _AGENT_CLASSES: dict[str, type] = {
     "classifier": ObligationClassifierAgent,
@@ -60,7 +64,10 @@ def get_emitter() -> EventEmitter:
 
 def reset_caches() -> None:
     """Reset all module-level caches (for test isolation)."""
+    global _trace_db, _trace_run_id
     _infra.reset_caches()
+    _trace_db = None
+    _trace_run_id = ""
 
 
 # ---------------------------------------------------------------------------
@@ -193,10 +200,28 @@ def classify_group_node(state: ClassifyState) -> dict[str, Any]:
 
     # Validate and collect errors
     errors: list[str] = []
+    all_passed = True
+    all_failures: list[str] = []
     for c in classifications:
         passed, failures = validate_classification(c)
         if not passed:
+            all_passed = False
+            all_failures.extend(failures)
             errors.append(f"Classification validation for {c.get('citation', '?')}: {failures}")
+
+    # Record quality metrics in trace DB
+    if _trace_db and _trace_run_id:
+        _trace_db.update_llm_call_quality(
+            run_id=_trace_run_id,
+            node_name="classify_group",
+            agent_name="ObligationClassifierAgent",
+            timestamp=time.time(),
+            validation_passed=all_passed,
+            validation_failures=all_failures,
+            retry_attempt=0,
+            output_type="classify",
+            parsed_output=result,
+        )
 
     _infra.emit_event(EventType.GROUP_CLASSIFIED, f"Classified {len(classifications)} obligations in {section_cit}")
 
@@ -242,6 +267,11 @@ def build_classify_graph(trace_db=None, run_id: str = ""):
     run_id : str
         Unique identifier for this pipeline run (used for tracing).
     """
+    # Store trace references for quality capture in graph nodes
+    global _trace_db, _trace_run_id
+    _trace_db = trace_db
+    _trace_run_id = run_id
+
     # If tracing is enabled, also wrap the transport client
     if trace_db and run_id:
         _infra.install_tracing_transport(trace_db, run_id)

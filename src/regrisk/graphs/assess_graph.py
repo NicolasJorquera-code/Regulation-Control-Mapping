@@ -24,6 +24,8 @@ Topology::
 from __future__ import annotations
 
 import asyncio
+import json
+import time
 from collections import defaultdict
 from typing import Any
 
@@ -51,6 +53,8 @@ from regrisk.validation.validator import validate_coverage, validate_mapping, va
 
 _infra = GraphInfra()
 _partial_assessments: list[dict] = []
+_trace_db: Any = None
+_trace_run_id: str = ""
 
 _AGENT_CLASSES: dict[str, type] = {
     "mapper": APQCMapperAgent,
@@ -74,9 +78,11 @@ def get_partial_assessments() -> list[dict]:
 
 def reset_caches() -> None:
     """Reset all module-level caches (for test isolation and between runs)."""
-    global _partial_assessments
+    global _partial_assessments, _trace_db, _trace_run_id
     _partial_assessments = []
     _infra.reset_caches()
+    _trace_db = None
+    _trace_run_id = ""
 
 
 # ---------------------------------------------------------------------------
@@ -122,10 +128,28 @@ def map_group_node(state: AssessState) -> dict[str, Any]:
 
     # Validate
     errors: list[str] = []
+    all_passed = True
+    all_failures: list[str] = []
     for m in mappings:
         passed, failures = validate_mapping(m)
         if not passed:
+            all_passed = False
+            all_failures.extend(failures)
             errors.append(f"Mapping validation for {m.get('citation', '?')}: {failures}")
+
+    # Record quality metrics in trace DB
+    if _trace_db and _trace_run_id:
+        _trace_db.update_llm_call_quality(
+            run_id=_trace_run_id,
+            node_name="map_group",
+            agent_name="APQCMapperAgent",
+            timestamp=time.time(),
+            validation_passed=all_passed,
+            validation_failures=all_failures,
+            retry_attempt=0,
+            output_type="map",
+            parsed_output=result,
+        )
 
     _infra.emit_event(EventType.MAPPING_COMPLETED, f"Mapped {len(mappings)} obligations in {section_cit}")
 
@@ -264,6 +288,20 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     if not passed:
         errors.append(f"Coverage validation for {citation}: {failures}")
 
+    # Record quality metrics in trace DB
+    if _trace_db and _trace_run_id:
+        _trace_db.update_llm_call_quality(
+            run_id=_trace_run_id,
+            node_name="assess_coverage",
+            agent_name="CoverageAssessorAgent",
+            timestamp=time.time(),
+            validation_passed=passed,
+            validation_failures=failures,
+            retry_attempt=0,
+            output_type="assess",
+            parsed_output=assessment,
+        )
+
     _infra.emit_event(EventType.COVERAGE_ASSESSED, f"Coverage for {citation}: {assessment.get('overall_coverage', '?')}")
 
     # Track for partial-checkpoint recovery on failure
@@ -344,10 +382,28 @@ def extract_and_score_node(state: AssessState) -> dict[str, Any]:
 
     # Validate
     errors: list[str] = []
+    all_passed = True
+    all_failures: list[str] = []
     for r in risks:
         passed, failures = validate_risk(r)
         if not passed:
+            all_passed = False
+            all_failures.extend(failures)
             errors.append(f"Risk validation for {citation}: {failures}")
+
+    # Record quality metrics in trace DB
+    if _trace_db and _trace_run_id:
+        _trace_db.update_llm_call_quality(
+            run_id=_trace_run_id,
+            node_name="extract_and_score",
+            agent_name="RiskExtractorAndScorerAgent",
+            timestamp=time.time(),
+            validation_passed=all_passed,
+            validation_failures=all_failures,
+            retry_attempt=0,
+            output_type="risk",
+            parsed_output=result,
+        )
 
     _infra.emit_event(EventType.RISK_SCORED, f"Scored {len(risks)} risks for {citation}")
 
@@ -452,6 +508,13 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
         f"Finalized: {len(assessments)} assessments, {len(gaps)} gaps, {len(risks)} risks",
     )
 
+    # Compute run metrics after all phases are complete
+    if _trace_db and _trace_run_id:
+        try:
+            _trace_db.compute_run_metrics(_trace_run_id)
+        except Exception:
+            pass  # metrics computation is best-effort
+
     return {
         "gap_report": gap_report,
         "compliance_matrix": compliance_matrix,
@@ -474,6 +537,11 @@ def build_assess_graph(trace_db=None, run_id: str = ""):
     run_id : str
         Unique identifier for this pipeline run (used for tracing).
     """
+    # Store trace references for quality capture in graph nodes
+    global _trace_db, _trace_run_id
+    _trace_db = trace_db
+    _trace_run_id = run_id
+
     if trace_db and run_id:
         _infra.install_tracing_transport(trace_db, run_id)
 

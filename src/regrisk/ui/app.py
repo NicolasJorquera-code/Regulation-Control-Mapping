@@ -1,11 +1,12 @@
 """
-Streamlit 5-tab UI for the Regulatory Obligation Control Mapper.
+Streamlit 6-tab UI for the Regulatory Obligation Control Mapper.
 
 Tab 1: Upload & Configure  (upload_tab.py)
 Tab 2: Classification Review  (review_tabs.py)
 Tab 3: Mapping Review  (review_tabs.py)
 Tab 4: Results  (results_tab.py)
 Tab 5: Traceability  (traceability_tab.py)
+Tab 6: Evaluation  (evaluation_tab.py)
 
 Shared helpers live in components.py.
 Two graph invocations bridged via st.session_state.
@@ -43,6 +44,7 @@ from regrisk.ui.review_tabs import (
 )
 from regrisk.ui.results_tab import render_results_tab
 from regrisk.ui.traceability_tab import render_traceability_tab
+from regrisk.ui.evaluation_tab import render_evaluation_tab
 
 
 # ---------------------------------------------------------------------------
@@ -203,12 +205,13 @@ def main() -> None:
         if reg:
             st.markdown(f"📜 *{reg}*")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📁 Upload & Configure",
         "🏷️ Classification Review",
         "🗺️ Mapping Review",
         "📊 Results",
         "🔗 Traceability",
+        "📈 Evaluation",
     ])
 
     with tab1:
@@ -221,6 +224,8 @@ def main() -> None:
         render_results_tab()
     with tab5:
         render_traceability_tab()
+    with tab6:
+        render_evaluation_tab()
 
 
 # ---------------------------------------------------------------------------
