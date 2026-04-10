@@ -1,4 +1,9 @@
-"""Tabs 2 & 3: Classification Review and Mapping Review."""
+"""Tabs 2 & 3: Classification Review and Mapping Review.
+
+Tab 2 uses a master-detail split (60 / 40) with ObligationCard list on the
+left and full detail on the right.  Tab 3 uses grouped expander panels per
+obligation with nested MappingChip components.
+"""
 
 from __future__ import annotations
 
@@ -30,11 +35,17 @@ from regrisk.ui.checkpoint import (
 from regrisk.ui.components import (
     CATEGORY_BG,
     build_partial_results,
+    format_citation,
+    criticality_dot,
     render_checkpoint_load,
     render_checkpoint_save,
-    render_html_table,
+    render_filter_bar,
+    render_mapping_chip,
+    render_obligation_card,
+    render_obligation_detail,
     save_uploaded_file,
 )
+from regrisk.ui.session_keys import SK
 
 
 # ---------------------------------------------------------------------------
@@ -55,12 +66,12 @@ def _new_run_id() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Tab 2: Classification Review
+# Tab 2: Classification Review  (master-detail split)
 # ---------------------------------------------------------------------------
 
 def render_classification_review_tab() -> None:
-    """Render the classification review tab."""
-    classified = st.session_state.get("classified_obligations", [])
+    """Render the classification review tab with master-detail layout."""
+    classified = st.session_state.get(SK.CLASSIFIED_OBLIGATIONS, [])
 
     if not classified:
         st.info("Run classification first (Tab 1).")
@@ -69,41 +80,56 @@ def render_classification_review_tab() -> None:
     st.header(f"Classification Review ({len(classified)} obligations)")
 
     df = pd.DataFrame(classified)
+    total_count = len(df)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        cat_filter = st.multiselect(
-            "Filter by Category",
-            options=sorted(df["obligation_category"].unique()) if "obligation_category" in df.columns else [],
-            key="cat_filter",
-        )
-    with col2:
-        crit_filter = st.multiselect(
-            "Filter by Criticality",
-            options=["High", "Medium", "Low"],
-            key="crit_filter",
-        )
-
-    if cat_filter:
-        df = df[df["obligation_category"].isin(cat_filter)]
-    if crit_filter:
-        df = df[df["criticality_tier"].isin(crit_filter)]
-
-    display_cols = [
-        "subpart", "citation", "abstract", "relationship_type",
-        "criticality_tier", "obligation_category",
-        "classification_rationale",
-    ]
-    display_cols = [c for c in display_cols if c in df.columns]
-
-    render_html_table(
-        df, display_cols, height=400,
-        color_col="obligation_category", color_map=CATEGORY_BG,
+    # ── Filter bar ──
+    df_filtered = render_filter_bar(
+        df, total_count, key_prefix="tab2",
+        show_category=True, show_criticality=True, show_subpart=True,
     )
 
-    # Download / Upload review
-    col1, col2 = st.columns(2)
-    with col1:
+    # Keep a list version for card rendering
+    filtered_records = df_filtered.to_dict("records")
+
+    # Ensure selected index is valid
+    sel_key = SK.SELECTED_OBLIGATION_IDX
+    if sel_key not in st.session_state:
+        st.session_state[sel_key] = 0
+    if st.session_state[sel_key] >= len(filtered_records):
+        st.session_state[sel_key] = 0
+
+    # ── Master-detail columns ──
+    col_list, col_detail = st.columns([0.6, 0.4])
+
+    with col_list:
+        with st.container(height=600):
+            # Group by subpart
+            groups: dict[str, list[tuple[int, dict]]] = defaultdict(list)
+            for idx, ob in enumerate(filtered_records):
+                subpart = ob.get("subpart", "General")
+                groups[subpart].append((idx, ob))
+
+            for subpart in sorted(groups.keys()):
+                st.subheader(subpart, divider="gray")
+                for idx, ob in groups[subpart]:
+                    clicked = render_obligation_card(
+                        ob, idx, st.session_state[sel_key], key_prefix="tab2_ob",
+                    )
+                    if clicked:
+                        st.session_state[sel_key] = idx
+                        st.rerun()
+
+    with col_detail:
+        if filtered_records:
+            sel_idx = st.session_state[sel_key]
+            if 0 <= sel_idx < len(filtered_records):
+                render_obligation_detail(filtered_records[sel_idx])
+
+    # ── Actions ──
+    st.divider()
+
+    col_dl, col_ul = st.columns(2)
+    with col_dl:
         buf = io.BytesIO()
         export_for_review(classified, "classification", buf)
         st.download_button(
@@ -112,7 +138,7 @@ def render_classification_review_tab() -> None:
             file_name="classification_review.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
-    with col2:
+    with col_ul:
         uploaded_review = st.file_uploader(
             "📤 Upload Reviewed File",
             type=["xlsx"],
@@ -121,7 +147,7 @@ def render_classification_review_tab() -> None:
         if uploaded_review:
             review_path = save_uploaded_file(uploaded_review)
             reviewed = import_reviewed(review_path, "classification")
-            st.session_state["classified_obligations"] = reviewed
+            st.session_state[SK.CLASSIFIED_OBLIGATIONS] = reviewed
             st.success(f"Imported {len(reviewed)} approved classifications.")
             st.rerun()
 
@@ -132,34 +158,85 @@ def render_classification_review_tab() -> None:
     st.divider()
 
     if st.button("✅ Approve and Continue to Mapping", type="primary"):
-        st.session_state["approved_for_mapping"] = True
+        st.session_state[SK.APPROVED_FOR_MAPPING] = True
         _run_mapping()
 
 
 # ---------------------------------------------------------------------------
-# Tab 3: Mapping Review
+# Tab 3: Mapping Review  (grouped panels + nested chips)
 # ---------------------------------------------------------------------------
 
 def render_mapping_review_tab() -> None:
-    """Render the mapping review tab."""
-    mappings = st.session_state.get("obligation_mappings", [])
+    """Render the mapping review tab with grouped obligation panels."""
+    mappings = st.session_state.get(SK.OBLIGATION_MAPPINGS, [])
 
     if not mappings:
         st.info("Run APQC mapping first (approve classifications in Tab 2).")
         return
 
-    st.header(f"APQC Mapping Review ({len(mappings)} mappings)")
+    # ── Summary strip ──
+    unique_citations = set(m.get("citation", "") for m in mappings)
+    avg_conf = (
+        sum(m.get("confidence", 0) for m in mappings) / len(mappings)
+        if mappings else 0
+    )
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Obligations Mapped", len(unique_citations))
+    c2.metric("Total Mappings", len(mappings))
+    c3.metric("Avg Confidence", f"{avg_conf:.2f}")
+    rel_types = defaultdict(int)
+    for m in mappings:
+        rel_types[m.get("relationship_type", "?")] += 1
+    c4.metric("Relationship Types", len(rel_types))
 
-    df = pd.DataFrame(mappings)
-    display_cols = [
-        "citation", "apqc_hierarchy_id", "apqc_process_name",
-        "relationship_type", "relationship_detail", "confidence",
-    ]
-    display_cols = [c for c in display_cols if c in df.columns]
-    render_html_table(df, display_cols, height=400)
+    st.header(f"APQC Mapping Review")
 
-    col1, col2 = st.columns(2)
-    with col1:
+    # Build per-obligation mapping groups
+    mappings_by_citation: dict[str, list[dict]] = defaultdict(list)
+    for m in mappings:
+        mappings_by_citation[m.get("citation", "unknown")].append(m)
+
+    # Get obligation metadata for panel headers
+    classified = st.session_state.get(SK.CLASSIFIED_OBLIGATIONS, [])
+    ob_meta: dict[str, dict] = {}
+    for ob in classified:
+        cit = ob.get("citation", "")
+        if cit:
+            ob_meta[cit] = ob
+
+    # Group obligations by subpart for ordering
+    obs_by_subpart: dict[str, list[str]] = defaultdict(list)
+    for cit in mappings_by_citation:
+        meta = ob_meta.get(cit, {})
+        subpart = meta.get("subpart", "General")
+        obs_by_subpart[subpart].append(cit)
+
+    for subpart in sorted(obs_by_subpart.keys()):
+        st.subheader(subpart, divider="gray")
+        for cit in sorted(obs_by_subpart[subpart]):
+            ob_maps = mappings_by_citation[cit]
+            meta = ob_meta.get(cit, {})
+            category = meta.get("obligation_category", "")
+            crit = meta.get("criticality_tier", "")
+            abstract = meta.get("abstract", "")
+            truncated = (abstract[:80] + "…") if len(abstract) > 80 else abstract
+
+            label = (
+                f"{format_citation(cit)}  "
+                f"{criticality_dot(crit)}  {category}  —  "
+                f"**{len(ob_maps)} mapping{'s' if len(ob_maps) != 1 else ''}**"
+            )
+            with st.expander(label, expanded=False):
+                if truncated:
+                    st.caption(truncated)
+                for mapping in ob_maps:
+                    render_mapping_chip(mapping)
+
+    # ── Actions ──
+    st.divider()
+
+    col_dl, col_ul = st.columns(2)
+    with col_dl:
         buf = io.BytesIO()
         export_for_review(mappings, "mapping", buf)
         st.download_button(
@@ -168,7 +245,7 @@ def render_mapping_review_tab() -> None:
             file_name="mapping_review.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
-    with col2:
+    with col_ul:
         uploaded_review = st.file_uploader(
             "📤 Upload Reviewed File",
             type=["xlsx"],
@@ -177,7 +254,7 @@ def render_mapping_review_tab() -> None:
         if uploaded_review:
             review_path = save_uploaded_file(uploaded_review)
             reviewed = import_reviewed(review_path, "mapping")
-            st.session_state["obligation_mappings"] = reviewed
+            st.session_state[SK.OBLIGATION_MAPPINGS] = reviewed
             st.success(f"Imported {len(reviewed)} approved mappings.")
             st.rerun()
 
