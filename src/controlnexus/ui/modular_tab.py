@@ -17,7 +17,7 @@ from controlnexus.core.domain_config import DomainConfig
 from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
 from controlnexus.graphs.forge_modular_graph import build_forge_graph, set_emitter
 from controlnexus.ui.components.data_table import render_data_table
-from controlnexus.ui.config_input import render_config_input
+from controlnexus.ui.config_input import _load_config, render_config_input
 
 logger = logging.getLogger(__name__)
 # ── Streamlit event listener ──────────────────────────────────────────────────
