@@ -1,11 +1,12 @@
 """
-Streamlit 5-tab UI for the Regulatory Obligation Control Mapper.
+Streamlit 6-tab UI for the Regulatory Obligation Control Mapper.
 
 Tab 1: Upload & Configure
 Tab 2: Classification Review
 Tab 3: Mapping Review
 Tab 4: Results (coverage summary, risk heatmap, gaps, risk register)
 Tab 5: Traceability
+Tab 6: Evaluation (run metrics, comparisons, cost/quality analysis)
 
 Two graph invocations bridged via st.session_state.
 Checkpoint persistence allows resuming after mid-run failures.
@@ -69,6 +70,7 @@ from regrisk.ui.checkpoint import (
 )
 from regrisk.tracing.db import TraceDB
 from regrisk.tracing.listener import SQLiteTraceListener
+from regrisk.ui.evaluation_tab import render_evaluation_tab
 
 
 # ---------------------------------------------------------------------------
@@ -375,12 +377,13 @@ def main() -> None:
         if reg:
             st.markdown(f"📜 *{reg}*")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📁 Upload & Configure",
         "🏷️ Classification Review",
         "🗺️ Mapping Review",
         "📊 Results",
         "🔗 Traceability",
+        "📈 Evaluation",
     ])
 
     # ── Tab 1: Upload & Configure ──
@@ -402,6 +405,10 @@ def main() -> None:
     # ── Tab 5: Traceability ──
     with tab5:
         _render_traceability_tab()
+
+    # ── Tab 6: Evaluation ──
+    with tab6:
+        render_evaluation_tab()
 
 
 # ---------------------------------------------------------------------------
