@@ -13,11 +13,10 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from controlnexus.core.domain_config import DomainConfig
 from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
 from controlnexus.graphs.forge_modular_graph import build_forge_graph, set_emitter
 from controlnexus.ui.components.data_table import render_data_table
-from controlnexus.ui.config_input import _load_config, render_config_input
+from controlnexus.ui.config_input import render_config_input
 
 logger = logging.getLogger(__name__)
 # ── Streamlit event listener ──────────────────────────────────────────────────
@@ -78,8 +77,6 @@ def render_modular_tab() -> None:
     )
 
     # ── Config input (Select Profile / Build from Form / Import from Excel) ──
-    st.markdown("### Organization Config")
-
     config = render_config_input()
 
     if config is None:
@@ -103,45 +100,6 @@ def render_modular_tab() -> None:
 
     if config_path is None:
         return
-
-    # Load and validate
-    try:
-        config_data = _load_config(str(config_path))
-        config = DomainConfig(**config_data)
-    except Exception as e:
-        logger.exception("Config validation error")
-        st.error(f"Config validation error: {e}")
-        return
-
-    # ── Config preview ────────────────────────────────────────────────────
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Control Types", len(config.control_types))
-    col2.metric("Business Units", len(config.business_units))
-    col3.metric("Process Areas", len(config.process_areas))
-
-    with st.expander("Config Details", expanded=False):
-        st.markdown("**Control Types:**")
-        type_data = [
-            {"Name": ct.name, "Code": ct.code or "(auto)", "Min Frequency": ct.min_frequency_tier or "—"}
-            for ct in config.control_types
-        ]
-        st.dataframe(pd.DataFrame(type_data), width="stretch", hide_index=True)
-
-        if config.business_units:
-            st.markdown("**Business Units:**")
-            bu_data = [
-                {"ID": bu.id, "Name": bu.name, "Key Types": ", ".join(bu.key_control_types[:3])}
-                for bu in config.business_units
-            ]
-            st.dataframe(pd.DataFrame(bu_data), width="stretch", hide_index=True)
-
-        if config.process_areas:
-            st.markdown("**Process Areas:**")
-            pa_data = [
-                {"ID": pa.id, "Name": pa.name, "Risk Multiplier": pa.risk_profile.multiplier}
-                for pa in config.process_areas
-            ]
-            st.dataframe(pd.DataFrame(pa_data), width="stretch", hide_index=True)
 
     # ── Generation settings ───────────────────────────────────────────────
     st.markdown("---")

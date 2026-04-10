@@ -123,7 +123,7 @@ def render_config_preview(config: DomainConfig) -> None:
             }
             for ct in config.control_types
         ]
-        st.dataframe(pd.DataFrame(type_data), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(type_data), width="stretch", hide_index=True)
 
         if config.business_units:
             st.markdown("**Business Units:**")
@@ -135,7 +135,7 @@ def render_config_preview(config: DomainConfig) -> None:
                 }
                 for bu in config.business_units
             ]
-            st.dataframe(pd.DataFrame(bu_data), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(bu_data), width="stretch", hide_index=True)
 
         if config.process_areas:
             st.markdown("**Process Areas:**")
@@ -147,7 +147,7 @@ def render_config_preview(config: DomainConfig) -> None:
                 }
                 for pa in config.process_areas
             ]
-            st.dataframe(pd.DataFrame(pa_data), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(pa_data), width="stretch", hide_index=True)
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────
