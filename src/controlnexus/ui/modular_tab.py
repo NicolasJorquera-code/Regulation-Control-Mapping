@@ -13,10 +13,11 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from controlnexus.core.domain_config import DomainConfig, load_domain_config
+from controlnexus.core.domain_config import DomainConfig
 from controlnexus.core.events import EventEmitter, EventType, PipelineEvent
 from controlnexus.graphs.forge_modular_graph import build_forge_graph, set_emitter
 from controlnexus.ui.components.data_table import render_data_table
+from controlnexus.ui.config_input import render_config_input
 
 logger = logging.getLogger(__name__)
 # ── Streamlit event listener ──────────────────────────────────────────────────
@@ -60,38 +61,6 @@ class StreamlitEventListener:
             self._status.update(label=f"\u2705 {msg}", state="complete", expanded=True)
 
 
-# ── Config resolution ─────────────────────────────────────────────────────────
-
-_PROFILES_DIR: Path | None = None
-
-
-def _profiles_dir() -> Path:
-    """Resolve the config/profiles directory."""
-    global _PROFILES_DIR
-    if _PROFILES_DIR is not None:
-        return _PROFILES_DIR
-
-    candidates = [
-        Path.cwd() / "config" / "profiles",
-        Path(__file__).resolve().parents[3] / "config" / "profiles",
-    ]
-    for c in candidates:
-        if c.is_dir():
-            _PROFILES_DIR = c
-            return c
-
-    # Fallback — return first candidate even if it doesn't exist
-    _PROFILES_DIR = candidates[0]
-    return _PROFILES_DIR
-
-
-@st.cache_data(show_spinner="Loading config…")
-def _load_config(path_str: str) -> dict[str, Any]:
-    """Load and cache a DomainConfig, returning its model_dump()."""
-    config = load_domain_config(Path(path_str))
-    return config.model_dump()
-
-
 # ── Main render function ──────────────────────────────────────────────────────
 
 
@@ -108,38 +77,28 @@ def render_modular_tab() -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Config selection ──────────────────────────────────────────────────
+    # ── Config input (Select Profile / Build from Form / Import from Excel) ──
     st.markdown("### Organization Config")
 
-    col_select, col_upload = st.columns([3, 2])
+    config = render_config_input()
 
-    with col_select:
-        profiles = sorted(_profiles_dir().glob("*.yaml"))
-        if not profiles:
-            st.warning("No config profiles found in `config/profiles/`.")
-            return
+    if config is None:
+        return
 
-        selected_path = st.selectbox(
-            "Select config profile",
-            profiles,
-            format_func=lambda p: p.stem.replace("_", " ").replace("-", " ").title(),
-        )
-
-    with col_upload:
-        uploaded = st.file_uploader(
-            "…or upload a custom YAML",
-            type=["yaml", "yml"],
-            help="Upload a DomainConfig YAML file for a custom organization.",
-        )
-
-    # Determine which config to use
+    # Resolve config_path for the graph (needed for backward compat)
     config_path: Path | None = None
-    if uploaded is not None:
-        # Write to a temp location and load
+    if "ci_selected_path" in st.session_state:
+        config_path = st.session_state["ci_selected_path"]
+    else:
+        # Write the active config to a temp file so the graph can load it
         import tempfile
+        import yaml as _yaml
 
-        tmp = Path(tempfile.gettempdir()) / f"controlforge_upload_{uploaded.name}"
-        tmp.write_bytes(uploaded.getvalue())
+        tmp = Path(tempfile.gettempdir()) / f"controlforge_{config.name}.yaml"
+        tmp.write_text(
+            _yaml.dump(config.model_dump(), default_flow_style=False, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
         config_path = tmp
     elif selected_path:
         config_path = selected_path
