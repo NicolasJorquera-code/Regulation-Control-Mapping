@@ -31,9 +31,12 @@ from regrisk.ui.checkpoint import (
     STAGE_ASSESS_PARTIAL,
     STAGE_CLASSIFIED,
     STAGE_MAPPED,
+    list_checkpoints,
+    load_checkpoint,
     save_checkpoint,
 )
 from regrisk.ui.components import (
+    apply_checkpoint,
     render_checkpoint_load,
     save_uploaded_file,
 )
@@ -189,11 +192,51 @@ def _subpart_summary(groups: list[dict]) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
+# Demo data loader
+# ---------------------------------------------------------------------------
+
+def _find_best_demo_checkpoint() -> dict[str, Any] | None:
+    """Find the newest fully-assessed checkpoint for demo mode."""
+    checkpoints = list_checkpoints()
+    for cp in checkpoints:
+        if cp["stage"] in (STAGE_ASSESSED, STAGE_ASSESS_PARTIAL):
+            return cp
+    # Fall back to any checkpoint (mapped, classified)
+    return checkpoints[0] if checkpoints else None
+
+
+def _load_demo_data() -> None:
+    """Load the best available checkpoint into session state."""
+    cp = _find_best_demo_checkpoint()
+    if cp is None:
+        st.error("No checkpoint files found in data/checkpoints/. Cannot load demo data.")
+        return
+    data = load_checkpoint(cp["path"])
+    apply_checkpoint(data)
+
+
+# ---------------------------------------------------------------------------
 # Tab renderer
 # ---------------------------------------------------------------------------
 
 def render_upload_tab() -> None:
     """Render the Upload & Configure tab."""
+
+    # ── Demo Mode Banner ──
+    if not st.session_state.get("classified_obligations"):
+        cp_info = _find_best_demo_checkpoint()
+        if cp_info:
+            with st.container(border=True):
+                demo_cols = st.columns([3, 1])
+                with demo_cols[0]:
+                    st.markdown(
+                        "**🎭 Demo Mode** — Load pre-computed results instantly "
+                        "(skips LLM pipeline). Uses the most recent assessed checkpoint: "
+                        f"*{cp_info['regulation_name']}* ({cp_info['stage_label']})"
+                    )
+                with demo_cols[1]:
+                    if st.button("🎭 Load Demo Data", type="primary", use_container_width=True):
+                        _load_demo_data()
 
     # ── Panel A: Data Sources ──
     detected = _detect_data_files()
