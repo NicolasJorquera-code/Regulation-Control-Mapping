@@ -330,6 +330,12 @@ class ConfigProposerAgent(BaseAgent):
             return await self._execute_section_autofill(**kwargs)
         elif mode == "enrich":
             return await self._execute_enrich(**kwargs)
+        elif mode == "suggest_types":
+            return await self._execute_suggest_types(**kwargs)
+        elif mode == "suggest_sections":
+            return await self._execute_suggest_sections(**kwargs)
+        elif mode == "suggest_registry_field":
+            return await self._execute_suggest_registry_field(**kwargs)
         else:
             raise AgentExecutionException(f"Unknown mode: {mode}")
 
@@ -441,3 +447,118 @@ class ConfigProposerAgent(BaseAgent):
         except Exception as exc:
             logger.warning("Enrich LLM failed: %s — using deterministic", exc)
             return _build_deterministic_enrichment(type_names)
+
+    # ── Suggest types mode ────────────────────────────────────────────────
+
+    async def _execute_suggest_types(self, **kwargs: Any) -> dict[str, Any]:
+        """Suggest control types based on industry, jurisdiction, and description."""
+        industry = kwargs.get("industry", "Generic")
+        jurisdiction = kwargs.get("jurisdiction", "Generic")
+        description = kwargs.get("description", "")
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_types) started for %s/%s", industry, jurisdiction)
+
+        # Deterministic fallback — standard banking types
+        fallback_types = [
+            {"name": "Reconciliation", "definition": "Comparison of data sets to identify differences", "code": "RCN"},
+            {"name": "Authorization", "definition": "Approval of transactions by appropriate authority", "code": "ATH"},
+            {"name": "Segregation of Duties", "definition": "Separation of incompatible functions", "code": "SOD"},
+            {"name": "Access Controls", "definition": "Restriction of system access to authorized users", "code": "ACC"},
+            {"name": "Review & Approval", "definition": "Independent review and sign-off of work products", "code": "RVW"},
+        ]
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_types) deterministic (%.3fs)", time.monotonic() - t0)
+            return {"suggested_types": fallback_types}
+
+        prompt = json.dumps({"industry": industry, "jurisdiction": jurisdiction, "description": description}, indent=2)
+        try:
+            raw = await self.call_llm(
+                "You are a controls taxonomy expert. Given an industry, jurisdiction, and description, "
+                "suggest 5-8 control types as a JSON array with name, definition, and 3-letter code fields. "
+                "Return JSON: {\"suggested_types\": [...]}",
+                prompt, max_tokens=2048,
+            )
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_types) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_types LLM failed: %s — using fallback", exc)
+            return {"suggested_types": fallback_types}
+
+    # ── Suggest sections mode ─────────────────────────────────────────────
+
+    async def _execute_suggest_sections(self, **kwargs: Any) -> dict[str, Any]:
+        """Suggest process area sections based on industry and control types."""
+        industry = kwargs.get("industry", "Generic")
+        control_type_names = kwargs.get("control_type_names", [])
+        description = kwargs.get("description", "")
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_sections) started")
+
+        fallback_sections = [
+            {"id": "1.0", "name": "Financial Reporting", "domain": "financial_reporting"},
+            {"id": "2.0", "name": "Treasury & Cash Management", "domain": "treasury"},
+            {"id": "3.0", "name": "Lending & Credit", "domain": "lending"},
+            {"id": "4.0", "name": "Compliance & Regulatory", "domain": "compliance"},
+            {"id": "5.0", "name": "IT & Operations", "domain": "it_operations"},
+        ]
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_sections) deterministic (%.3fs)", time.monotonic() - t0)
+            return {"suggested_sections": fallback_sections}
+
+        prompt = json.dumps({"industry": industry, "control_types": control_type_names, "description": description}, indent=2)
+        try:
+            raw = await self.call_llm(
+                "You are a process area expert. Given an industry context and control types, "
+                "suggest 5-8 process area sections as a JSON array with id, name, and domain fields. "
+                "Return JSON: {\"suggested_sections\": [...]}",
+                prompt, max_tokens=2048,
+            )
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_sections) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_sections LLM failed: %s — using fallback", exc)
+            return {"suggested_sections": fallback_sections}
+
+    # ── Suggest registry field mode ───────────────────────────────────────
+
+    async def _execute_suggest_registry_field(self, **kwargs: Any) -> dict[str, Any]:
+        """Suggest items for a specific registry field based on context."""
+        field_name = kwargs.get("field_name", "roles")
+        section_name = kwargs.get("section_name", "")
+        existing_items = kwargs.get("existing_items", [])
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_registry_field) for %s in '%s'", field_name, section_name)
+
+        fallback_items = {
+            "roles": ["Senior Accountant", "Control Owner", "Compliance Officer", "Internal Auditor"],
+            "systems": ["SAP", "Oracle EBS", "Workiva", "ServiceNow"],
+            "data_objects": ["General Ledger", "Trial Balance", "Bank Statement", "Loan Portfolio"],
+            "evidence_artifacts": ["Reconciliation Report", "Approval Email", "System Screenshot"],
+            "event_triggers": ["Month-End Close", "Daily COB", "Regulatory Filing Deadline"],
+            "regulatory_frameworks": ["SOX", "Basel III", "FDICIA", "OCC Guidelines"],
+        }
+
+        default_items = fallback_items.get(field_name, ["Item 1", "Item 2", "Item 3"])
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_registry_field) deterministic (%.3fs)", time.monotonic() - t0)
+            return {"suggestions": [i for i in default_items if i not in existing_items]}
+
+        prompt = json.dumps({"field": field_name, "section": section_name, "existing": existing_items}, indent=2)
+        try:
+            raw = await self.call_llm(
+                f"You are a domain registry expert. Suggest 3-5 new items for the '{field_name}' "
+                f"registry field for a section called '{section_name}'. Avoid duplicating existing items. "
+                "Return JSON: {\"suggestions\": [...]}",
+                prompt, max_tokens=1024,
+            )
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_registry_field) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_registry_field LLM failed: %s — using fallback", exc)
+            return {"suggestions": [i for i in default_items if i not in existing_items]}

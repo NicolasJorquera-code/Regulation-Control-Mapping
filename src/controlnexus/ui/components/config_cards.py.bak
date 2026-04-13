@@ -1,0 +1,177 @@
+"""Reusable card renderers for control types, business units, and section navigation."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import streamlit as st
+
+
+def render_control_type_cards(
+    control_types: list[dict[str, Any]],
+    on_edit: str = "edit",
+    on_remove: str = "remove",
+    columns: int = 3,
+    read_only: bool = False,
+) -> None:
+    """Render control types as a responsive card grid."""
+    if not control_types:
+        st.info("No control types defined yet.")
+        return
+
+    cols = st.columns(columns)
+    for i, ct in enumerate(control_types):
+        with cols[i % columns]:
+            with st.container(border=True):
+                # Header row: name + code badge
+                hcol1, hcol2 = st.columns([4, 1])
+                with hcol1:
+                    st.markdown(f"**{ct.get('name', '(unnamed)')}**")
+                with hcol2:
+                    code = ct.get("code", "")
+                    if code:
+                        st.code(code, language=None)
+
+                # Definition (truncated)
+                defn = ct.get("definition", "")
+                if len(defn) > 120:
+                    st.caption(defn[:120] + "...")
+                elif defn:
+                    st.caption(defn)
+
+                # Tags row
+                tags = ct.get("placement_categories", [])
+                if tags:
+                    tag_html = " ".join(
+                        f'<span class="cn-tag cn-tag-blue">{t}</span>' for t in tags
+                    )
+                    st.markdown(tag_html, unsafe_allow_html=True)
+
+                # Metadata row
+                freq = ct.get("min_frequency_tier", "—") or "—"
+                evid_count = len(ct.get("evidence_criteria", []))
+                st.caption(f"Min freq: {freq} · Evidence: {evid_count} criteria")
+
+                # Actions
+                if not read_only:
+                    bcol1, bcol2 = st.columns(2)
+                    with bcol1:
+                        st.button("Edit", key=f"{on_edit}_{i}", use_container_width=True)
+                    with bcol2:
+                        st.button("Remove", key=f"{on_remove}_{i}", use_container_width=True)
+
+
+def render_business_unit_cards(
+    business_units: list[dict[str, Any]],
+    on_edit: str = "bu_edit",
+    on_remove: str = "bu_remove",
+    columns: int = 3,
+    read_only: bool = False,
+) -> None:
+    """Render business units as a responsive card grid."""
+    if not business_units:
+        st.info("No business units defined yet.")
+        return
+
+    cols = st.columns(columns)
+    for i, bu in enumerate(business_units):
+        with cols[i % columns]:
+            with st.container(border=True):
+                st.markdown(f"**{bu.get('id', '?')}** — {bu.get('name', '(unnamed)')}")
+
+                desc = bu.get("description", "")
+                if desc:
+                    st.caption(desc[:100] + ("..." if len(desc) > 100 else ""))
+
+                # Key types as tags
+                key_types = bu.get("key_control_types", [])
+                if key_types:
+                    tag_html = " ".join(
+                        f'<span class="cn-tag cn-tag-gray">{t}</span>' for t in key_types[:5]
+                    )
+                    st.markdown(tag_html, unsafe_allow_html=True)
+
+                # Sections
+                sections = bu.get("primary_sections", [])
+                if sections:
+                    st.caption(f"Sections: {', '.join(sections[:5])}")
+
+                if not read_only:
+                    bcol1, bcol2 = st.columns(2)
+                    with bcol1:
+                        st.button("Edit", key=f"{on_edit}_{i}", use_container_width=True)
+                    with bcol2:
+                        st.button("Remove", key=f"{on_remove}_{i}", use_container_width=True)
+
+
+def render_section_pill_strip(
+    sections: list[dict[str, Any]],
+    active_index: int,
+    key_prefix: str = "secnav",
+) -> int:
+    """Render horizontal pill strip for section navigation.
+
+    Returns the newly selected section index, or -1 if Add was clicked.
+    """
+    if not sections and active_index == -1:
+        return -1
+
+    n = len(sections)
+    cols = st.columns(min(n + 1, 14))
+    selected = active_index
+
+    for i, sec in enumerate(sections):
+        with cols[i % len(cols)]:
+            label = sec.get("id", f"{i + 1}.0")
+            # Determine status icon
+            has_registry = bool(sec.get("registry", {}).get("roles"))
+            has_affinity = bool(sec.get("affinity", {}).get("HIGH"))
+            if has_registry and has_affinity:
+                icon = "✅"
+            elif has_registry or has_affinity:
+                icon = "⚠️"
+            else:
+                icon = "○"
+
+            is_active = i == active_index
+            btn_type = "primary" if is_active else "secondary"
+            if st.button(
+                f"{icon} {label}",
+                key=f"{key_prefix}_{i}",
+                type=btn_type,
+                use_container_width=True,
+            ):
+                selected = i
+
+    # Add button
+    with cols[min(n, len(cols) - 1)]:
+        if st.button("➕", key=f"{key_prefix}_add", use_container_width=True):
+            selected = -1
+
+    return selected
+
+
+def render_registry_tags(
+    field_name: str,
+    items: list[str],
+    key: str,
+) -> list[str]:
+    """Render registry items as tags above a text input for adding new items.
+
+    Returns the updated list of items.
+    """
+    if items:
+        tag_html = " ".join(f'<span class="cn-tag cn-tag-gray">{item}</span>' for item in items)
+        st.markdown(f"**{field_name}** ({len(items)})")
+        st.markdown(tag_html, unsafe_allow_html=True)
+    else:
+        st.markdown(f"**{field_name}** (0)")
+
+    text = st.text_area(
+        f"Edit {field_name} (one per line)",
+        value="\n".join(items),
+        key=key,
+        height=80,
+        label_visibility="collapsed",
+    )
+    return [line.strip() for line in text.split("\n") if line.strip()]

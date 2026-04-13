@@ -1,0 +1,99 @@
+"""Affinity grid component — drag-and-drop or selectbox fallback."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import streamlit as st
+
+_AFFINITY_LEVELS = ["HIGH", "MEDIUM", "LOW", "NONE"]
+_LEVEL_COLORS = {
+    "HIGH": "#24a148",
+    "MEDIUM": "#f1c21b",
+    "LOW": "#e0e0e0",
+    "NONE": "#f4f4f4",
+}
+
+
+def render_affinity_grid(
+    control_type_names: list[str],
+    current_affinity: dict[str, list[str]],
+    key_prefix: str = "aff",
+) -> dict[str, list[str]]:
+    """Render an affinity grid for assigning control types to levels.
+
+    Attempts to use streamlit-sortables for drag-and-drop kanban.
+    Falls back to a colored selectbox grid if sortables is unavailable.
+
+    Returns the updated affinity dict.
+    """
+    try:
+        return _render_sortables_grid(control_type_names, current_affinity, key_prefix)
+    except Exception:
+        return _render_selectbox_grid(control_type_names, current_affinity, key_prefix)
+
+
+def _render_sortables_grid(
+    control_type_names: list[str],
+    current_affinity: dict[str, list[str]],
+    key_prefix: str,
+) -> dict[str, list[str]]:
+    """Kanban-style drag-and-drop using streamlit-sortables."""
+    from streamlit_sortables import sort_items
+
+    # Build items per column from current affinity
+    items: list[dict[str, Any]] = []
+    assigned = set()
+    for level in _AFFINITY_LEVELS:
+        level_items = [t for t in current_affinity.get(level, []) if t in control_type_names]
+        assigned.update(level_items)
+        items.append({"header": f"{level} ({len(level_items)})", "items": level_items})
+
+    # Unassigned types go to MEDIUM
+    unassigned = [t for t in control_type_names if t not in assigned]
+    if unassigned:
+        items[1]["items"].extend(unassigned)
+        items[1]["header"] = f"MEDIUM ({len(items[1]['items'])})"
+
+    sorted_items = sort_items(items, multi_containers=True, key=f"{key_prefix}_kanban")
+
+    # Rebuild affinity from sorted result
+    new_affinity: dict[str, list[str]] = {}
+    for i, level in enumerate(_AFFINITY_LEVELS):
+        if i < len(sorted_items):
+            container = sorted_items[i]
+            new_affinity[level] = container if isinstance(container, list) else container.get("items", [])
+        else:
+            new_affinity[level] = []
+
+    return new_affinity
+
+
+def _render_selectbox_grid(
+    control_type_names: list[str],
+    current_affinity: dict[str, list[str]],
+    key_prefix: str,
+) -> dict[str, list[str]]:
+    """Fallback: colored selectbox grid."""
+    # Build reverse lookup
+    type_level: dict[str, str] = {}
+    for level in _AFFINITY_LEVELS:
+        for t in current_affinity.get(level, []):
+            type_level[t] = level
+
+    new_affinity: dict[str, list[str]] = {level: [] for level in _AFFINITY_LEVELS}
+
+    cols = st.columns(min(len(control_type_names), 3)) if control_type_names else [st.container()]
+    for j, tname in enumerate(control_type_names):
+        with cols[j % len(cols)]:
+            current_level = type_level.get(tname, "MEDIUM")
+            level_idx = _AFFINITY_LEVELS.index(current_level) if current_level in _AFFINITY_LEVELS else 1
+            selected = st.selectbox(
+                tname,
+                options=_AFFINITY_LEVELS,
+                index=level_idx,
+                key=f"{key_prefix}_{j}",
+            )
+            new_affinity[selected].append(tname)
+
+    return new_affinity

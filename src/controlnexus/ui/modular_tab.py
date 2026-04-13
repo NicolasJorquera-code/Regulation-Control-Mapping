@@ -229,37 +229,43 @@ def render_modular_tab() -> None:
             bus_used = set(r.get("business_unit_name", "") for r in records)
             mcol3.metric("Business Units Used", len(bus_used))
 
-            # All available columns for the toggler
+            # Controls table
             all_cols = [
-                "control_id",
-                "hierarchy_id",
-                "leaf_name",
-                "selected_level_1",
-                "selected_level_2",
-                "business_unit_id",
-                "business_unit_name",
-                "who",
-                "what",
-                "when",
-                "frequency",
-                "where",
-                "why",
-                "full_description",
-                "quality_rating",
-                "evidence",
+                "control_id", "hierarchy_id", "leaf_name",
+                "selected_level_1", "selected_level_2",
+                "business_unit_id", "business_unit_name",
+                "who", "what", "when", "frequency",
+                "where", "why", "full_description",
+                "quality_rating", "evidence",
             ]
-
             render_data_table(
                 records=records,
                 default_columns=[
-                    "control_id",
-                    "business_unit_name",
-                    "selected_level_1",
-                    "selected_level_2",
-                    "frequency",
-                    "full_description",
+                    "control_id", "business_unit_name",
+                    "selected_level_1", "selected_level_2",
+                    "frequency", "full_description",
                 ],
                 all_columns=all_cols,
                 key="modular_controls",
                 export_filename=f"{payload.get('config_name', 'controls')}_controls.csv",
             )
+
+            # Downloads
+            import json as _json
+            dl1, dl2 = st.columns(2)
+            with dl1:
+                st.download_button(
+                    "📥 Download CSV",
+                    data=pd.DataFrame(records).to_csv(index=False),
+                    file_name=f"{payload.get('config_name', 'controls')}_controls.csv",
+                    mime="text/csv",
+                    key="modular_export_csv",
+                )
+            with dl2:
+                st.download_button(
+                    "📥 Download JSON",
+                    data=_json.dumps(records, indent=2),
+                    file_name=f"{payload.get('config_name', 'controls')}_controls.json",
+                    mime="application/json",
+                    key="modular_export_json",
+                )

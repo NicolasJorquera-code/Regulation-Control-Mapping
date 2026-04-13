@@ -1,10 +1,10 @@
-"""Tests for controlnexus.ui.config_wizard (unit tests for helpers, no Streamlit)."""
+"""Tests for controlnexus.ui.control_builder (unit tests for helpers, no Streamlit)."""
 
 from __future__ import annotations
 
 import pytest
 
-from controlnexus.ui.config_wizard import (
+from controlnexus.ui.control_builder import (
     STEP_LABELS,
     TOTAL_STEPS,
     _auto_code,
@@ -39,8 +39,8 @@ class TestAutoCode:
 
 class TestConstants:
     def test_step_count(self):
-        assert TOTAL_STEPS == 6
-        assert len(STEP_LABELS) == 6
+        assert TOTAL_STEPS == 5
+        assert len(STEP_LABELS) == 5
 
     def test_step_labels(self):
         assert STEP_LABELS[0] == "Basics"

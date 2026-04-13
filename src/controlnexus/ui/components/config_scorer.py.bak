@@ -1,0 +1,170 @@
+"""Config quality scoring logic + display.
+
+Computes a 0-100 quality score across dimensions for wizard form data
+or DomainConfig dicts, and renders the score as a progress ring.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import streamlit as st
+
+
+@dataclass
+class ConfigScore:
+    """Quality score breakdown for a DomainConfig."""
+
+    overall: float  # 0-100
+    basics: float
+    types: float
+    business_units: float
+    sections: float
+    registries: float
+    exemplars: float
+    standards: float
+    cross_refs: float
+
+
+def compute_config_score(form: dict[str, Any]) -> ConfigScore:
+    """Compute quality score from wizard form data.
+
+    Scoring dimensions (max 100):
+      - Basics (name filled): 5 pts
+      - Types (definitions, codes, evidence, placements): 15 pts
+      - Business units (at least one): 10 pts
+      - Sections (name + registry + affinity): 20 pts
+      - Registries (item richness): 15 pts
+      - Exemplars (at least 2 per section): 15 pts
+      - Standards (narrative fields + word limits): 10 pts
+      - Cross-refs (assumed valid unless detectable): 10 pts
+    """
+    # Basics: name filled = 5pts
+    basics = 5.0 if form.get("name", "").strip() else 0.0
+
+    # Types: each type with definition worth up to 15pts total
+    types_list = [t for t in form.get("control_types", []) if t.get("name", "").strip()]
+    if types_list:
+        type_scores: list[float] = []
+        for t in types_list:
+            s = 0.0
+            if t.get("definition"):
+                s += 0.3
+            if t.get("code"):
+                s += 0.2
+            if t.get("evidence_criteria"):
+                s += 0.3
+            if t.get("placement_categories"):
+                s += 0.2
+            type_scores.append(s)
+        types = 15.0 * (sum(type_scores) / len(type_scores))
+    else:
+        types = 0.0
+
+    # Business units: 10pts if any exist
+    bus = form.get("business_units", [])
+    business_units = 10.0 if any(b.get("name", "").strip() for b in bus) else 0.0
+
+    # Sections: 20pts based on section count and completeness
+    pas = form.get("process_areas", [])
+    if pas:
+        pa_scores: list[float] = []
+        for pa in pas:
+            s = 0.0
+            if pa.get("name", "").strip():
+                s += 0.3
+            reg = pa.get("registry", {})
+            if isinstance(reg, dict):
+                filled_fields = sum(1 for v in reg.values() if v and isinstance(v, list) and len(v) > 0)
+                s += 0.4 * min(1.0, filled_fields / 4)
+            if pa.get("affinity", {}).get("HIGH"):
+                s += 0.3
+            pa_scores.append(s)
+        sections = 20.0 * (sum(pa_scores) / len(pa_scores))
+    else:
+        sections = 0.0
+
+    # Registries: 15pts — deeper check on registry richness
+    if pas:
+        reg_scores: list[float] = []
+        for pa in pas:
+            reg = pa.get("registry", {})
+            if isinstance(reg, dict):
+                total_items = sum(len(v) if isinstance(v, list) else 0 for v in reg.values())
+                reg_scores.append(min(1.0, total_items / 18))
+            else:
+                reg_scores.append(0.0)
+        registries = 15.0 * (sum(reg_scores) / len(reg_scores)) if reg_scores else 0.0
+    else:
+        registries = 0.0
+
+    # Exemplars: 15pts
+    if pas:
+        ex_scores = [min(1.0, len(pa.get("exemplars", [])) / 2) for pa in pas]
+        exemplars = 15.0 * (sum(ex_scores) / len(ex_scores))
+    else:
+        exemplars = 0.0
+
+    # Standards: 10pts (narrative fields present + word counts set)
+    narr = form.get("narrative", {})
+    has_fields = bool(narr.get("fields"))
+    has_limits = narr.get("word_count_min", 0) > 0 and narr.get("word_count_max", 0) > 0
+    standards = 10.0 if (has_fields and has_limits) else (5.0 if has_fields else 0.0)
+
+    # Cross-refs: 10pts — assume valid unless detectable errors
+    cross_refs = 10.0
+
+    overall = basics + types + business_units + sections + registries + exemplars + standards + cross_refs
+
+    return ConfigScore(
+        overall=min(100.0, overall),
+        basics=basics,
+        types=types,
+        business_units=business_units,
+        sections=sections,
+        registries=registries,
+        exemplars=exemplars,
+        standards=standards,
+        cross_refs=cross_refs,
+    )
+
+
+def render_config_score(score: ConfigScore) -> None:
+    """Display the config score as a progress bar with dimension breakdown."""
+    pct = score.overall
+    if pct >= 80:
+        color = "#24a148"
+        grade = "A"
+    elif pct >= 60:
+        color = "#0f62fe"
+        grade = "B"
+    elif pct >= 40:
+        color = "#f1c21b"
+        grade = "C"
+    else:
+        color = "#da1e28"
+        grade = "D"
+
+    st.markdown(
+        f'<div style="text-align:center;padding:8px 0;">'
+        f'<div style="font-size:32px;font-weight:600;color:{color};">{grade}</div>'
+        f'<div style="font-size:14px;color:#525252;">{pct:.0f}/100</div>'
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    st.progress(min(pct / 100.0, 1.0))
+
+    with st.expander("Score Breakdown", expanded=False):
+        _dim = [
+            ("Basics", score.basics, 5),
+            ("Types", score.types, 15),
+            ("Business Units", score.business_units, 10),
+            ("Sections", score.sections, 20),
+            ("Registries", score.registries, 15),
+            ("Exemplars", score.exemplars, 15),
+            ("Standards", score.standards, 10),
+            ("Cross-refs", score.cross_refs, 10),
+        ]
+        for name, val, mx in _dim:
+            st.caption(f"{name}: {val:.1f}/{mx}")
