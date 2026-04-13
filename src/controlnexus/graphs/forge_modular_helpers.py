@@ -23,6 +23,8 @@ def build_assignment_matrix(
     config: DomainConfig,
     target_count: int,
     distribution_config: dict[str, Any] | None = None,
+    *,
+    section_filter: str | None = None,
 ) -> list[dict[str, Any]]:
     """Build a list of control assignments from configuration.
 
@@ -36,12 +38,21 @@ def build_assignment_matrix(
         distribution_config: Optional user overrides with keys:
             - type_weights: dict[str, float] mapping type name to relative weight
             - section_weights: dict[str, float] mapping section id to relative weight
+        section_filter: If set, only generate controls for this section ID
+            (e.g. ``"12.0"``).  All *target_count* controls will be allocated
+            to the single section.
     """
     if not config.process_areas:
         return _build_assignments_no_sections(config, target_count, distribution_config)
 
     type_names = [ct.name for ct in config.control_types]
     section_ids = config.section_ids()
+
+    # Apply section filter if provided
+    if section_filter:
+        section_ids = [sid for sid in section_ids if sid == section_filter]
+        if not section_ids:
+            return []
 
     # Determine per-type count
     type_counts = _distribute_by_weight(

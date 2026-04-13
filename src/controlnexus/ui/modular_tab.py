@@ -101,21 +101,138 @@ def render_modular_tab() -> None:
     if config_path is None:
         return
 
-    # ── Generation settings ───────────────────────────────────────────────
-    st.markdown("---")
-    st.markdown("### Generation Settings")
+    # ── Quick Section Run ─────────────────────────────────────────────────
+    _render_quick_section_run(config, config_path)
 
+    # ── Full Generation (all sections) ────────────────────────────────────
+    with st.expander("Full Generation (All Sections)", expanded=False):
+        _render_full_generation(config, config_path)
+
+    # ── Display full-run results ──────────────────────────────────────────
+    _render_results(
+        session_key="modular_result",
+        table_key="modular_controls",
+        csv_key="modular_export_csv",
+        json_key="modular_export_json",
+        config_name=config.name,
+    )
+
+
+# ── Quick Section Run ─────────────────────────────────────────────────────────
+
+
+def _render_quick_section_run(config: Any, config_path: Path) -> None:
+    """Generate controls for a single APQC process area."""
+    st.markdown("---")
+    st.markdown("### Quick Section Run")
+    st.caption("Generate controls for a single APQC process area.")
+
+    if not config.process_areas:
+        st.info("No process areas defined in this config.")
+        return
+
+    col_sec, col_count = st.columns([3, 1])
+    with col_sec:
+        section_options = list(range(len(config.process_areas)))
+        selected_idx = st.selectbox(
+            "Process Area",
+            options=section_options,
+            format_func=lambda i: f"{config.process_areas[i].id} — {config.process_areas[i].name}",
+            key="qsr_section",
+        )
+    with col_count:
+        qsr_count = st.number_input(
+            "Controls",
+            min_value=1,
+            max_value=50,
+            value=5,
+            key="qsr_count",
+        )
+
+    qsr_llm = st.toggle(
+        "Enable LLM Generation",
+        value=False,
+        key="qsr_llm",
+        help="Uses LLM agents for richer output. Requires API credentials.",
+    )
+    if qsr_llm:
+        from controlnexus.core.transport import build_client_from_env
+
+        if build_client_from_env() is None:
+            st.warning(
+                "No LLM credentials found. Generation will use deterministic fallback."
+            )
+
+    selected_pa = config.process_areas[selected_idx]
+
+    if st.button(
+        f"Generate {qsr_count} controls for Section {selected_pa.id}",
+        type="primary",
+        use_container_width=True,
+        key="qsr_generate",
+    ):
+        with st.status(
+            f"Generating {qsr_count} controls for {selected_pa.id}: {selected_pa.name}…",
+            expanded=True,
+        ) as status:
+            emitter = EventEmitter()
+            listener = StreamlitEventListener(status)
+            emitter.on(listener)
+            set_emitter(emitter)
+
+            try:
+                graph = build_forge_graph().compile()
+                input_state: dict[str, Any] = {
+                    "config_path": str(config_path),
+                    "target_count": qsr_count,
+                    "llm_enabled": qsr_llm,
+                    "section_filter": selected_pa.id,
+                }
+                result = graph.invoke(input_state)
+            finally:
+                set_emitter(EventEmitter())
+
+        payload = result.get("plan_payload", {})
+        st.session_state["section_run_result"] = payload
+
+        st.success(
+            f"Generated **{payload.get('total_controls', 0)}** controls "
+            f"for section **{selected_pa.id}: {selected_pa.name}**"
+        )
+
+        tool_log = result.get("tool_calls_log", [])
+        if tool_log:
+            with st.expander(f"Tool Usage ({len(tool_log)} calls)", expanded=False):
+                st.dataframe(pd.DataFrame(tool_log), hide_index=True)
+
+    # Display section-run results
+    _render_results(
+        session_key="section_run_result",
+        table_key="qsr_controls",
+        csv_key="qsr_export_csv",
+        json_key="qsr_export_json",
+        config_name=config.name,
+    )
+
+
+# ── Full Generation ───────────────────────────────────────────────────────────
+
+
+def _render_full_generation(config: Any, config_path: Path) -> None:
+    """Full multi-section generation settings and execution."""
     target_count = st.number_input(
         "Number of controls to generate",
         min_value=1,
         max_value=500,
         value=10,
+        key="full_gen_count",
     )
 
     llm_enabled = st.toggle(
         "Enable LLM Generation",
         value=False,
         help="Uses LLM agents for richer control output. Requires API credentials (ICA/OpenAI/Anthropic).",
+        key="full_gen_llm",
     )
     if llm_enabled:
         from controlnexus.core.transport import build_client_from_env
@@ -214,58 +331,72 @@ def render_modular_tab() -> None:
             with st.expander(f"Tool Usage ({len(tool_log)} calls)", expanded=False):
                 st.dataframe(pd.DataFrame(tool_log), hide_index=True)
 
-    # ── Display results ───────────────────────────────────────────────────
-    payload = st.session_state.get("modular_result")
-    if payload:
-        records = payload.get("final_records", [])
-        if records:
-            st.markdown("### Generated Controls")
 
-            # Summary metrics
-            mcol1, mcol2, mcol3 = st.columns(3)
-            mcol1.metric("Total Controls", len(records))
-            types_used = set(r.get("control_type", "") for r in records)
-            mcol2.metric("Control Types Used", len(types_used))
-            bus_used = set(r.get("business_unit_name", "") for r in records)
-            mcol3.metric("Business Units Used", len(bus_used))
+# ── Shared results display ────────────────────────────────────────────────────
 
-            # Controls table
-            all_cols = [
-                "control_id", "hierarchy_id", "leaf_name",
-                "selected_level_1", "selected_level_2",
-                "business_unit_id", "business_unit_name",
-                "who", "what", "when", "frequency",
-                "where", "why", "full_description",
-                "quality_rating", "evidence",
-            ]
-            render_data_table(
-                records=records,
-                default_columns=[
-                    "control_id", "business_unit_name",
-                    "selected_level_1", "selected_level_2",
-                    "frequency", "full_description",
-                ],
-                all_columns=all_cols,
-                key="modular_controls",
-                export_filename=f"{payload.get('config_name', 'controls')}_controls.csv",
-            )
 
-            # Downloads
-            import json as _json
-            dl1, dl2 = st.columns(2)
-            with dl1:
-                st.download_button(
-                    "📥 Download CSV",
-                    data=pd.DataFrame(records).to_csv(index=False),
-                    file_name=f"{payload.get('config_name', 'controls')}_controls.csv",
-                    mime="text/csv",
-                    key="modular_export_csv",
-                )
-            with dl2:
-                st.download_button(
-                    "📥 Download JSON",
-                    data=_json.dumps(records, indent=2),
-                    file_name=f"{payload.get('config_name', 'controls')}_controls.json",
-                    mime="application/json",
-                    key="modular_export_json",
-                )
+def _render_results(
+    session_key: str,
+    table_key: str,
+    csv_key: str,
+    json_key: str,
+    config_name: str,
+) -> None:
+    """Display generated controls from session state."""
+    payload = st.session_state.get(session_key)
+    if not payload:
+        return
+    records = payload.get("final_records", [])
+    if not records:
+        return
+
+    st.markdown("### Generated Controls")
+
+    # Summary metrics
+    mcol1, mcol2, mcol3 = st.columns(3)
+    mcol1.metric("Total Controls", len(records))
+    types_used = set(r.get("control_type", "") for r in records)
+    mcol2.metric("Control Types Used", len(types_used))
+    bus_used = set(r.get("business_unit_name", "") for r in records)
+    mcol3.metric("Business Units Used", len(bus_used))
+
+    # Controls table
+    all_cols = [
+        "control_id", "hierarchy_id", "leaf_name",
+        "selected_level_1", "selected_level_2",
+        "business_unit_id", "business_unit_name",
+        "who", "what", "when", "frequency",
+        "where", "why", "full_description",
+        "quality_rating", "evidence",
+    ]
+    render_data_table(
+        records=records,
+        default_columns=[
+            "control_id", "business_unit_name",
+            "selected_level_1", "selected_level_2",
+            "frequency", "full_description",
+        ],
+        all_columns=all_cols,
+        key=table_key,
+        export_filename=f"{config_name}_controls.csv",
+    )
+
+    # Downloads
+    import json as _json
+    dl1, dl2 = st.columns(2)
+    with dl1:
+        st.download_button(
+            "📥 Download CSV",
+            data=pd.DataFrame(records).to_csv(index=False),
+            file_name=f"{config_name}_controls.csv",
+            mime="text/csv",
+            key=csv_key,
+        )
+    with dl2:
+        st.download_button(
+            "📥 Download JSON",
+            data=_json.dumps(records, indent=2),
+            file_name=f"{config_name}_controls.json",
+            mime="application/json",
+            key=json_key,
+        )

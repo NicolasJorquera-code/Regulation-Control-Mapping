@@ -146,6 +146,9 @@ class ForgeState(TypedDict, total=False):
     # Distribution overrides from UI
     distribution_config: dict[str, Any]
 
+    # Optional section filter (generate for one section only)
+    section_filter: str
+
     # Target
     target_count: int
 
@@ -185,8 +188,9 @@ def init_node(state: ForgeState) -> dict[str, Any]:
     domain_config = load_domain_config(Path(config_path))
     target = state.get("target_count", 10)
     dist_cfg = state.get("distribution_config")
+    section_filter = state.get("section_filter")
 
-    assignments = build_assignment_matrix(domain_config, target, dist_cfg)
+    assignments = build_assignment_matrix(domain_config, target, dist_cfg, section_filter=section_filter)
     logger.info("init_node: built %d assignments for target_count=%d", len(assignments), target)
 
     _emit_event(
