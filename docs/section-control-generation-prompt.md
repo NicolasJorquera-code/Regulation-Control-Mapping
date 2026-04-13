@@ -127,8 +127,133 @@ Each generated control must pass these checks:
 - quality_rating is one of: Strong, Effective, Satisfactory, Needs Improvement
 
 ────────────────────────────────────────────────────────
-[SECTION DATA] — Replace this block with your target section
+[SECTION DATA] — Replace this block with your target section (or use both below)
 ────────────────────────────────────────────────────────
+
+=== SECTION 11.0: Enterprise Risk, Compliance, Remediation & Resiliency ===
+
+Section ID: 11.0
+Section Name: Enterprise Risk, Compliance, Remediation and Resiliency
+Domain: enterprise_risk_compliance_remediation_and_resiliency
+
+Risk Profile:
+  Inherent Risk: 5/5
+  Regulatory Intensity: 5/5
+  Control Density: 5/5
+  Multiplier: 3.0
+  Rationale: Enterprise risk management, compliance, remediation, and resiliency functions represent the highest regulatory intensity and control density across the organization. Failures in these functions directly result in enforcement actions, consent orders, MRAs, and systemic control environment degradation. This section encompasses the second and third lines of defense.
+
+Affinity Matrix:
+  HIGH:
+    - Risk and Compliance Assessments
+    - Risk Limit Setting
+    - Risk Escalation Processes
+    - Internal and External Audits
+    - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    - Verification and Validation
+    - Business Continuity Planning and Awareness
+    - Crisis Management
+    - Technology Disaster Recovery
+  MEDIUM:
+    - Authorization
+    - Exception Reporting
+    - Segregation of Duties
+    - Surveillance
+    - Internal Compliance Monitoring
+    - Training and Awareness Programs
+    - Automated Rules
+  LOW:
+    - Reconciliation
+    - Client Due Diligence and Transaction Monitoring
+    - Staffing and Resourcing Adequacy
+    - Third Party Due Diligence
+    - Talent Management Practices
+  NONE:
+    - Physical Safeguards
+    - System and Application Restrictions
+    - Data Security and Protection
+    - System Change Management
+
+Registry:
+  Roles:
+    - Chief Risk Officer
+    - Chief Compliance Officer
+    - Enterprise Risk Manager
+    - Operational Risk Manager
+    - Credit Risk Manager
+    - Market Risk Manager
+    - Liquidity Risk Manager
+    - Model Risk Manager
+    - Compliance Testing Analyst
+    - Regulatory Relations Manager
+    - Remediation Program Manager
+    - Issues Management Analyst
+    - Business Continuity Manager
+    - Crisis Management Coordinator
+    - Resiliency Program Manager
+  Systems:
+    - Governance Risk and Compliance Platform
+    - Issues and Action Tracking System
+    - Risk Appetite and Limit Monitoring Dashboard
+    - Compliance Testing and Monitoring Platform
+    - Regulatory Change Management System
+    - Business Continuity Planning Platform
+    - Crisis Communication and Incident Management Tool
+    - Model Inventory and Validation Platform
+    - Regulatory Examination Management System
+  Data Objects:
+    - enterprise risk assessment reports
+    - risk appetite statements and limit utilization data
+    - compliance testing results and findings
+    - regulatory examination findings (MRAs, MRIAs, consent orders)
+    - issues and action plans with remediation milestones
+    - business continuity plans and test results
+    - crisis management playbooks and activation logs
+    - model validation reports and inventory
+    - regulatory change impact assessments
+    - key risk indicators and key control indicators
+  Evidence Artifacts:
+    - enterprise risk assessment report with risk committee approval
+    - risk appetite limit breach notification and remediation log
+    - compliance testing report with findings and management response
+    - regulatory examination response with action plan and milestone tracking
+    - issue remediation closure documentation with validation testing
+    - business continuity plan test results with gap remediation documentation
+    - crisis management exercise after-action report
+    - model validation report with challenge findings and disposition
+  Event Triggers:
+    - at each quarterly enterprise risk committee review cycle
+    - on identification of risk limit breach or threshold exceedance
+    - on receipt of regulatory examination finding or enforcement action
+    - at each annual enterprise risk assessment cycle
+    - on identification of new or emerging risk requiring assessment
+    - at each annual business continuity plan testing cycle
+    - on activation of crisis management protocol
+    - on issue remediation target date approaching or exceeded
+    - at each annual compliance testing plan execution cycle
+    - on material regulatory change requiring impact assessment
+  Regulatory Frameworks:
+    - OCC Heightened Standards
+    - Regulation YY (Enhanced Prudential Standards)
+    - Basel III Capital and Liquidity Frameworks
+    - CCAR/DFAST Stress Testing
+    - SR 11-7 (Model Risk Management)
+    - BSA/AML Program Requirements
+    - OFAC Sanctions Compliance
+    - FFIEC Business Continuity Handbook
+    - Interagency Paper on Sound Practices for Operational Resilience
+    - SOX Section 404
+    - FDICIA
+
+Exemplar (reference for narrative style and quality):
+  Control Type: Risk and Compliance Assessments
+  Placement: Detective
+  Method: Manual with System Support
+  Full Description: "Quarterly, the Enterprise Risk Manager conducts a comprehensive risk assessment across all business units using the governance risk and compliance platform, evaluating inherent risk ratings, control effectiveness scores, and residual risk determinations, and presents the consolidated enterprise risk report to the Risk Committee for review, challenge, and approval of any required risk mitigation action plans."
+  Word Count: 52
+  Quality Rating: Strong
+
+=== SECTION 12.0: External Relationship Management ===
 
 Section ID: 12.0
 Section Name: External Relationship Management
@@ -256,7 +381,7 @@ Example output for 1 control:
   }
 ]
 
-Now generate TARGET_COUNT controls for the section described above. Ensure diversity across control types (prioritizing HIGH affinity types), roles, systems, and event triggers. Each control should be unique and realistic.
+Now generate TARGET_COUNT controls for each section described above (11.0 and 12.0). Ensure diversity across control types (prioritizing HIGH affinity types), roles, systems, and event triggers. Each control should be unique and realistic. Output all controls in a single JSON array, clearly distinguishable by their control_id prefix (CTRL-1100-* for section 11.0 and CTRL-1200-* for section 12.0).
 ```
 
 ---
