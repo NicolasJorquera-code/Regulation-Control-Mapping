@@ -39,12 +39,17 @@ class SK:
     # ── UI control flags ──
     APPROVED_FOR_MAPPING = "approved_for_mapping"
     CACHES_INITIALISED = "caches_initialised"
+    CLASSIFICATION_JUST_COMPLETED = "classification_just_completed"
 
     # ── UI navigation ──
     SELECTED_OBLIGATION_IDX = "selected_obligation_idx"
     SELECTED_MAPPING_OBLIGATION_IDX = "selected_mapping_obligation_idx"
+    SELECTED_RESULTS_IDX = "selected_results_idx"
     RESULTS_GAP_EXPANDED = "results_gap_expanded"
     RESULTS_RISK_EXPANDED = "results_risk_expanded"
+
+    # ── Data Source Explorer ──
+    EXPLORER_DATA_PATHS = "explorer_data_paths"
 
     # ── Tracing ──
     TRACE_DB = "trace_db"

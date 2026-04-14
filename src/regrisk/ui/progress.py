@@ -10,11 +10,13 @@ Usage inside a pipeline runner::
         listener = StreamlitProgressListener(progress_bar, status, "classify")
         emitter.on(listener)
         result = graph.invoke(input_state)
+        listener.detach()
         status.update(label="Complete!", state="complete")
 """
 
 from __future__ import annotations
 
+import logging
 import re
 
 from regrisk.core.events import EventType, PipelineEvent
@@ -75,6 +77,38 @@ _LOG_EVENTS: set[EventType] = {
     EventType.PIPELINE_FAILED,
 }
 
+# Pattern to detect retry/error warnings from the transport logger.
+_RETRY_RE = re.compile(
+    r"(Server error \d+|Rate limited|Timeout|Connection error|Transient 404)"
+    r".*retry in ([\d.]+)s.*\(attempt (\d+)/(\d+)\)",
+    re.IGNORECASE,
+)
+
+
+class _TransportRetryHandler(logging.Handler):
+    """Captures transport retry warnings and writes them to st.status + bar."""
+
+    def __init__(self, status_container, progress_bar) -> None:
+        super().__init__(level=logging.WARNING)
+        self._status = status_container
+        self._bar = progress_bar
+
+    def emit(self, record: logging.LogRecord) -> None:
+        msg = record.getMessage()
+        match = _RETRY_RE.search(msg)
+        if not match:
+            return
+        error_type = match.group(1)
+        wait_s = match.group(2)
+        attempt = match.group(3)
+        max_attempts = match.group(4)
+        label = f"⏳ {error_type} — retrying ({attempt}/{max_attempts}), waiting {wait_s}s…"
+        try:
+            self._status.write(f"🔄 {error_type} — retry {attempt}/{max_attempts} (waiting {wait_s}s)")
+            self._bar.progress(self._bar._value if hasattr(self._bar, "_value") else 0, text=label)
+        except Exception:
+            pass  # Streamlit context may be gone
+
 
 class StreamlitProgressListener:
     """Fan-in event listener that drives ``st.progress`` + ``st.status``."""
@@ -89,6 +123,15 @@ class StreamlitProgressListener:
         self._graph_type = graph_type
         self._current_phase = ""
         self._progress: float = 0.0
+
+        # Attach a logging handler to surface transport retry warnings in the UI.
+        self._retry_handler = _TransportRetryHandler(status_container, progress_bar)
+        self._transport_logger = logging.getLogger("regrisk.core.transport")
+        self._transport_logger.addHandler(self._retry_handler)
+
+    def detach(self) -> None:
+        """Remove the transport retry logging handler. Call after pipeline finishes."""
+        self._transport_logger.removeHandler(self._retry_handler)
 
     # ------------------------------------------------------------------
     # EventListener protocol

@@ -43,6 +43,7 @@ from regrisk.graphs.graph_infra import GraphInfra
 from regrisk.tracing.decorators import trace_node
 from regrisk.tracing.transport_wrapper import TracingTransportClient
 from regrisk.ingest.apqc_loader import build_apqc_summary
+from regrisk.core.scoring import deduplicate_risks
 from regrisk.ingest.control_loader import build_control_index, find_controls_for_apqc
 from regrisk.validation.validator import validate_coverage, validate_mapping, validate_risk
 
@@ -55,6 +56,8 @@ _infra = GraphInfra()
 _partial_assessments: list[dict] = []
 _trace_db: Any = None
 _trace_run_id: str = ""
+_auto_save_fn: Any = None  # callable(partial_assessments) or None
+_AUTO_SAVE_INTERVAL: int = 25
 
 _AGENT_CLASSES: dict[str, type] = {
     "mapper": APQCMapperAgent,
@@ -71,6 +74,13 @@ def get_emitter() -> EventEmitter:
     return _infra.get_emitter()
 
 
+def set_auto_save(fn: Any, interval: int = 25) -> None:
+    """Register a callback invoked every *interval* assessments with the partial list."""
+    global _auto_save_fn, _AUTO_SAVE_INTERVAL
+    _auto_save_fn = fn
+    _AUTO_SAVE_INTERVAL = interval
+
+
 def get_partial_assessments() -> list[dict]:
     """Return coverage assessments accumulated so far (survives graph failure)."""
     return list(_partial_assessments)
@@ -78,11 +88,12 @@ def get_partial_assessments() -> list[dict]:
 
 def reset_caches() -> None:
     """Reset all module-level caches (for test isolation and between runs)."""
-    global _partial_assessments, _trace_db, _trace_run_id
+    global _partial_assessments, _trace_db, _trace_run_id, _auto_save_fn
     _partial_assessments = []
     _infra.reset_caches()
     _trace_db = None
     _trace_run_id = ""
+    _auto_save_fn = None
 
 
 # ---------------------------------------------------------------------------
@@ -307,6 +318,13 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     # Track for partial-checkpoint recovery on failure
     _partial_assessments.append(assessment)
 
+    # Periodic auto-save to protect against silent interruption
+    if _auto_save_fn and len(_partial_assessments) % _AUTO_SAVE_INTERVAL == 0:
+        try:
+            _auto_save_fn(_partial_assessments)
+        except Exception:
+            pass  # never let auto-save failure break the pipeline
+
     return {
         "coverage_assessments": [assessment],
         "assess_idx": idx + 1,
@@ -427,7 +445,12 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
     approved = state.get("approved_obligations", [])
     mappings = state.get("obligation_mappings", [])
     assessments = state.get("coverage_assessments", [])
-    risks = state.get("scored_risks", [])
+    raw_risks = state.get("scored_risks", [])
+
+    # Deduplicate: keep one risk per (source_citation, risk_category),
+    # prioritising the highest impact × frequency score.
+    risk_id_prefix = state.get("pipeline_config", {}).get("risk_id_prefix", "RISK")
+    risks = deduplicate_risks(raw_risks, id_prefix=risk_id_prefix)
 
     # Classified counts
     classified_counts: dict[str, int] = defaultdict(int)

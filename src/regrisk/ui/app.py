@@ -16,6 +16,7 @@ Checkpoint persistence allows resuming after mid-run failures.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,20 +32,47 @@ for _quiet in ("httpx", "httpcore", "urllib3", "matplotlib", "PIL"):
 
 import streamlit as st
 
+import yaml
+
 from regrisk.graphs.classify_graph import reset_caches as reset_classify_caches
 from regrisk.graphs.assess_graph import reset_caches as reset_assess_caches
-from regrisk.ui.checkpoint import (
-    STAGE_CLASSIFIED, STAGE_MAPPED, STAGE_ASSESSED,
-)
-from regrisk.ui.components import pipeline_phase, phase_badge
 from regrisk.ui.upload_tab import render_upload_tab
 from regrisk.ui.review_tabs import (
     render_classification_review_tab,
     render_mapping_review_tab,
 )
-from regrisk.ui.results_tab import render_results_tab
+from regrisk.ui.results_tab import render_coverage_tab
+from regrisk.ui.risk_register_tab import render_risk_register_tab
 from regrisk.ui.traceability_tab import render_traceability_tab
 from regrisk.ui.evaluation_tab import render_evaluation_tab
+from regrisk.ui.data_explorer_tab import render_data_explorer_tab
+from regrisk.core.config import default_config_path
+
+# ── Tab registry: label → (icon, render_function) ──
+_TAB_REGISTRY: dict[str, tuple[str, Any]] = {
+    "Upload & Configure":    ("📁", render_upload_tab),
+    "Data Source Explorer":  ("🔍", render_data_explorer_tab),
+    "Classification Review": ("🏷️", render_classification_review_tab),
+    "Mapping Review":        ("🗺️", render_mapping_review_tab),
+    "Coverage":              ("📊", render_coverage_tab),
+    "Risk Register":         ("⚠️", render_risk_register_tab),
+    "Traceability":          ("🔗", render_traceability_tab),
+    "Evaluation":            ("📈", render_evaluation_tab),
+}
+
+_ALL_TAB_LABELS = list(_TAB_REGISTRY.keys())
+
+
+def _visible_tabs() -> list[str]:
+    """Return the list of tab labels to show, driven by config/default.yaml."""
+    try:
+        with open(default_config_path(), "r", encoding="utf-8") as fh:
+            raw = yaml.safe_load(fh) or {}
+        configured = raw.get("ui", {}).get("visible_tabs", _ALL_TAB_LABELS)
+        # Filter to only known tabs, preserving configured order
+        return [t for t in configured if t in _TAB_REGISTRY]
+    except Exception:
+        return _ALL_TAB_LABELS
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +181,21 @@ _GLOBAL_CSS = """
 /* ── Muted text ── */
 .text-muted { color: #6c757d; font-size: 0.85rem; }
 
+/* ── Risk score highlight ── */
+.risk-score-highlight {
+    display: inline-block; font-size: 1.3rem; font-weight: 800;
+    letter-spacing: 0.02em; line-height: 1;
+}
+.risk-score-label {
+    font-size: 0.75rem; color: #6c757d;
+}
+
+/* ── Quality rating badge ── */
+.quality-badge {
+    display: inline-block; font-size: 0.78rem; font-weight: 600;
+    border-radius: 4px; padding: 2px 8px; vertical-align: middle;
+}
+
 /* ── Stacked coverage bar ── */
 .coverage-bar {
     display: flex; height: 28px; border-radius: 4px; overflow: hidden;
@@ -164,6 +207,73 @@ _GLOBAL_CSS = """
 .coverage-bar .bar-covered { background: #2e7d32; }
 .coverage-bar .bar-partial { background: #f9a825; color: #333; }
 .coverage-bar .bar-gap { background: #c62828; }
+
+/* ── Data Source Explorer badges ── */
+.type-badge-preventive {
+    display: inline-block; background: #1565C0; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.type-badge-detective {
+    display: inline-block; background: #7B1FA2; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.rating-badge-effective {
+    display: inline-block; background: #2e7d32; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.rating-badge-default {
+    display: inline-block; background: #e2e3e5; color: #333;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+
+/* ── Explorer table ── */
+.explorer-table-container {
+    max-height: 700px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+.explorer-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.explorer-table th {
+    position: sticky;
+    top: 0;
+    background: #f0f2f6;
+    border-bottom: 2px solid #ccc;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 1;
+}
+.explorer-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid #eee;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    vertical-align: top;
+    line-height: 1.4;
+}
+.explorer-table tr:hover {
+    background-color: #f8f9fa;
+}
+.explorer-table tr.selected-row {
+    background-color: #e3f2fd;
+}
+.col-narrow { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col-flex { max-width: 500px; }
+.text-truncated { max-height: 3.2em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.explorer-count-badge {
+    display: inline-block; background: #e2e3e5; color: #333;
+    border-radius: 12px; padding: 2px 10px; font-size: 0.8rem; font-weight: 500;
+    margin-left: 8px;
+}
 </style>
 """
 
@@ -189,43 +299,15 @@ def main() -> None:
         st.session_state["caches_initialised"] = True
 
     st.title("📋 Regulatory Obligation Control Mapper")
-    st.caption("Map regulatory obligations → APQC processes → control coverage → risk scoring")
 
-    # ── Pipeline status bar ──
-    phase = pipeline_phase()
-    status_cols = st.columns(4)
-    with status_cols[0]:
-        st.markdown(phase_badge("Classification", phase in (STAGE_CLASSIFIED, STAGE_MAPPED, STAGE_ASSESSED)))
-    with status_cols[1]:
-        st.markdown(phase_badge("APQC Mapping", phase in (STAGE_MAPPED, STAGE_ASSESSED)))
-    with status_cols[2]:
-        st.markdown(phase_badge("Coverage & Risk", phase == STAGE_ASSESSED))
-    with status_cols[3]:
-        reg = st.session_state.get("regulation_name", "")
-        if reg:
-            st.markdown(f"📜 *{reg}*")
+    # ── Dynamic tabs driven by config/default.yaml → ui.visible_tabs ──
+    tabs_to_show = _visible_tabs()
+    tab_labels = [f"{_TAB_REGISTRY[t][0]} {t}" for t in tabs_to_show]
+    tab_widgets = st.tabs(tab_labels)
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📁 Upload & Configure",
-        "🏷️ Classification Review",
-        "🗺️ Mapping Review",
-        "📊 Results",
-        "🔗 Traceability",
-        "📈 Evaluation",
-    ])
-
-    with tab1:
-        render_upload_tab()
-    with tab2:
-        render_classification_review_tab()
-    with tab3:
-        render_mapping_review_tab()
-    with tab4:
-        render_results_tab()
-    with tab5:
-        render_traceability_tab()
-    with tab6:
-        render_evaluation_tab()
+    for tab_widget, tab_name in zip(tab_widgets, tabs_to_show):
+        with tab_widget:
+            _TAB_REGISTRY[tab_name][1]()
 
 
 # ---------------------------------------------------------------------------
