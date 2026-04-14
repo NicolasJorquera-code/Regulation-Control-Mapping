@@ -108,12 +108,14 @@ Classify ALL {len(obligations)} obligations. Return one classification per oblig
                         ob_cit = ob.get("citation", "") if isinstance(ob, dict) else ob.citation
                         if ob_cit == c.get("citation"):
                             _get = ob.get if isinstance(ob, dict) else (lambda k, d="": getattr(ob, k, d))
-                            c.setdefault("abstract", _get("abstract", ""))
-                            c.setdefault("text", _get("text", ""))
-                            c.setdefault("status", _get("status", ""))
-                            c.setdefault("effective_date", _get("effective_date", ""))
-                            c.setdefault("applicability", _get("applicability", ""))
-                            c.setdefault("link", _get("link", ""))
+                            for fld in (
+                                "abstract", "text", "status", "effective_date",
+                                "applicability", "link", "mandate_title",
+                                "title_level_2", "title_level_3",
+                                "title_level_4", "title_level_5",
+                                "citation_level_2", "citation_level_3",
+                            ):
+                                c.setdefault(fld, _get(fld, ""))
                             break
                 return {"classifications": classifications}
 
@@ -164,23 +166,12 @@ Classify ALL {len(obligations)} obligations. Return one classification per oblig
                 rationale = "No clear actionable requirement identified."
 
             # Extract additional metadata from source obligation
-            if isinstance(ob, dict):
-                ob_text = ob.get("text", "")
-                ob_status = ob.get("status", "")
-                ob_eff = ob.get("effective_date", "")
-                ob_app = ob.get("applicability", "")
-                ob_link = ob.get("link", "")
-            else:
-                ob_text = ob.text
-                ob_status = ob.status
-                ob_eff = ob.effective_date
-                ob_app = ob.applicability
-                ob_link = ob.link
+            _g = ob.get if isinstance(ob, dict) else (lambda k, d="": getattr(ob, k, d))
 
             results.append({
                 "citation": cit,
                 "abstract": abstract,
-                "text": ob_text,
+                "text": _g("text", ""),
                 "section_citation": section_citation,
                 "section_title": section_title,
                 "subpart": subpart,
@@ -188,9 +179,16 @@ Classify ALL {len(obligations)} obligations. Return one classification per oblig
                 "relationship_type": rel,
                 "criticality_tier": crit,
                 "classification_rationale": rationale,
-                "status": ob_status,
-                "effective_date": ob_eff,
-                "applicability": ob_app,
-                "link": ob_link,
+                "status": _g("status", ""),
+                "effective_date": _g("effective_date", ""),
+                "applicability": _g("applicability", ""),
+                "link": _g("link", ""),
+                "mandate_title": _g("mandate_title", ""),
+                "title_level_2": _g("title_level_2", ""),
+                "title_level_3": _g("title_level_3", ""),
+                "title_level_4": _g("title_level_4", ""),
+                "title_level_5": _g("title_level_5", ""),
+                "citation_level_2": _g("citation_level_2", ""),
+                "citation_level_3": _g("citation_level_3", ""),
             })
         return results

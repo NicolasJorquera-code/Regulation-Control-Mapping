@@ -1,10 +1,12 @@
-"""Tab 4: Results — executive dashboard with coverage metrics, risk heatmap,
-gap analysis, and risk register.
+"""Tab: Coverage — obligation cards with coverage assessment detail and dashboard.
 
 Layout:
-  - Four metric cards + stacked coverage bar
-  - Two-column: risk heatmap (55%) | top gaps at-a-glance (45%)
-  - Expandable gap analysis & risk register sections
+  - Filter bar (category, criticality, subpart, coverage, APQC section)
+  - Scrollable obligation cards grouped by subpart
+    - Collapsed card: citation (row 1), category + relationship (row 2),
+      regulation title (row 3)
+    - Expanded view: obligation text + full-width coverage assessment chips
+  - Executive dashboard: KPI cards + coverage progress bar
   - Export + checkpoint controls
 """
 
@@ -13,10 +15,6 @@ from __future__ import annotations
 import io
 from collections import defaultdict
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -24,18 +22,18 @@ from regrisk.export.excel_export import export_gap_report
 from regrisk.ui.checkpoint import STAGE_ASSESSED, STAGE_ASSESS_PARTIAL, STAGE_CLASSIFIED, STAGE_MAPPED
 from regrisk.ui.components import (
     build_partial_results,
-    coverage_indicator_html,
     format_citation,
-    criticality_dot,
     render_checkpoint_load,
     render_checkpoint_save,
-    risk_score_badge_html,
+    render_coverage_chip,
+    render_filter_bar,
+    render_obligation_text_only,
 )
 from regrisk.ui.session_keys import SK
 
 
-def render_results_tab() -> None:
-    """Render the Results tab as an executive dashboard."""
+def render_coverage_tab() -> None:
+    """Render the Coverage tab with obligation viewer and coverage dashboard."""
     gap_report = st.session_state.get(SK.GAP_REPORT, {})
 
     if not gap_report:
@@ -49,7 +47,7 @@ def render_results_tab() -> None:
         st.info("Run the full assessment pipeline first (Tabs 1–3).")
         return
 
-    st.header("Results")
+    st.header("Coverage")
 
     # ── Partial results warning ──
     if gap_report.get("_partial"):
@@ -61,183 +59,303 @@ def render_results_tab() -> None:
             f"Resume from the saved checkpoint to finish the remaining assessments."
         )
 
-    # ── Key metric cards ──
+    # ── Gather data ──
     coverage = gap_report.get("coverage_summary", {})
     total_assessed = sum(coverage.values())
     covered = coverage.get("Covered", 0)
     partial_cov = coverage.get("Partially Covered", 0)
     not_covered = coverage.get("Not Covered", 0)
-    risks = st.session_state.get(SK.SCORED_RISKS, [])
+    gaps = partial_cov + not_covered
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Assessed", total_assessed)
-    m2.metric("✅ Covered", f"{covered} ({_pct(covered, total_assessed)})")
-    m3.metric("❌ Gaps", f"{partial_cov + not_covered} ({_pct(partial_cov + not_covered, total_assessed)})")
-    m4.metric("Risks Identified", len(risks))
+    # ── Build per-obligation records ──
+    assessments = st.session_state.get(SK.COVERAGE_ASSESSMENTS, [])
+    classified = st.session_state.get(SK.CLASSIFIED_OBLIGATIONS, [])
 
-    # ── Stacked coverage bar ──
+    ob_meta: dict[str, dict] = {}
+    for ob in classified:
+        cit = ob.get("citation", "")
+        if cit:
+            ob_meta[cit] = ob
+
+    assessments_by_cit: dict[str, list[dict]] = defaultdict(list)
+    for a in assessments:
+        assessments_by_cit[a.get("citation", "")].append(a)
+
+    assessed_citations = set(assessments_by_cit.keys())
+    results_records: list[dict] = []
+    for cit in sorted(assessed_citations):
+        meta = ob_meta.get(cit, {})
+        rec = dict(meta) if meta else {"citation": cit}
+        rec.setdefault("citation", cit)
+        rec.setdefault("subpart", "General")
+        rec.setdefault("obligation_category", "Not Assigned")
+        rec.setdefault("criticality_tier", "Low")
+        ob_covs = [a.get("overall_coverage", "Not Covered") for a in assessments_by_cit[cit]]
+        if "Not Covered" in ob_covs:
+            rec["overall_coverage"] = "Not Covered"
+        elif "Partially Covered" in ob_covs:
+            rec["overall_coverage"] = "Partially Covered"
+        else:
+            rec["overall_coverage"] = "Covered"
+        # Collect unique top-level APQC sections for this obligation
+        sections = sorted({a.get("apqc_hierarchy_id", "").split(".")[0]
+                           for a in assessments_by_cit[cit]
+                           if a.get("apqc_hierarchy_id", "")},
+                          key=lambda s: (int(s) if s.isdigit() else 999, s))
+        rec["apqc_sections"] = ",".join(sections)
+        results_records.append(rec)
+
+    if not results_records:
+        st.info("No assessed obligations to display.")
+        _render_actions(gap_report)
+        return
+
+    # ── Filter bar ──
+    df = pd.DataFrame(results_records)
+    total_count = len(df)
+    df_filtered = render_filter_bar(
+        df, total_count, key_prefix="tab4_cov",
+        show_category=True, show_criticality=True, show_subpart=True,
+        show_coverage=True, show_apqc_section=True,
+    )
+    filtered_records = df_filtered.to_dict("records")
+
+    if not filtered_records:
+        st.info("No obligations match the current filters.")
+        _render_coverage_dashboard(coverage, total_assessed, covered, partial_cov, not_covered, gaps)
+        _render_actions(gap_report)
+        return
+
+    # ── Scrollable obligation cards ──
+    with st.container(height=900):
+        groups: dict[str, list[dict]] = defaultdict(list)
+        for ob in filtered_records:
+            subpart = ob.get("subpart", "General")
+            groups[subpart].append(ob)
+
+        for subpart in sorted(groups.keys()):
+            st.subheader(subpart, divider="gray")
+            for ob in groups[subpart]:
+                cit = ob.get("citation", "")
+                ob_assessments = assessments_by_cit.get(cit, [])
+
+                with st.container(border=True):
+                    # ── Three-row collapsed card header (no risk badge) ──
+                    st.markdown(
+                        _card_header_html(ob, 0, []),
+                        unsafe_allow_html=True,
+                    )
+
+                    with st.expander("View Details", expanded=False):
+                        # Obligation text
+                        render_obligation_text_only(ob)
+
+                        st.markdown("")  # breathing room
+
+                        # ── Coverage summary bar ──
+                        _render_coverage_summary(ob_assessments)
+
+                        st.markdown("")  # breathing room
+
+                        # Coverage assessment chips (control LEFT, breakdown RIGHT)
+                        if ob_assessments:
+                            for a in ob_assessments:
+                                render_coverage_chip(a, show_inline=True)
+                        else:
+                            st.caption("No coverage assessment available.")
+
+    # ── Executive Dashboard (below the detail view) ──
+    st.divider()
+    _render_coverage_dashboard(coverage, total_assessed, covered, partial_cov, not_covered, gaps)
+
+    # ── Actions ──
+    _render_actions(gap_report)
+
+
+# ---------------------------------------------------------------------------
+# Card header HTML builder
+# ---------------------------------------------------------------------------
+
+_RISK_BADGE_BG: dict[str, tuple[str, str]] = {
+    "Critical": ("#c62828", "white"),
+    "High": ("#ef6c00", "white"),
+    "Medium": ("#f9a825", "#333"),
+    "Low": ("#2e7d32", "white"),
+}
+
+
+def _card_header_html(ob: dict, n_risks: int, ob_risks: list[dict]) -> str:
+    """Build HTML for the three-row collapsed card header.
+
+    Row 1: Citation (dominant anchor)
+    Row 2: Category badge · Relationship type · Risk count badge (colored)
+    Row 3: Regulation title (plain text, wraps naturally)
+    """
+    from html import escape as _esc
+
+    cit = ob.get("citation", "")
+    cit_fmt = format_citation(cit)
+    cat = ob.get("obligation_category", "")
+    rel = ob.get("relationship_type", "")
+    cat_bg = _CATEGORY_BG.get(cat, "#E2E3E5")
+
+    # Row 1: Citation
+    row1 = (
+        f'<div style="font-size:1.15rem;font-weight:700;color:#1a1a1a;'
+        f'margin-bottom:4px">{_esc(cit_fmt)}</div>'
+    )
+
+    # Row 2: Category + Relationship + Risk count
+    meta_parts: list[str] = []
+    if cat:
+        meta_parts.append(
+            f'<span class="category-pill" style="background:{cat_bg};font-size:0.78rem">'
+            f'{_esc(cat)}</span>'
+        )
+    if rel and rel != "N/A":
+        meta_parts.append(
+            f'<span style="color:#6c757d;font-size:0.82rem">{_esc(rel)}</span>'
+        )
+    if n_risks > 0:
+        highest_bg, highest_fg = _highest_severity_color(ob_risks)
+        risk_label = f"{n_risks} risk{'s' if n_risks != 1 else ''}"
+        meta_parts.append(
+            f'<span style="display:inline-block;background:{highest_bg};color:{highest_fg};'
+            f'border-radius:4px;padding:1px 8px;font-size:0.78rem;font-weight:600">'
+            f'{risk_label}</span>'
+        )
+    row2 = (
+        f'<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;'
+        f'margin-bottom:4px">{"  ".join(meta_parts)}</div>'
+        if meta_parts else ""
+    )
+
+    # Row 3: Regulation title (plain text, no breadcrumb arrows)
+    title = ob.get("mandate_title", "") or ""
+    row3 = ""
+    if title and str(title).strip() and str(title).lower() not in ("nan", "none"):
+        row3 = (
+            f'<div style="color:#555;font-size:0.85rem;line-height:1.4">'
+            f'{_esc(str(title).strip())}</div>'
+        )
+
+    return f'{row1}{row2}{row3}'
+
+
+def _highest_severity_color(ob_risks: list[dict]) -> tuple[str, str]:
+    """Return (bg, fg) for the highest-severity risk present."""
+    severity_order = ["Critical", "High", "Medium", "Low"]
+    present = {r.get("inherent_risk_rating", "Low") for r in ob_risks}
+    for sev in severity_order:
+        if sev in present:
+            return _RISK_BADGE_BG.get(sev, ("#e0e0e0", "#333"))
+    return ("#e0e0e0", "#333")
+
+
+_CATEGORY_BG: dict[str, str] = {
+    "Controls": "#CCE5FF",
+    "Documentation": "#D4EDDA",
+    "Attestation": "#E2D5F1",
+    "General Awareness": "#E2E3E5",
+    "Not Assigned": "#F8D7DA",
+}
+
+
+# ---------------------------------------------------------------------------
+# Coverage summary for a single obligation
+# ---------------------------------------------------------------------------
+
+def _render_coverage_summary(ob_assessments: list[dict]) -> None:
+    """Render a mini coverage bar for a single obligation's APQC assessments."""
+    total_nodes = len(ob_assessments)
+    if not total_nodes:
+        return
+
+    covered_count = sum(
+        1 for a in ob_assessments if a.get("overall_coverage") == "Covered"
+    )
+    partial_count = sum(
+        1 for a in ob_assessments if a.get("overall_coverage") == "Partially Covered"
+    )
+    gap_count = total_nodes - covered_count - partial_count
+
+    pct_c = covered_count / total_nodes * 100
+    pct_p = partial_count / total_nodes * 100
+    pct_g = gap_count / total_nodes * 100
+    bar_html = (
+        f'<div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">'
+        f'{covered_count} of {total_nodes} APQC nodes covered</div>'
+        f'<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;'
+        f'margin-bottom:6px">'
+        f'<div style="width:{pct_c:.0f}%;background:#2e7d32"></div>'
+        f'<div style="width:{pct_p:.0f}%;background:#f57f17"></div>'
+        f'<div style="width:{pct_g:.0f}%;background:#c62828"></div>'
+        f'</div>'
+    )
+    st.markdown(bar_html, unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Coverage-only executive dashboard
+# ---------------------------------------------------------------------------
+
+def _render_coverage_dashboard(
+    coverage: dict,
+    total_assessed: int,
+    covered: int,
+    partial_cov: int,
+    not_covered: int,
+    gaps: int,
+) -> None:
+    """Render the coverage dashboard: KPIs + coverage progress bar."""
+    # ── KPI Summary Strip ──
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        st.markdown(
+            _kpi_card("Total Assessed", total_assessed),
+            unsafe_allow_html=True,
+        )
+    with k2:
+        st.markdown(
+            _kpi_card("Covered", covered, _pct(covered, total_assessed), accent="positive"),
+            unsafe_allow_html=True,
+        )
+    with k3:
+        st.markdown(
+            _kpi_card("Gaps", gaps, _pct(gaps, total_assessed), accent="negative", loud=True),
+            unsafe_allow_html=True,
+        )
+
+    # ── Compact coverage progress bar ──
     if total_assessed > 0:
         pct_covered = covered / total_assessed * 100
         pct_partial = partial_cov / total_assessed * 100
         pct_gap = not_covered / total_assessed * 100
         bar_html = (
-            '<div style="display:flex;height:24px;border-radius:6px;overflow:hidden;margin:0.5rem 0 1rem 0">'
-            f'<div style="width:{pct_covered:.1f}%;background:#2e7d32" title="Covered {pct_covered:.0f}%"></div>'
-            f'<div style="width:{pct_partial:.1f}%;background:#f57f17" title="Partial {pct_partial:.0f}%"></div>'
-            f'<div style="width:{pct_gap:.1f}%;background:#c62828" title="Gap {pct_gap:.0f}%"></div>'
+            '<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;'
+            'margin:0.25rem 0 0.5rem 0">'
+            f'<div style="width:{pct_covered:.1f}%;background:#2e7d32"'
+            f' title="Covered {pct_covered:.0f}%"></div>'
+            f'<div style="width:{pct_partial:.1f}%;background:#f57f17"'
+            f' title="Partial {pct_partial:.0f}%"></div>'
+            f'<div style="width:{pct_gap:.1f}%;background:#c62828"'
+            f' title="Gap {pct_gap:.0f}%"></div>'
             '</div>'
-            f'<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#6c757d">'
-            f'<span>✅ Covered {pct_covered:.0f}%</span>'
-            f'<span>⚠️ Partial {pct_partial:.0f}%</span>'
-            f'<span>❌ Gap {pct_gap:.0f}%</span>'
-            f'</div>'
+            '<div style="display:flex;justify-content:space-between;'
+            'font-size:0.75rem;color:#6c757d">'
+            f'<span>\u2705 Covered {pct_covered:.0f}%</span>'
+            f'<span>\u26a0\ufe0f Partial {pct_partial:.0f}%</span>'
+            f'<span>\u274c Gap {pct_gap:.0f}%</span>'
+            '</div>'
         )
         st.markdown(bar_html, unsafe_allow_html=True)
 
+
+def _render_actions(gap_report: dict) -> None:
+    """Render export, checkpoint save/load controls."""
     st.divider()
 
-    # ── Two-column: Heatmap + Top Gaps ──
-    col_heatmap, col_gaps = st.columns([0.55, 0.45])
-
-    with col_heatmap:
-        if risks:
-            st.subheader("Risk Heatmap")
-            _render_risk_heatmap(risks)
-
-            # Compact risk distribution
-            risk_cats: dict[str, int] = defaultdict(int)
-            for r in risks:
-                risk_cats[r.get("risk_category", "Other")] += 1
-            if risk_cats:
-                st.caption("**Risk distribution**")
-                for cat, cnt in sorted(risk_cats.items(), key=lambda x: -x[1]):
-                    st.caption(f"  {cat}: {cnt}")
-        else:
-            st.info("No risks extracted — risk heatmap not available.")
-
-    with col_gaps:
-        gaps = gap_report.get("gaps", [])
-        st.subheader("Top Gaps")
-        if gaps:
-            top_gaps = sorted(
-                gaps,
-                key=lambda g: (
-                    0 if g.get("overall_coverage") == "Not Covered" else 1,
-                    g.get("citation", ""),
-                ),
-            )[:8]
-            for g in top_gaps:
-                with st.container(border=True):
-                    cit = format_citation(g.get("citation", ""))
-                    cov = g.get("overall_coverage", "")
-                    ctrl = g.get("control_id", "—")
-                    apqc = g.get("apqc_process_name", g.get("apqc_hierarchy_id", ""))
-                    st.markdown(
-                        f"**`{cit}`** &nbsp; {coverage_indicator_html(cov)}",
-                        unsafe_allow_html=True,
-                    )
-                    if apqc:
-                        st.caption(f"APQC: {apqc}")
-                    st.caption(f"Control: {ctrl}")
-            if len(gaps) > 8:
-                st.caption(f"*…and {len(gaps) - 8} more gaps below*")
-        else:
-            st.success("No gaps found — all obligations have coverage!")
-
-    st.divider()
-
-    # ── Expandable Gap Analysis ──
-    with st.expander(f"Gap Analysis — {len(gaps)} gaps", expanded=False):
-        if gaps:
-            # Group: Not Covered first, then Partially Covered
-            not_covered_gaps = [g for g in gaps if g.get("overall_coverage") == "Not Covered"]
-            partial_gaps = [g for g in gaps if g.get("overall_coverage") == "Partially Covered"]
-
-            for label, group in [("Not Covered", not_covered_gaps), ("Partially Covered", partial_gaps)]:
-                if not group:
-                    continue
-                st.markdown(f"**{label}** ({len(group)})")
-                for g in group:
-                    cit = format_citation(g.get("citation", ""))
-                    cov = g.get("overall_coverage", "")
-                    ctrl = g.get("control_id", "—")
-                    sem = g.get("semantic_match", "")
-                    rel = g.get("relationship_match", "")
-                    with st.container(border=True):
-                        c1, c2, c3 = st.columns([2, 1, 1])
-                        with c1:
-                            st.markdown(
-                                f"**`{cit}`** &nbsp; {coverage_indicator_html(cov)}",
-                                unsafe_allow_html=True,
-                            )
-                            apqc = g.get("apqc_process_name", g.get("apqc_hierarchy_id", ""))
-                            if apqc:
-                                st.caption(f"APQC: {apqc}")
-                        with c2:
-                            if sem:
-                                st.caption(f"Semantic: {sem}")
-                        with c3:
-                            if rel:
-                                st.caption(f"Relationship: {rel}")
-                            st.caption(f"Control: {ctrl}")
-                        # Expandable rationale
-                        rationale = g.get("semantic_rationale", "") or g.get("relationship_rationale", "")
-                        if rationale:
-                            with st.expander("Rationale", expanded=False):
-                                st.markdown(rationale)
-        else:
-            st.success("No gaps found!")
-
-    # ── Expandable Risk Register ──
-    with st.expander(f"Risk Register — {len(risks)} risks", expanded=False):
-        if risks:
-            # Group by risk_category
-            by_cat: dict[str, list[dict]] = defaultdict(list)
-            for r in risks:
-                by_cat[r.get("risk_category", "Other")].append(r)
-
-            for cat in sorted(by_cat.keys()):
-                st.markdown(f"**{cat}** ({len(by_cat[cat])})")
-                for r in by_cat[cat]:
-                    rid = r.get("risk_id", "")
-                    cit = format_citation(r.get("source_citation", ""))
-                    desc = r.get("risk_description", "")
-                    rating = r.get("inherent_risk_rating", "Low")
-                    impact = r.get("impact_rating", 0)
-                    freq = r.get("frequency_rating", 0)
-                    with st.container(border=True):
-                        c1, c2 = st.columns([3, 1])
-                        with c1:
-                            st.markdown(f"**{rid}** — `{cit}`")
-                            st.caption(desc)
-                        with c2:
-                            score = impact * freq if impact and freq else None
-                            st.markdown(
-                                risk_score_badge_html(rating, score),
-                                unsafe_allow_html=True,
-                            )
-                            if impact and freq:
-                                st.caption(f"Impact: {impact} × Freq: {freq}")
-                        # Expandable detail
-                        sub_cat = r.get("sub_risk_category", "")
-                        impact_rat = r.get("impact_rationale", "")
-                        freq_rat = r.get("frequency_rationale", "")
-                        extras = []
-                        if sub_cat:
-                            extras.append(f"**Sub-category:** {sub_cat}")
-                        if impact_rat:
-                            extras.append(f"**Impact rationale:** {impact_rat}")
-                        if freq_rat:
-                            extras.append(f"**Frequency rationale:** {freq_rat}")
-                        if extras:
-                            with st.expander("Detail", expanded=False):
-                                st.markdown("\n\n".join(extras))
-        else:
-            st.info("No risks extracted.")
-
-    st.divider()
-
-    # ── Export ──
+    risks = st.session_state.get(SK.SCORED_RISKS, [])
     buf = io.BytesIO()
     export_gap_report(
         gap_report,
@@ -255,8 +373,8 @@ def render_results_tab() -> None:
     )
 
     st.divider()
-    render_checkpoint_save(STAGE_ASSESSED, "tab4")
-    render_checkpoint_load([STAGE_CLASSIFIED, STAGE_MAPPED, STAGE_ASSESSED, STAGE_ASSESS_PARTIAL], "tab4")
+    render_checkpoint_save(STAGE_ASSESSED, "tab4_cov")
+    render_checkpoint_load([STAGE_CLASSIFIED, STAGE_MAPPED, STAGE_ASSESSED, STAGE_ASSESS_PARTIAL], "tab4_cov")
 
 
 # ---------------------------------------------------------------------------
@@ -268,49 +386,36 @@ def _pct(n: int, total: int) -> str:
     return f"{n / total * 100:.0f}%" if total > 0 else "N/A"
 
 
-def _render_risk_heatmap(risks: list[dict]) -> None:
-    """4x4 risk heatmap using matplotlib."""
-    grid = np.zeros((4, 4), dtype=int)
-    for r in risks:
-        impact = r.get("impact_rating", 1)
-        freq = r.get("frequency_rating", 1)
-        if 1 <= impact <= 4 and 1 <= freq <= 4:
-            grid[4 - impact][freq - 1] += 1
-
-    fig, ax = plt.subplots(figsize=(6, 5))
-
-    color_grid = np.zeros((4, 4, 4))
-    for i in range(4):
-        for j in range(4):
-            impact = 4 - i
-            freq = j + 1
-            score = impact * freq
-            if score >= 12:
-                color_grid[i, j, :3] = [0.8, 0.0, 0.0]
-            elif score >= 8:
-                color_grid[i, j, :3] = [1.0, 0.5, 0.0]
-            elif score >= 4:
-                color_grid[i, j, :3] = [1.0, 1.0, 0.0]
-            else:
-                color_grid[i, j, :3] = [0.2, 0.8, 0.2]
-            color_grid[i, j, 3] = 0.6
-
-    ax.imshow(color_grid, aspect="auto")
-
-    for i in range(4):
-        for j in range(4):
-            count = grid[i][j]
-            if count > 0:
-                ax.text(j, i, str(count), ha="center", va="center",
-                        fontsize=14, fontweight="bold", color="black")
-
-    ax.set_xticks(range(4))
-    ax.set_xticklabels(["Remote\n(1)", "Unlikely\n(2)", "Possible\n(3)", "Likely\n(4)"])
-    ax.set_yticks(range(4))
-    ax.set_yticklabels(["Severe\n(4)", "Major\n(3)", "Moderate\n(2)", "Minor\n(1)"])
-    ax.set_xlabel("Frequency / Likelihood")
-    ax.set_ylabel("Impact")
-    ax.set_title("Risk Heatmap")
-
-    st.pyplot(fig)
-    plt.close(fig)
+def _kpi_card(
+    label: str,
+    value: int,
+    pct_str: str | None = None,
+    *,
+    accent: str = "neutral",
+    loud: bool = False,
+) -> str:
+    """Return HTML for a single KPI metric card."""
+    styles = {
+        "neutral":  ("#f0f2f6", "#333",    "#e0e0e0"),
+        "positive": ("#e8f5e9", "#2e7d32", "#a5d6a7"),
+        "negative": ("#fbe9e7", "#c62828", "#ef9a9a"),
+        "warning":  ("#fff3e0", "#ef6c00", "#ffcc80"),
+    }
+    bg, fg, border = styles.get(accent, styles["neutral"])
+    font_size = "1.8rem" if loud else "1.5rem"
+    border_width = "3px" if loud else "1px"
+    pct_html = (
+        f'<div style="font-size:0.8rem;color:#6c757d">{pct_str}</div>'
+        if pct_str
+        else ""
+    )
+    return (
+        f'<div style="background:{bg};border:{border_width} solid {border};'
+        f'border-radius:8px;padding:0.75rem 0.5rem;text-align:center">'
+        f'<div style="font-size:0.75rem;color:#6c757d;text-transform:uppercase;'
+        f'letter-spacing:0.05em">{label}</div>'
+        f'<div style="font-size:{font_size};font-weight:700;color:{fg};'
+        f'line-height:1.3">{value}</div>'
+        f'{pct_html}'
+        f'</div>'
+    )

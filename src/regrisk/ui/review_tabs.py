@@ -21,6 +21,7 @@ from regrisk.graphs.assess_graph import (
     build_assess_graph,
     get_partial_assessments,
     reset_caches as reset_assess_caches,
+    set_auto_save as set_assess_auto_save,
     set_emitter as set_assess_emitter,
 )
 from regrisk.tracing.db import TraceDB
@@ -44,6 +45,7 @@ from regrisk.ui.components import (
     render_mapping_chip,
     render_obligation_card,
     render_obligation_detail,
+    render_obligation_text_only,
     save_uploaded_file,
 )
 from regrisk.ui.session_keys import SK
@@ -83,21 +85,52 @@ def render_classification_review_tab() -> None:
     df = pd.DataFrame(classified)
     total_count = len(df)
 
-    # ── Summary statistics strip ──
+    # ── Summary statistics — Row 1: Obligation breakdown by type ──
     from collections import Counter
     cat_counts = Counter(ob.get("obligation_category", "Not Assigned") for ob in classified)
     crit_counts = Counter(ob.get("criticality_tier", "Unrated") for ob in classified)
+    total = len(classified) or 1
 
-    # Category breakdown
     cat_order = ["Controls", "Documentation", "Attestation", "General Awareness", "Not Assigned"]
-    cat_cols = st.columns(len(cat_order) + 3)  # +3 for criticality tiers
-    for i, cat in enumerate(cat_order):
-        count = cat_counts.get(cat, 0)
-        cat_cols[i].metric(cat, count)
-    # Criticality breakdown
-    for j, tier in enumerate(["High", "Medium", "Low"]):
-        count = crit_counts.get(tier, 0)
-        cat_cols[len(cat_order) + j].metric(f"{criticality_dot(tier)} {tier}", count)
+    active_cats = [(c, cat_counts.get(c, 0)) for c in cat_order if cat_counts.get(c, 0) > 0]
+
+    if active_cats:
+        # Stacked bar as colored HTML segments
+        bar_segments = []
+        for cat, cnt in active_cats:
+            pct = cnt / total * 100
+            bg = CATEGORY_BG.get(cat, "#E2E3E5")
+            label = f"{cat} ({cnt})" if pct >= 12 else str(cnt)
+            bar_segments.append(
+                f'<div style="background:{bg};width:{pct:.1f}%;padding:6px 8px;text-align:center;'
+                f'font-size:0.78rem;white-space:nowrap;overflow:hidden">{label}</div>'
+            )
+        bar_html = (
+            '<div style="display:flex;border-radius:6px;overflow:hidden;border:1px solid #ddd">'
+            + "".join(bar_segments)
+            + "</div>"
+        )
+        st.markdown("**Obligation breakdown by type**")
+        st.markdown(bar_html, unsafe_allow_html=True)
+
+        # Dominant category insight
+        top_cat, top_cnt = active_cats[0]
+        top_pct = top_cnt / total * 100
+        if top_pct >= 40:
+            st.caption(f"Most obligations ({top_pct:.0f}%) are **{top_cat}**.")
+
+    # ── Row 2: Risk profile ──
+    st.markdown("**Risk profile**")
+    rc1, rc2, rc3 = st.columns(3)
+    for col, tier, dot in ((rc1, "High", "🔴"), (rc2, "Medium", "🟡"), (rc3, "Low", "⚪")):
+        cnt = crit_counts.get(tier, 0)
+        pct = cnt / total * 100
+        col.metric(f"{dot} {tier}", f"{cnt} ({pct:.0f}%)")
+
+    high_pct = crit_counts.get("High", 0) / total * 100
+    if high_pct >= 40:
+        st.caption(f"{high_pct:.0f}% of obligations are high-criticality — enforcement risk if not addressed.")
+
     st.divider()
 
     # ── Filter bar ──
@@ -120,7 +153,7 @@ def render_classification_review_tab() -> None:
     col_list, col_detail = st.columns([0.6, 0.4])
 
     with col_list:
-        with st.container(height=600):
+        with st.container(height=900):
             # Group by subpart
             groups: dict[str, list[tuple[int, dict]]] = defaultdict(list)
             for idx, ob in enumerate(filtered_records):
@@ -185,36 +218,18 @@ def render_classification_review_tab() -> None:
 # ---------------------------------------------------------------------------
 
 def render_mapping_review_tab() -> None:
-    """Render the mapping review tab with grouped obligation panels."""
+    """Render the mapping review tab with master-detail layout."""
     mappings = st.session_state.get(SK.OBLIGATION_MAPPINGS, [])
 
     if not mappings:
         st.info("Run APQC mapping first (approve classifications in Tab 2).")
         return
 
-    # ── Summary strip ──
-    unique_citations = set(m.get("citation", "") for m in mappings)
-    avg_conf = (
-        sum(m.get("confidence", 0) for m in mappings) / len(mappings)
-        if mappings else 0
-    )
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Obligations Mapped", len(unique_citations))
-    c2.metric("Total Mappings", len(mappings))
-    c3.metric("Avg Confidence", f"{avg_conf:.2f}")
-    rel_types = defaultdict(int)
-    for m in mappings:
-        rel_types[m.get("relationship_type", "?")] += 1
-    c4.metric("Relationship Types", len(rel_types))
-
-    st.header(f"APQC Mapping Review")
-
-    # Build per-obligation mapping groups
+    # ── Build per-obligation mapping groups + metadata ──
     mappings_by_citation: dict[str, list[dict]] = defaultdict(list)
     for m in mappings:
         mappings_by_citation[m.get("citation", "unknown")].append(m)
 
-    # Get obligation metadata for panel headers
     classified = st.session_state.get(SK.CLASSIFIED_OBLIGATIONS, [])
     ob_meta: dict[str, dict] = {}
     for ob in classified:
@@ -222,33 +237,124 @@ def render_mapping_review_tab() -> None:
         if cit:
             ob_meta[cit] = ob
 
-    # Group obligations by subpart for ordering
-    obs_by_subpart: dict[str, list[str]] = defaultdict(list)
+    # Build records list for mapped obligations only
+    mapped_records: list[dict] = []
     for cit in mappings_by_citation:
         meta = ob_meta.get(cit, {})
-        subpart = meta.get("subpart", "General")
-        obs_by_subpart[subpart].append(cit)
+        rec = dict(meta) if meta else {"citation": cit}
+        rec.setdefault("citation", cit)
+        rec.setdefault("subpart", "General")
+        rec.setdefault("obligation_category", "Not Assigned")
+        rec.setdefault("criticality_tier", "Low")
+        mapped_records.append(rec)
 
-    for subpart in sorted(obs_by_subpart.keys()):
-        st.subheader(subpart, divider="gray")
-        for cit in sorted(obs_by_subpart[subpart]):
-            ob_maps = mappings_by_citation[cit]
-            meta = ob_meta.get(cit, {})
-            category = meta.get("obligation_category", "")
-            crit = meta.get("criticality_tier", "")
-            abstract = meta.get("abstract", "")
-            truncated = (abstract[:80] + "…") if len(abstract) > 80 else abstract
+    # ── Summary strip ──
+    from collections import Counter
 
-            label = (
-                f"{format_citation(cit)}  "
-                f"{criticality_dot(crit)}  {category}  —  "
-                f"**{len(ob_maps)} mapping{'s' if len(ob_maps) != 1 else ''}**"
+    avg_conf = (
+        sum(m.get("confidence", 0) for m in mappings) / len(mappings)
+        if mappings else 0
+    )
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Obligations Mapped", len(mapped_records))
+    c2.metric("Total Mappings", len(mappings))
+    c3.metric("Avg Confidence", f"{avg_conf:.2f}")
+    rel_types = set(m.get("relationship_type", "?") for m in mappings)
+    c4.metric("Relationship Types", len(rel_types))
+
+    st.header("APQC Mapping Review")
+
+    total = len(mapped_records) or 1
+    cat_counts = Counter(r.get("obligation_category", "Not Assigned") for r in mapped_records)
+    crit_counts = Counter(r.get("criticality_tier", "Low") for r in mapped_records)
+
+    # ── Obligation breakdown bar ──
+    cat_order = ["Controls", "Documentation", "Attestation", "General Awareness", "Not Assigned"]
+    active_cats = [(c, cat_counts.get(c, 0)) for c in cat_order if cat_counts.get(c, 0) > 0]
+
+    if active_cats:
+        bar_segments = []
+        for cat, cnt in active_cats:
+            pct = cnt / total * 100
+            bg = CATEGORY_BG.get(cat, "#E2E3E5")
+            label = f"{cat} ({cnt})" if pct >= 12 else str(cnt)
+            bar_segments.append(
+                f'<div style="background:{bg};width:{pct:.1f}%;padding:6px 8px;text-align:center;'
+                f'font-size:0.78rem;white-space:nowrap;overflow:hidden">{label}</div>'
             )
-            with st.expander(label, expanded=False):
-                if truncated:
-                    st.caption(truncated)
-                for mapping in ob_maps:
-                    render_mapping_chip(mapping)
+        bar_html = (
+            '<div style="display:flex;border-radius:6px;overflow:hidden;border:1px solid #ddd">'
+            + "".join(bar_segments)
+            + "</div>"
+        )
+        st.markdown("**Obligation breakdown by type**")
+        st.markdown(bar_html, unsafe_allow_html=True)
+
+    # ── Risk profile ──
+    st.markdown("**Risk profile**")
+    rc1, rc2, rc3 = st.columns(3)
+    for col, tier, dot in ((rc1, "High", "🔴"), (rc2, "Medium", "🟡"), (rc3, "Low", "⚪")):
+        cnt = crit_counts.get(tier, 0)
+        pct = cnt / total * 100
+        col.metric(f"{dot} {tier}", f"{cnt} ({pct:.0f}%)")
+
+    st.divider()
+
+    # ── Filter bar ──
+    df = pd.DataFrame(mapped_records)
+    total_count = len(df)
+    df_filtered = render_filter_bar(
+        df, total_count, key_prefix="tab3",
+        show_category=True, show_criticality=True, show_subpart=True,
+    )
+    filtered_records = df_filtered.to_dict("records")
+
+    # Ensure selected index is valid
+    sel_key = SK.SELECTED_MAPPING_OBLIGATION_IDX
+    if sel_key not in st.session_state or st.session_state[sel_key] is None:
+        st.session_state[sel_key] = 0
+    if st.session_state[sel_key] >= len(filtered_records):
+        st.session_state[sel_key] = 0
+
+    # ── Master-detail columns ──
+    col_list, col_detail = st.columns([0.6, 0.4])
+
+    with col_list:
+        with st.container(height=900):
+            groups: dict[str, list[tuple[int, dict]]] = defaultdict(list)
+            for idx, ob in enumerate(filtered_records):
+                subpart = ob.get("subpart", "General")
+                groups[subpart].append((idx, ob))
+
+            for subpart in sorted(groups.keys()):
+                st.subheader(subpart, divider="gray")
+                for idx, ob in groups[subpart]:
+                    cit = ob.get("citation", "")
+                    n_maps = len(mappings_by_citation.get(cit, []))
+                    map_label = f"**{n_maps} mapping{'s' if n_maps != 1 else ''}**"
+                    clicked = render_obligation_card(
+                        ob, idx, st.session_state[sel_key],
+                        key_prefix="tab3_ob",
+                        extra_label=map_label,
+                    )
+                    if clicked:
+                        st.session_state[sel_key] = idx
+                        st.rerun()
+
+    with col_detail:
+        if filtered_records:
+            sel_idx = st.session_state[sel_key]
+            if 0 <= sel_idx < len(filtered_records):
+                selected_ob = filtered_records[sel_idx]
+                render_obligation_text_only(selected_ob)
+
+                # ── APQC Mappings for this obligation ──
+                sel_cit = selected_ob.get("citation", "")
+                ob_maps = mappings_by_citation.get(sel_cit, [])
+                if ob_maps:
+                    st.markdown("#### APQC Mappings")
+                    for mapping in ob_maps:
+                        render_mapping_chip(mapping)
 
     # ── Actions ──
     st.divider()
@@ -346,6 +452,8 @@ def _run_mapping() -> None:
             status.update(label="Mapping failed", state="error")
             st.error(f"Mapping pipeline failed: {type(exc).__name__}: {exc}")
             return
+        finally:
+            progress_listener.detach()
     progress_bar.progress(100, text="Mapping complete!")
 
     st.session_state["obligation_mappings"] = result.get("obligation_mappings", [])
@@ -401,6 +509,14 @@ def _run_assessment() -> None:
     trace_listener = SQLiteTraceListener(trace_db, run_id)
     emitter.on(trace_listener)
 
+    def _auto_save_partial(partial: list[dict]) -> None:
+        """Periodic auto-save: persist partial assessment checkpoint."""
+        st.session_state["coverage_assessments"] = list(partial)
+        build_partial_results(partial, classified)
+        save_checkpoint(STAGE_ASSESS_PARTIAL, dict(st.session_state))
+
+    set_assess_auto_save(_auto_save_partial, interval=25)
+
     progress_bar = st.progress(0, text="Initializing assessment pipeline…")
     with st.status("Assessment Pipeline", expanded=True) as status:
         progress_listener = StreamlitProgressListener(progress_bar, status, "assess")
@@ -422,6 +538,8 @@ def _run_assessment() -> None:
                 )
             st.error(f"Assessment pipeline failed: {type(exc).__name__}: {exc}")
             return
+        finally:
+            progress_listener.detach()
     progress_bar.progress(100, text="Assessment complete!")
 
     st.session_state["assess_result"] = result

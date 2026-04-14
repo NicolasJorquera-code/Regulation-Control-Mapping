@@ -128,21 +128,46 @@ def save_checkpoint(
     target_dir.mkdir(parents=True, exist_ok=True)
 
     now = datetime.now(timezone.utc)
-    ts_filename = now.strftime("%Y-%m-%d_%Hh%M")
-    ts_display = now.strftime("%Y-%m-%d %H:%M UTC")
+    ts_filename = now.strftime("%Y-%m-%d_%Hh%M_%S")
+    ts_display = now.strftime("%Y-%m-%d %H:%M:%S UTC")
     reg_name = session_data.get("regulation_name", "unknown")
     safe_name = _sanitise_name(reg_name)
+    llm_enabled = session_data.get("llm_enabled", False)
+    mode_tag = "llm" if llm_enabled else "det"
+
+    # Count obligations for the filename descriptor
+    obligations = session_data.get("classified_obligations", [])
+    ob_count = len(obligations)
+
     stage_lbl = _STAGE_LABELS.get(stage, stage).replace(" ", "_")
-    filename = f"{stage_lbl}_{safe_name}_{ts_filename}.json"
+    filename = f"{stage_lbl}_{safe_name}_{ob_count}obs_{mode_tag}_{ts_filename}.json"
     path = target_dir / filename
 
     keys = _STAGE_KEYS.get(stage, list(session_data.keys()))
+
+    # Build summary statistics for metadata
+    from collections import Counter
+    cat_counts = dict(Counter(
+        ob.get("obligation_category", "Not Assigned") for ob in obligations
+    )) if obligations else {}
+    crit_counts = dict(Counter(
+        ob.get("criticality_tier", "Unrated") for ob in obligations
+    )) if obligations else {}
+    mapping_count = len(session_data.get("obligation_mappings", []))
+    assessment_count = len(session_data.get("coverage_assessments", []))
+
     payload: dict[str, Any] = {
         "_meta": {
             "stage": stage,
             "stage_label": _STAGE_LABELS.get(stage, stage),
             "regulation_name": reg_name,
             "timestamp": ts_display,
+            "llm_mode": "LLM-assisted" if llm_enabled else "Deterministic",
+            "obligation_count": ob_count,
+            "mapping_count": mapping_count,
+            "assessment_count": assessment_count,
+            "category_breakdown": cat_counts,
+            "criticality_breakdown": crit_counts,
             "keys_saved": keys,
         },
     }
@@ -181,11 +206,31 @@ def list_checkpoints(directory: Path | None = None) -> list[dict[str, Any]]:
         return []
 
     results = []
-    for p in sorted(target_dir.glob("*.json"), reverse=True):
+    for p in sorted(target_dir.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True):
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
             meta = data.get("_meta", {})
             ts_raw = meta.get("timestamp", "?")
+            ob_count = meta.get("obligation_count")
+            llm_mode = meta.get("llm_mode", "")
+            is_patched = meta.get("patched", False)
+
+            # Build a human-readable display string
+            label = meta.get("stage_label", "?")
+            if is_patched:
+                label = f"\U0001f527 Patched {label}"
+            parts = [label]
+            parts.append(meta.get("regulation_name", "?"))
+            detail_bits: list[str] = []
+            if ob_count is not None:
+                detail_bits.append(f"{ob_count} obligations")
+            if llm_mode:
+                detail_bits.append(llm_mode)
+            if detail_bits:
+                parts.append(" · ".join(detail_bits))
+            patch_ts = meta.get("patch_timestamp")
+            parts.append(patch_ts if is_patched and patch_ts else ts_raw)
+
             results.append({
                 "path": p,
                 "filename": p.name,
@@ -193,11 +238,10 @@ def list_checkpoints(directory: Path | None = None) -> list[dict[str, Any]]:
                 "stage_label": meta.get("stage_label", "?"),
                 "regulation_name": meta.get("regulation_name", "?"),
                 "timestamp": ts_raw,
-                "display": (
-                    f"{meta.get('stage_label', '?')} · "
-                    f"{meta.get('regulation_name', '?')} · "
-                    f"{ts_raw}"
-                ),
+                "obligation_count": ob_count,
+                "llm_mode": llm_mode,
+                "patched": is_patched,
+                "display": " · ".join(parts),
             })
         except (json.JSONDecodeError, OSError):
             continue

@@ -112,7 +112,6 @@ def _preview_regulation(reg_path: str) -> tuple[int, list[str], pd.DataFrame]:
             "citation": ob.citation,
             "mandate_title": ob.mandate_title,
             "abstract": ob.abstract[:200] if ob.abstract else "",
-            "status": ob.status,
             "citation_level_2": ob.citation_level_2,
             "citation_level_3": ob.citation_level_3,
             "applicability": ob.applicability,
@@ -197,11 +196,16 @@ def _subpart_summary(groups: list[dict]) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 def _find_best_demo_checkpoint() -> dict[str, Any] | None:
-    """Find the newest fully-assessed checkpoint for demo mode."""
+    """Find the newest fully-assessed checkpoint for demo mode.
+
+    Prefers patched checkpoints over regular assessed ones.
+    """
     checkpoints = list_checkpoints()
-    for cp in checkpoints:
-        if cp["stage"] in (STAGE_ASSESSED, STAGE_ASSESS_PARTIAL):
-            return cp
+    assessed = [cp for cp in checkpoints if cp["stage"] in (STAGE_ASSESSED, STAGE_ASSESS_PARTIAL)]
+    if assessed:
+        # Prefer patched checkpoints
+        patched = [cp for cp in assessed if cp.get("patched")]
+        return patched[0] if patched else assessed[0]
     # Fall back to any checkpoint (mapped, classified)
     return checkpoints[0] if checkpoints else None
 
@@ -217,46 +221,7 @@ def _load_demo_data() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Post-classification summary
-# ---------------------------------------------------------------------------
-
-def _render_classification_summary(classified: list[dict[str, Any]]) -> None:
-    """Render a summary panel showing classification results on Tab 1."""
-    from collections import Counter
-
-    reg_name = st.session_state.get("regulation_name", "Unknown Regulation")
-    total = len(classified)
-
-    cat_counts = Counter(ob.get("obligation_category", "Not Assigned") for ob in classified)
-    crit_counts = Counter(ob.get("criticality_tier", "Unrated") for ob in classified)
-
-    with st.container(border=True):
-        st.subheader(f"✅ Classification Complete — {reg_name}")
-
-        # ── Top-level metrics ──
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Obligations", total)
-        m2.metric("Categories", len(cat_counts))
-        m3.metric("Criticality Tiers", len(crit_counts))
-
-        # ── Category breakdown ──
-        cat_col, crit_col = st.columns(2)
-        with cat_col:
-            st.markdown("**Obligation Categories**")
-            for cat, count in sorted(cat_counts.items(), key=lambda x: -x[1]):
-                pct = count / total * 100 if total else 0
-                st.markdown(f"- **{cat}**: {count} ({pct:.0f}%)")
-
-        with crit_col:
-            st.markdown("**Criticality Tiers**")
-            for tier, count in sorted(crit_counts.items(), key=lambda x: -x[1]):
-                pct = count / total * 100 if total else 0
-                st.markdown(f"- **{tier}**: {count} ({pct:.0f}%)")
-
-        st.info(
-            "📋 Review results in the **🏷️ Classification Review** tab, "
-            "then approve to continue to APQC mapping."
-        )
+# Post-classification summary (removed — see git history)
 
 
 # ---------------------------------------------------------------------------
@@ -272,24 +237,8 @@ def render_upload_tab() -> None:
     if st.session_state.pop("classification_just_completed", False):
         st.success(f"Classification complete! {len(classified)} obligations classified.")
 
-    # ── Post-classification summary ──
-    if classified:
-        _render_classification_summary(classified)
-    else:
-        # ── Demo Mode Banner ──
-        cp_info = _find_best_demo_checkpoint()
-        if cp_info:
-            with st.container(border=True):
-                demo_cols = st.columns([3, 1])
-                with demo_cols[0]:
-                    st.markdown(
-                        "**🎭 Demo Mode** — Load pre-computed results instantly "
-                        "(skips LLM pipeline). Uses the most recent assessed checkpoint: "
-                        f"*{cp_info['regulation_name']}* ({cp_info['stage_label']})"
-                    )
-                with demo_cols[1]:
-                    if st.button("🎭 Load Demo Data", type="primary", width="stretch"):
-                        _load_demo_data()
+    if not classified:
+        pass  # No demo banner — users load via checkpoint resume instead
 
     # ── Panel A: Data Sources ──
     detected = _detect_data_files()
@@ -563,6 +512,8 @@ def _invoke_classify_graph(input_state: dict) -> None:
             trace_db.update_run_status(run_id, "failed")
             st.error(f"Classification pipeline failed: {type(exc).__name__}: {exc}")
             return
+        finally:
+            progress_listener.detach()
     progress_bar.progress(100, text="Classification complete!")
 
     st.session_state["classify_result"] = result

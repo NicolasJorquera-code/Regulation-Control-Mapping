@@ -85,3 +85,15 @@ frequency_scale:
 
 # Output
 risk_id_prefix: "RISK"
+
+# UI
+ui:
+  visible_tabs:
+    - "Upload & Configure"
+    - "Data Source Explorer"
+    - "Classification Review"
+    - "Mapping Review"
+    - "Coverage"
+    - "Risk Register"
+    # - "Traceability"     # uncomment to restore
+    # - "Evaluation"       # uncomment to restore
