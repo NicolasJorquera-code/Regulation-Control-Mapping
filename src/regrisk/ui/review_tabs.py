@@ -248,21 +248,9 @@ def render_mapping_review_tab() -> None:
         rec.setdefault("criticality_tier", "Low")
         mapped_records.append(rec)
 
-    # ── Summary strip ──
-    from collections import Counter
-
-    avg_conf = (
-        sum(m.get("confidence", 0) for m in mappings) / len(mappings)
-        if mappings else 0
-    )
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Obligations Mapped", len(mapped_records))
-    c2.metric("Total Mappings", len(mappings))
-    c3.metric("Avg Confidence", f"{avg_conf:.2f}")
-    rel_types = set(m.get("relationship_type", "?") for m in mappings)
-    c4.metric("Relationship Types", len(rel_types))
-
     st.header("APQC Mapping Review")
+
+    from collections import Counter
 
     total = len(mapped_records) or 1
     cat_counts = Counter(r.get("obligation_category", "Not Assigned") for r in mapped_records)
