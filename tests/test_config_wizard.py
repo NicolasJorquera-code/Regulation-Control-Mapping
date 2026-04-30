@@ -39,8 +39,8 @@ class TestAutoCode:
 
 class TestConstants:
     def test_step_count(self):
-        assert TOTAL_STEPS == 5
-        assert len(STEP_LABELS) == 5
+        assert TOTAL_STEPS == 6
+        assert len(STEP_LABELS) == 6
 
     def test_step_labels(self):
         assert STEP_LABELS[0] == "Basics"

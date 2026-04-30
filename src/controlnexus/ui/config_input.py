@@ -58,7 +58,10 @@ def _render_select_profile() -> DomainConfig | None:
     col_select, col_upload = st.columns([3, 2])
 
     with col_select:
-        profiles = sorted(_profiles_dir().glob("*.yaml"))
+        profiles = sorted(
+            p for p in _profiles_dir().glob("*.yaml")
+            if p.stem != "healthcare_demo"
+        )
         if not profiles:
             st.warning("No config profiles found in `config/profiles/`.")
             return None

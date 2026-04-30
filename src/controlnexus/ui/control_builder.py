@@ -26,12 +26,13 @@ from controlnexus.core.domain_config import DomainConfig, load_domain_config
 
 logger = logging.getLogger(__name__)
 
-TOTAL_STEPS = 5
+TOTAL_STEPS = 6
 STEP_LABELS = [
     "Basics",
     "Control Types",
     "Business Units",
-    "Process Areas",
+    "Processes",
+    "Risks",
     "Review & Export",
 ]
 
@@ -74,6 +75,8 @@ def _blank_form() -> dict[str, Any]:
         "control_types": [],
         "business_units": [],
         "process_areas": [],
+        "processes": [],
+        "risk_catalog": [],
         "placements": [{"name": p, "description": ""} for p in _DEFAULT_PLACEMENTS],
         "methods": [{"name": m, "description": ""} for m in _DEFAULT_METHODS],
         "frequency_tiers": list(_DEFAULT_FREQUENCY_TIERS),
@@ -129,7 +132,7 @@ def _seed_form_from_config(config: DomainConfig) -> None:
     form = _blank_form()
     for key in ("name", "description", "control_types", "business_units",
                 "process_areas", "placements", "methods", "frequency_tiers",
-                "quality_ratings", "narrative"):
+                "quality_ratings", "narrative", "risk_catalog"):
         if key in data:
             form[key] = copy.deepcopy(data[key])
     st.session_state["builder_form"] = form
@@ -196,7 +199,10 @@ def _render_template_picker() -> None:
     st.info("💡 Start from a template to save time, or skip to build from scratch.")
 
     profiles_path = _profiles_dir()
-    yaml_files = sorted(profiles_path.glob("*.yaml")) if profiles_path.is_dir() else []
+    yaml_files = sorted(
+        p for p in profiles_path.glob("*.yaml")
+        if p.stem != "healthcare_demo"
+    ) if profiles_path.is_dir() else []
 
     n_cols = len(yaml_files) + 1
     cols = st.columns(min(n_cols, 4))
@@ -208,10 +214,11 @@ def _render_template_picker() -> None:
                     config = load_domain_config(yf)
                     name = yf.stem.replace("_", " ").replace("-", " ").title()
                     st.markdown(f"**{name}**")
+                    n_proc = len(config.processes) or len(config.process_areas)
                     st.caption(
                         f"{len(config.control_types)} types · "
                         f"{len(config.business_units)} BUs · "
-                        f"{len(config.process_areas)} sections"
+                        f"{n_proc} processes"
                     )
                     if st.button("Use as starting point", key=f"tmpl_{i}"):
                         _seed_form_from_config(config)
@@ -376,7 +383,10 @@ def _render_step_control_types(form: dict[str, Any]) -> None:
 def _render_type_import(types_list: list[dict[str, Any]]) -> None:
     """Import control types from an existing profile."""
     profiles_path = _profiles_dir()
-    yaml_files = sorted(profiles_path.glob("*.yaml")) if profiles_path.is_dir() else []
+    yaml_files = sorted(
+        p for p in profiles_path.glob("*.yaml")
+        if p.stem != "healthcare_demo"
+    ) if profiles_path.is_dir() else []
     if not yaml_files:
         st.info("No profiles available for import.")
         return
@@ -418,13 +428,14 @@ def _render_step_business_units(form: dict[str, Any]) -> None:
 
     bu_list: list[dict[str, Any]] = form.setdefault("business_units", [])
     type_names = [ct["name"] for ct in form.get("control_types", []) if ct.get("name")]
+    process_ids = [p["id"] for p in form.get("processes", []) if p.get("id")]
     section_ids = [pa["id"] for pa in form.get("process_areas", []) if pa.get("id")]
 
     if st.button("➕ Add Business Unit", key="cb_add_bu"):
         next_num = len(bu_list) + 1
         bu_list.append({
             "id": f"BU-{next_num:03d}", "name": "", "description": "",
-            "primary_sections": [], "key_control_types": [], "regulatory_exposure": [],
+            "processes": [], "primary_sections": [], "key_control_types": [], "regulatory_exposure": [],
         })
         st.rerun()
 
@@ -450,6 +461,16 @@ def _render_step_business_units(form: dict[str, Any]) -> None:
             else:
                 sec_text = st.text_input("Primary Sections (comma-separated)", value=", ".join(bu.get("primary_sections", [])), key=f"cb_bu_sec_txt_{i}")
                 bu["primary_sections"] = [s.strip() for s in sec_text.split(",") if s.strip()]
+
+            if process_ids:
+                bu["processes"] = st.multiselect(
+                    "Processes", options=process_ids,
+                    default=[p for p in bu.get("processes", []) if p in process_ids],
+                    key=f"cb_bu_proc_{i}",
+                )
+            else:
+                proc_text = st.text_input("Processes (comma-separated IDs)", value=", ".join(bu.get("processes", [])), key=f"cb_bu_proc_txt_{i}")
+                bu["processes"] = [p.strip() for p in proc_text.split(",") if p.strip()]
 
             bu["key_control_types"] = st.multiselect(
                 "Key Control Types", options=type_names,
@@ -483,8 +504,8 @@ def _render_step_business_units(form: dict[str, Any]) -> None:
 
 
 def _render_step_process_areas(form: dict[str, Any]) -> None:
-    st.markdown("#### Step 4: Process Areas")
-    st.caption("Define sections with risk profiles, affinity grids, registries, and exemplars.")
+    st.markdown("#### Step 4: Processes")
+    st.caption("Define processes with registries and exemplars. Risk details are configured in the next step.")
 
     pa_list: list[dict[str, Any]] = form.setdefault("process_areas", [])
     type_names = [ct["name"] for ct in form.get("control_types", []) if ct.get("name")]
@@ -586,6 +607,8 @@ def _render_step_process_areas(form: dict[str, Any]) -> None:
     with col_next:
         if st.button("Next →", type="primary", key="cb_step4_next"):
             form["process_areas"] = pa_list
+            # Also populate processes list for new model
+            form["processes"] = pa_list
             _set_step(5)
             st.rerun()
 
@@ -783,11 +806,138 @@ def _render_exemplars(pa: dict, idx: int, form: dict) -> None:
         st.rerun()
 
 
-# ── Step 5: Review & Export ──────────────────────────────────────────────────
+# ── Step 5: Risks ────────────────────────────────────────────────────────────
+
+
+def _render_step_risks(form: dict[str, Any]) -> None:
+    st.markdown("#### Step 5: Risks")
+    st.caption("Define the risk catalog and assign risk instances to processes.")
+
+    type_names = [ct["name"] for ct in form.get("control_types", []) if ct.get("name")]
+    process_list = form.get("process_areas", []) or form.get("processes", [])
+
+    # Risk catalog
+    st.markdown("##### Risk Catalog")
+    risk_catalog: list[dict[str, Any]] = form.setdefault("risk_catalog", [])
+
+    if st.button("➕ Add Risk", key="cb_add_risk"):
+        next_num = len(risk_catalog) + 1
+        risk_catalog.append({
+            "id": f"RISK-{next_num:03d}",
+            "name": "",
+            "category": "Operational",
+            "default_severity": 3,
+            "description": "",
+        })
+        st.rerun()
+
+    # Build dynamic category list from existing risks + defaults
+    _BASE_CATEGORIES = ["Operational", "Regulatory", "Financial", "Strategic", "Technology", "Other"]
+    _extra = {r.get("category") or r.get("level_1", "") for r in risk_catalog} - {"", *_BASE_CATEGORIES}
+    _all_categories = _BASE_CATEGORIES + sorted(_extra)
+
+    to_remove: list[int] = []
+    for i, risk in enumerate(risk_catalog):
+        with st.expander(f"Risk: {risk.get('name') or risk.get('id', f'#{i+1}')}", expanded=not risk.get("name")):
+            c1, c2, c3 = st.columns([2, 3, 2])
+            with c1:
+                risk["id"] = st.text_input("ID", value=risk.get("id", ""), key=f"cb_risk_id_{i}")
+            with c2:
+                risk["name"] = st.text_input("Name", value=risk.get("name", ""), key=f"cb_risk_name_{i}")
+            with c3:
+                current_cat = risk.get("category") or risk.get("level_1", "Operational")
+                if current_cat not in _all_categories:
+                    _all_categories.append(current_cat)
+                risk["category"] = st.selectbox(
+                    "Category",
+                    _all_categories,
+                    index=_all_categories.index(current_cat),
+                    key=f"cb_risk_cat_{i}",
+                )
+            risk["default_severity"] = st.slider("Default Severity", 1, 5, risk.get("default_severity", 3), key=f"cb_risk_sev_{i}")
+            risk["description"] = st.text_area("Description", value=risk.get("description", ""), height=60, key=f"cb_risk_desc_{i}")
+            if st.button("🗑 Remove", key=f"cb_risk_rm_{i}"):
+                to_remove.append(i)
+
+    for idx in reversed(to_remove):
+        risk_catalog.pop(idx)
+    if to_remove:
+        st.rerun()
+
+    # Per-process risk instances
+    if process_list and risk_catalog:
+        st.markdown("##### Process → Risk Assignments")
+        risk_ids = [r["id"] for r in risk_catalog if r.get("id")]
+
+        for pi, proc in enumerate(process_list):
+            with st.expander(f"Process: {proc.get('name', proc.get('id', f'#{pi+1}'))}"):
+                proc_risks: list[dict[str, Any]] = proc.setdefault("risks", [])
+
+                if st.button("➕ Add Risk Instance", key=f"cb_proc_addrisk_{pi}"):
+                    proc_risks.append({
+                        "risk_id": risk_ids[0] if risk_ids else "",
+                        "severity": 3,
+                        "multiplier": 1.0,
+                        "mitigated_by_types": [],
+                        "rationale": "",
+                    })
+                    st.rerun()
+
+                ri_remove: list[int] = []
+                for ri_idx, ri in enumerate(proc_risks):
+                    st.markdown(f"**Risk Instance {ri_idx + 1}**")
+                    c1, c2, c3 = st.columns(3)
+                    with c1:
+                        ri["risk_id"] = st.selectbox(
+                            "Risk", options=risk_ids,
+                            index=risk_ids.index(ri["risk_id"]) if ri.get("risk_id") in risk_ids else 0,
+                            key=f"cb_ri_id_{pi}_{ri_idx}",
+                        )
+                    with c2:
+                        ri["severity"] = st.slider("Severity", 1, 5, ri.get("severity", 3), key=f"cb_ri_sev_{pi}_{ri_idx}")
+                    with c3:
+                        ri["multiplier"] = st.number_input(
+                            "Multiplier", 0.1, 5.0, float(ri.get("multiplier", 1.0)), step=0.1,
+                            key=f"cb_ri_mul_{pi}_{ri_idx}",
+                        )
+                    ri["mitigated_by_types"] = st.multiselect(
+                        "Mitigated by Types", options=type_names,
+                        default=[t for t in ri.get("mitigated_by_types", []) if t in type_names],
+                        key=f"cb_ri_types_{pi}_{ri_idx}",
+                    )
+                    ri["rationale"] = st.text_input("Rationale", value=ri.get("rationale", ""), key=f"cb_ri_rat_{pi}_{ri_idx}")
+                    if st.button("🗑 Remove", key=f"cb_ri_rm_{pi}_{ri_idx}"):
+                        ri_remove.append(ri_idx)
+
+                for idx in reversed(ri_remove):
+                    proc_risks.pop(idx)
+                if ri_remove:
+                    st.rerun()
+
+    elif not process_list:
+        st.info("Define processes in Step 4 first.")
+    elif not risk_catalog:
+        st.info("Add at least one risk to the catalog above.")
+
+    # Navigation
+    st.markdown("---")
+    col_back, col_next = st.columns(2)
+    with col_back:
+        if st.button("← Back", key="cb_step5_back"):
+            _set_step(4)
+            st.rerun()
+    with col_next:
+        if st.button("Next →", type="primary", key="cb_step5_next"):
+            form["risk_catalog"] = risk_catalog
+            _set_step(6)
+            st.rerun()
+
+
+# ── Step 6: Review & Export ──────────────────────────────────────────────────
 
 
 def _render_step_review(form: dict[str, Any]) -> None:
-    st.markdown("#### Step 5: Review & Export")
+    st.markdown("#### Step 6: Review & Export")
 
     # Advanced settings (narrative, quality, placements) — collapsed
     with st.expander("⚙️ Advanced Settings — Narrative, Quality, Placements", expanded=False):
@@ -803,18 +953,20 @@ def _render_step_review(form: dict[str, Any]) -> None:
     except Exception as e:
         st.error(f"**Config has validation errors:**\n\n{e}")
         st.info("Go back to the relevant step and fix the issues listed above.")
-        if st.button("← Back to Edit", key="cb_step5_back_err"):
-            _set_step(4)
+        if st.button("← Back to Edit", key="cb_step6_back_err"):
+            _set_step(5)
             st.rerun()
         return
 
     # Success
     st.success(f"**{config.name}** is valid!")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Control Types", len(config.control_types))
     col2.metric("Business Units", len(config.business_units))
-    col3.metric("Process Areas", len(config.process_areas))
+    n_proc = len(config.processes) or len(config.process_areas)
+    col3.metric("Processes", n_proc)
+    col4.metric("Risks", len(config.risk_catalog))
 
     # Config preview
     from controlnexus.ui.config_input import render_config_preview
@@ -838,8 +990,8 @@ def _render_step_review(form: dict[str, Any]) -> None:
             out_path.write_text(yaml_str, encoding="utf-8")
             st.success(f"Saved to `{out_path}`")
 
-    if st.button("← Back", key="cb_step5_back"):
-        _set_step(4)
+    if st.button("← Back", key="cb_step6_back"):
+        _set_step(5)
         st.rerun()
 
 
@@ -930,4 +1082,6 @@ def render_control_builder_tab() -> None:
         elif current_step == 4:
             _render_step_process_areas(form)
         elif current_step == 5:
+            _render_step_risks(form)
+        elif current_step == 6:
             _render_step_review(form)

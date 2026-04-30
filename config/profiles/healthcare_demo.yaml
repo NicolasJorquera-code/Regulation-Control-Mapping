@@ -1,0 +1,126 @@
+name: "healthcare-demo"
+description: "Minimal healthcare domain config for testing domain-agnosticism."
+
+control_types:
+  - name: Access Control
+    definition: "Mechanisms that restrict access to clinical data, systems, or physical areas based on role, credentials, or authorization level."
+    code: ACC
+    placement_categories: [Preventive]
+
+  - name: Audit Trail
+    definition: "Automated logging and tracking of user actions, system events, and data changes to ensure accountability and traceability."
+    code: AUD
+    placement_categories: [Detective]
+
+  - name: Clinical Review
+    definition: "Peer or supervisory review of clinical decisions, prescriptions, or patient care plans to ensure quality and safety."
+    code: CLR
+    placement_categories: [Preventive, Detective]
+
+  - name: Incident Reporting
+    definition: "Structured reporting of adverse events, near-misses, or safety concerns for investigation and root cause analysis."
+    code: INC
+    placement_categories: [Detective]
+
+risk_catalog:
+  - id: "RISK-PHI-001"
+    name: "Protected Health Information Breach"
+    level_1: "Regulatory Compliance"
+    level_1_code: "RCO"
+    default_severity: 5
+    description: "Risk of unauthorized access or disclosure of patient PHI in violation of HIPAA."
+    default_mitigating_types: ["Access Control", "Audit Trail"]
+
+  - id: "RISK-CLIN-001"
+    name: "Medication Error"
+    level_1: "Operational"
+    level_1_code: "OPS"
+    default_severity: 4
+    description: "Risk of incorrect medication being prescribed, dispensed, or administered."
+    default_mitigating_types: ["Clinical Review", "Audit Trail"]
+
+  - id: "RISK-SAFE-001"
+    name: "Patient Safety Incident"
+    level_1: "Operational"
+    level_1_code: "OPS"
+    default_severity: 4
+    description: "Risk of adverse patient outcomes due to procedural failures."
+    default_mitigating_types: ["Incident Reporting", "Clinical Review"]
+
+risk_level_1_categories:
+  - name: Regulatory Compliance
+    code: RCO
+    definition: "Risk of non-conformance with healthcare regulations (HIPAA, CMS, state law)."
+  - name: Operational
+    code: OPS
+    definition: "Risk from internal clinical and operational process failures."
+    sub_groups:
+      - Clinical Safety
+      - Administrative
+
+business_units:
+  - id: "BU-CLIN"
+    name: "Clinical Operations"
+    description: "Patient care, clinical workflows, and medical staff."
+    primary_sections: []
+    regulatory_exposure: ["HIPAA", "CMS"]
+
+  - id: "BU-IT"
+    name: "Health IT"
+    description: "Electronic health records, clinical systems, and data management."
+    primary_sections: []
+    regulatory_exposure: ["HIPAA", "HITECH"]
+
+processes:
+  - id: "PROC-EHR"
+    name: "Electronic Health Record Management"
+    domain: "health_it"
+    domain_metadata:
+      system_class: "EHR"
+    hierarchy_id: "HIT-1.0"
+    owner_bu_ids: ["BU-IT", "BU-CLIN"]
+    risks:
+      - risk_id: "RISK-PHI-001"
+        severity: 5
+        multiplier: 2.0
+        mitigated_by_types: ["Access Control", "Audit Trail"]
+        rationale: "EHR systems are the primary repository of PHI."
+
+  - id: "PROC-MEDADMIN"
+    name: "Medication Administration"
+    domain: "clinical_care"
+    domain_metadata:
+      care_setting: "inpatient"
+    hierarchy_id: "CC-2.0"
+    owner_bu_ids: ["BU-CLIN"]
+    risks:
+      - risk_id: "RISK-CLIN-001"
+        severity: 4
+        multiplier: 1.5
+        mitigated_by_types: ["Clinical Review", "Audit Trail"]
+        rationale: "Medication administration carries direct patient safety risk."
+      - risk_id: "RISK-SAFE-001"
+        severity: 4
+        multiplier: 1.0
+        mitigated_by_types: ["Incident Reporting", "Clinical Review"]
+        rationale: "All clinical processes carry patient safety risk."
+    registry:
+      roles:
+        - Attending Physician
+        - Pharmacist
+        - Nurse
+      systems:
+        - Computerized Physician Order Entry (CPOE)
+        - Pharmacy Information System
+      data_objects:
+        - medication orders
+        - patient allergy records
+      evidence_artifacts:
+        - medication administration record
+        - pharmacy review log
+      event_triggers:
+        - on medication order entry
+        - at each shift handoff
+      regulatory_frameworks:
+        - CMS Conditions of Participation
+        - The Joint Commission Standards

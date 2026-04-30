@@ -58,44 +58,80 @@ def dc_taxonomy_validator(
 
 def dc_regulatory_lookup(
     framework: str,
-    section_id: str,
+    section_id: str = "",
     *,
+    process_id: str = "",
     config: DomainConfig,
 ) -> dict[str, Any]:
-    """Look up regulatory context for *framework* in *section_id*."""
-    pa = config.get_process_area(section_id)
-    if pa is None:
+    """Look up regulatory context for *framework* in a section or process."""
+    # Try process first, then fall back to process_area
+    registry_source = None
+    affinity_types: list[str] = []
+    resolved_id = process_id or section_id
+
+    if process_id:
+        proc = config.get_process(process_id)
+        if proc:
+            registry_source = proc
+            # Derive applicable types from risk mitigating_links
+            for risk in proc.risks:
+                affinity_types.extend(risk.mitigating_type_names)
+            affinity_types = list(dict.fromkeys(affinity_types))
+
+    if not registry_source and section_id:
+        pa = config.get_process_area(section_id)
+        if pa:
+            registry_source = pa
+            affinity_types = list(pa.affinity.HIGH) + list(pa.affinity.MEDIUM)
+
+    if registry_source is None:
         return {
             "framework": framework,
             "required_themes": [],
             "applicable_types": [],
-            "error": f"Unknown section {section_id}",
+            "error": f"Unknown section/process {resolved_id}",
         }
 
-    frameworks = pa.registry.regulatory_frameworks
+    frameworks = registry_source.registry.regulatory_frameworks
     matching = [f for f in frameworks if framework.lower() in f.lower() or f.lower() in framework.lower()]
-
-    applicable_types = list(pa.affinity.HIGH) + list(pa.affinity.MEDIUM)
 
     return {
         "framework": framework,
         "section_id": section_id,
+        "process_id": process_id,
         "required_themes": matching or [framework],
-        "applicable_types": applicable_types,
-        "domain": pa.domain,
+        "applicable_types": affinity_types,
+        "domain": registry_source.domain if hasattr(registry_source, "domain") else "",
     }
 
 
 def dc_hierarchy_search(
-    section_id: str,
-    keyword: str,
+    section_id: str = "",
+    keyword: str = "",
     *,
+    process_id: str = "",
     config: DomainConfig,
 ) -> dict[str, Any]:
-    """Return domain vocabulary for *section_id*, optionally filtered by *keyword*."""
-    pa = config.get_process_area(section_id)
-    if pa is None:
-        return {"leaves": [], "error": f"Unknown section {section_id}"}
+    """Return domain vocabulary for a section or process, optionally filtered by *keyword*."""
+    # Try process first, then fall back to process_area
+    registry_source = None
+    resolved_id = process_id or section_id
+    domain = ""
+
+    if process_id:
+        proc = config.get_process(process_id)
+        if proc:
+            registry_source = proc
+            domain = proc.domain
+
+    if not registry_source and section_id:
+        pa = config.get_process_area(section_id)
+        if pa:
+            registry_source = pa
+            domain = pa.domain
+
+    if registry_source is None:
+        return {"leaves": [], "error": f"Unknown section/process {resolved_id}"}
 
     kw = keyword.lower()
 
@@ -107,12 +143,13 @@ def dc_hierarchy_search(
 
     return {
         "section_id": section_id,
-        "domain": pa.domain,
+        "process_id": process_id,
+        "domain": domain,
         "keyword": keyword,
-        "available_roles": _filter(pa.registry.roles),
-        "available_systems": _filter(pa.registry.systems),
-        "available_evidence": _filter(pa.registry.evidence_artifacts),
-        "leaves": [],  # Full leaf search requires APQC template
+        "available_roles": _filter(registry_source.registry.roles),
+        "available_systems": _filter(registry_source.registry.systems),
+        "available_evidence": _filter(registry_source.registry.evidence_artifacts),
+        "leaves": [],
     }
 
 
@@ -231,17 +268,51 @@ def dc_evidence_rules_lookup(
 
 
 def dc_exemplar_lookup(
-    section_id: str,
+    section_id: str = "",
+    *,
+    process_id: str = "",
+    config: DomainConfig,
+) -> dict[str, Any]:
+    """Retrieve exemplar narratives for a section or process."""
+    # Try process first, then fall back to process_area
+    if process_id:
+        proc = config.get_process(process_id)
+        if proc:
+            return {
+                "process_id": process_id,
+                "section_id": section_id,
+                "exemplars": [e.model_dump() for e in proc.exemplars],
+            }
+
+    if section_id:
+        pa = config.get_process_area(section_id)
+        if pa:
+            return {
+                "section_id": section_id,
+                "exemplars": [e.model_dump() for e in pa.exemplars],
+            }
+
+    return {"section_id": section_id, "process_id": process_id, "exemplars": [], "error": f"Unknown section/process"}
+
+
+# ── Risk catalog tool ────────────────────────────────────────────────────────
+
+
+def dc_risk_catalog_lookup(
+    risk_id: str,
     *,
     config: DomainConfig,
 ) -> dict[str, Any]:
-    """Retrieve exemplar narratives for *section_id*."""
-    pa = config.get_process_area(section_id)
-    if pa is None:
-        return {"section_id": section_id, "exemplars": [], "error": f"Unknown section {section_id}"}
+    """Look up a RiskCatalogEntry by ID."""
+    entry = config.get_risk_catalog_entry(risk_id)
+    if entry is None:
+        return {"risk_id": risk_id, "error": f"Unknown risk: {risk_id}"}
     return {
-        "section_id": section_id,
-        "exemplars": [e.model_dump() for e in pa.exemplars],
+        "risk_id": entry.id,
+        "name": entry.name,
+        "category": entry.category,
+        "default_severity": entry.default_severity,
+        "description": entry.description,
     }
 
 
@@ -271,6 +342,7 @@ def build_domain_tool_executor(
         "method_lookup": lambda **kw: dc_method_lookup(config=config),
         "evidence_rules_lookup": lambda **kw: dc_evidence_rules_lookup(**kw, config=config),
         "exemplar_lookup": lambda **kw: dc_exemplar_lookup(**kw, config=config),
+        "risk_catalog_lookup": lambda **kw: dc_risk_catalog_lookup(**kw, config=config),
     }
 
     def executor(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:

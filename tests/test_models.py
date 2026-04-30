@@ -139,7 +139,7 @@ class TestFinalControlRecord:
             leaf_name="Test",
         )
         export = record.to_export_dict()
-        assert len(export) == 19
+        assert len(export) == 24
         assert "control_id" in export
         assert "control_type" not in export or export.get("control_type") is not None
         assert "placement" not in export
@@ -156,6 +156,11 @@ class TestFinalControlRecord:
             "selected_level_2",
             "business_unit_id",
             "business_unit_name",
+            "process_id",
+            "process_name",
+            "risk_id",
+            "risk_name",
+            "risk_severity",
             "who",
             "what",
             "when",

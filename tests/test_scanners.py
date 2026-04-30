@@ -9,6 +9,7 @@ from controlnexus.analysis.scanners import (
     evidence_sufficiency_scan,
     frequency_coherence_scan,
     regulatory_coverage_scan,
+    risk_coverage_scan,
 )
 from controlnexus.core.models import (
     AffinityMatrix,
@@ -229,3 +230,84 @@ class TestScoreEvidence:
         score, missing = _score_evidence("")
         assert score == 0
         assert len(missing) == 3
+
+
+# -- Risk Coverage Scan --------------------------------------------------------
+
+
+class TestRiskCoverageScan:
+    """Test risk_coverage_scan for risk-aware gap analysis."""
+
+    def test_no_risk_catalog_returns_empty(self):
+        """Config without risk_catalog returns no gaps."""
+        from controlnexus.core.domain_config import ControlTypeConfig, DomainConfig
+
+        config = DomainConfig(
+            control_types=[ControlTypeConfig(name="Auth", definition="d")],
+        )
+        gaps = risk_coverage_scan([], config)
+        assert gaps == []
+
+    def test_uncovered_high_severity_risk(self):
+        """High-severity risk with 0 controls → high gap."""
+        from controlnexus.core.domain_config import (
+            ControlTypeConfig,
+            DomainConfig,
+            RiskCatalogEntry,
+        )
+
+        config = DomainConfig(
+            control_types=[ControlTypeConfig(name="Auth", definition="d")],
+            risk_catalog=[
+                RiskCatalogEntry(id="R1", name="Critical Risk", default_severity=5),
+                RiskCatalogEntry(id="R2", name="Low Risk", default_severity=2),
+            ],
+        )
+        # One control covers R2, none cover R1
+        controls = [_make_control(risk_id="R2")]
+        gaps = risk_coverage_scan(controls, config)
+        # R1 (severity 5) has 0 controls → high gap
+        # R2 (severity 2) has 1 control which meets expected=1
+        high_gaps = [g for g in gaps if g.risk_id == "R1"]
+        assert len(high_gaps) == 1
+        assert high_gaps[0].gap_severity == "high"
+        assert high_gaps[0].actual_control_count == 0
+
+    def test_partially_covered_risk(self):
+        """Severity-4 risk with 1 control (expected 2) → low gap."""
+        from controlnexus.core.domain_config import (
+            ControlTypeConfig,
+            DomainConfig,
+            RiskCatalogEntry,
+        )
+
+        config = DomainConfig(
+            control_types=[ControlTypeConfig(name="Auth", definition="d")],
+            risk_catalog=[
+                RiskCatalogEntry(id="R1", name="Important Risk", default_severity=4),
+            ],
+        )
+        controls = [_make_control(risk_id="R1")]
+        gaps = risk_coverage_scan(controls, config)
+        assert len(gaps) == 1
+        assert gaps[0].gap_severity == "low"
+        assert gaps[0].actual_control_count == 1
+        assert gaps[0].expected_control_count == 2
+
+    def test_fully_covered_no_gaps(self):
+        """All risks with sufficient controls → no gaps."""
+        from controlnexus.core.domain_config import (
+            ControlTypeConfig,
+            DomainConfig,
+            RiskCatalogEntry,
+        )
+
+        config = DomainConfig(
+            control_types=[ControlTypeConfig(name="Auth", definition="d")],
+            risk_catalog=[
+                RiskCatalogEntry(id="R1", name="Low Risk", default_severity=2),
+            ],
+        )
+        controls = [_make_control(risk_id="R1")]
+        gaps = risk_coverage_scan(controls, config)
+        assert gaps == []

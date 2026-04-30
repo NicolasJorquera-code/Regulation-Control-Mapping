@@ -101,6 +101,19 @@ def render_modular_tab() -> None:
     if config_path is None:
         return
 
+    # ── Config Summary ────────────────────────────────────────────────────
+    with st.expander("Profile Summary", expanded=False):
+        cols = st.columns(4)
+        cols[0].metric("Control Types", len(config.control_types))
+        cols[1].metric("Processes", len(config.processes))
+        cols[2].metric("Risk Catalog", len(config.risk_catalog))
+        cols[3].metric("L1 Categories", len(config.risk_level_1_categories))
+        if config.risk_level_1_categories:
+            st.caption(
+                "Risk categories: "
+                + ", ".join(f"**{c.name}** ({c.code})" for c in config.risk_level_1_categories)
+            )
+
     # ── Quick Section Run ─────────────────────────────────────────────────
     _render_quick_section_run(config, config_path)
 
@@ -122,22 +135,27 @@ def render_modular_tab() -> None:
 
 
 def _render_quick_section_run(config: Any, config_path: Path) -> None:
-    """Generate controls for a single APQC process area."""
+    """Generate controls for a single process (or legacy process area)."""
     st.markdown("---")
-    st.markdown("### Quick Section Run")
-    st.caption("Generate controls for a single APQC process area.")
+    st.markdown("### Quick Process Run")
+    st.caption("Generate controls for a single process or APQC process area.")
 
-    if not config.process_areas:
-        st.info("No process areas defined in this config.")
+    # Support both new processes and legacy process_areas
+    processes = getattr(config, "processes", []) or []
+    process_areas = getattr(config, "process_areas", []) or []
+    items = processes or process_areas
+
+    if not items:
+        st.info("No processes defined in this config.")
         return
 
     col_sec, col_count = st.columns([3, 1])
     with col_sec:
-        section_options = list(range(len(config.process_areas)))
+        section_options = list(range(len(items)))
         selected_idx = st.selectbox(
-            "Process Area",
+            "Process",
             options=section_options,
-            format_func=lambda i: f"{config.process_areas[i].id} — {config.process_areas[i].name}",
+            format_func=lambda i: f"{items[i].id} — {items[i].name}",
             key="qsr_section",
         )
     with col_count:
@@ -163,16 +181,16 @@ def _render_quick_section_run(config: Any, config_path: Path) -> None:
                 "No LLM credentials found. Generation will use deterministic fallback."
             )
 
-    selected_pa = config.process_areas[selected_idx]
+    selected_item = items[selected_idx]
 
     if st.button(
-        f"Generate {qsr_count} controls for Section {selected_pa.id}",
+        f"Generate {qsr_count} controls for {selected_item.id}",
         type="primary",
         use_container_width=True,
         key="qsr_generate",
     ):
         with st.status(
-            f"Generating {qsr_count} controls for {selected_pa.id}: {selected_pa.name}…",
+            f"Generating {qsr_count} controls for {selected_item.id}: {selected_item.name}…",
             expanded=True,
         ) as status:
             emitter = EventEmitter()
@@ -186,9 +204,13 @@ def _render_quick_section_run(config: Any, config_path: Path) -> None:
                     "config_path": str(config_path),
                     "target_count": qsr_count,
                     "llm_enabled": qsr_llm,
-                    "section_filter": selected_pa.id,
                 }
-                result = graph.invoke(input_state)
+                # Use process_filter for new configs, section_filter for legacy
+                if processes:
+                    input_state["process_filter"] = selected_item.id
+                else:
+                    input_state["section_filter"] = selected_item.id
+                result = graph.invoke(input_state, config={"recursion_limit": 300})
             finally:
                 set_emitter(EventEmitter())
 
@@ -197,7 +219,7 @@ def _render_quick_section_run(config: Any, config_path: Path) -> None:
 
         st.success(
             f"Generated **{payload.get('total_controls', 0)}** controls "
-            f"for section **{selected_pa.id}: {selected_pa.name}**"
+            f"for **{selected_item.id}: {selected_item.name}**"
         )
 
         tool_log = result.get("tool_calls_log", [])
@@ -244,12 +266,28 @@ def _render_full_generation(config: Any, config_path: Path) -> None:
                 "deterministic fallback."
             )
 
+    # Generation mode toggle
+    generation_mode = st.radio(
+        "Generation Mode",
+        options=["synthetic", "policy_first"],
+        index=0,
+        horizontal=True,
+        help=(
+            "**Synthetic**: Generate controls from catalog risks and config. "
+            "**Policy First**: Ingest a policy document to derive risks "
+            "(requires LLM — stub implementation)."
+        ),
+        key="full_gen_mode",
+    )
+    if generation_mode == "policy_first" and not llm_enabled:
+        st.info("Policy-first mode works best with LLM enabled. Currently uses synthetic fallback.")
+
     # Optional distribution customization
     distribution_config: dict[str, Any] | None = None
 
     with st.expander("Customize Distribution", expanded=False):
         st.caption(
-            "Adjust relative weights for control type and section emphasis. Leave defaults for even/risk-weighted distribution."
+            "Adjust relative weights for control type and process emphasis. Leave defaults for even/risk-weighted distribution."
         )
 
         type_names = [ct.name for ct in config.control_types]
@@ -264,24 +302,35 @@ def _render_full_generation(config: Any, config_path: Path) -> None:
                 if w != 1.0:
                     type_changed = True
 
+        # Support both new processes and legacy process_areas
+        processes = getattr(config, "processes", []) or []
+        process_areas = getattr(config, "process_areas", []) or []
+        items = processes or process_areas
+
         section_weights: dict[str, float] = {}
         section_changed = False
 
-        if config.process_areas:
-            st.markdown("**Section Emphasis:**")
-            s_cols = st.columns(min(len(config.process_areas), 4))
-            for i, pa in enumerate(config.process_areas):
+        if items:
+            st.markdown("**Process Emphasis:**")
+            s_cols = st.columns(min(len(items), 4))
+            for i, item in enumerate(items):
                 with s_cols[i % len(s_cols)]:
+                    # Get default weight: from risk_profile multiplier (legacy) or 1.0 (new)
+                    default_w = 1.0
+                    if hasattr(item, "risk_profile") and hasattr(item.risk_profile, "multiplier"):
+                        default_w = float(item.risk_profile.multiplier)
+                    elif hasattr(item, "risks") and item.risks:
+                        default_w = float(max(r.multiplier for r in item.risks))
                     w = st.slider(
-                        f"{pa.id}: {pa.name[:20]}",
+                        f"{item.id}: {item.name[:20]}",
                         0.0,
                         10.0,
-                        float(pa.risk_profile.multiplier),
+                        default_w,
                         0.5,
-                        key=f"sw_{pa.id}",
+                        key=f"sw_{item.id}",
                     )
-                    section_weights[pa.id] = w
-                    if w != pa.risk_profile.multiplier:
+                    section_weights[item.id] = w
+                    if w != default_w:
                         section_changed = True
 
         if type_changed or section_changed:
@@ -308,11 +357,12 @@ def _render_full_generation(config: Any, config_path: Path) -> None:
                     "config_path": str(config_path),
                     "target_count": target_count,
                     "llm_enabled": llm_enabled,
+                    "generation_mode": generation_mode,
                 }
                 if distribution_config:
                     input_state["distribution_config"] = distribution_config
 
-                result = graph.invoke(input_state)
+                result = graph.invoke(input_state, config={"recursion_limit": 300})
             finally:
                 # Reset to no-op emitter so other tabs aren't affected
                 set_emitter(EventEmitter())
@@ -353,18 +403,22 @@ def _render_results(
     st.markdown("### Generated Controls")
 
     # Summary metrics
-    mcol1, mcol2, mcol3 = st.columns(3)
+    mcol1, mcol2, mcol3, mcol4 = st.columns(4)
     mcol1.metric("Total Controls", len(records))
     types_used = set(r.get("control_type", "") for r in records)
     mcol2.metric("Control Types Used", len(types_used))
     bus_used = set(r.get("business_unit_name", "") for r in records)
     mcol3.metric("Business Units Used", len(bus_used))
+    processes_used = set(r.get("process_name", "") for r in records if r.get("process_name"))
+    mcol4.metric("Processes", len(processes_used) if processes_used else "–")
 
     # Controls table
     all_cols = [
         "control_id", "hierarchy_id", "leaf_name",
         "selected_level_1", "selected_level_2",
         "business_unit_id", "business_unit_name",
+        "process_id", "process_name",
+        "risk_id", "risk_name", "risk_severity",
         "who", "what", "when", "frequency",
         "where", "why", "full_description",
         "quality_rating", "evidence",
@@ -373,6 +427,7 @@ def _render_results(
         records=records,
         default_columns=[
             "control_id", "business_unit_name",
+            "process_name", "risk_id",
             "selected_level_1", "selected_level_2",
             "frequency", "full_description",
         ],

@@ -2,11 +2,15 @@
 
 All scanners are pure Python (no LLM). They take control records and
 section profiles and produce typed gap/issue models.
+
+Supports both legacy SectionProfile-based configs and the new
+ProcessConfig-based (risk-driven) configs.
 """
 
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from controlnexus.core.constants import derive_frequency_from_when
 from controlnexus.core.models import AffinityMatrix, SectionProfile
@@ -16,7 +20,78 @@ from controlnexus.core.state import (
     FinalControlRecord,
     FrequencyIssue,
     RegulatoryGap,
+    RiskCoverageGap,
 )
+
+# -- helpers ----------------------------------------------------------------
+
+
+def _profiles_from_domain_config(config: Any) -> dict[str, SectionProfile]:
+    """Build SectionProfile lookup from a DomainConfig (new or legacy).
+
+    For new risk-driven configs (``config.processes`` non-empty), synthesize
+    a ``SectionProfile`` per process so the existing scanners work unchanged.
+    """
+    from controlnexus.core.domain_config import DomainConfig
+
+    if not isinstance(config, DomainConfig):
+        return {}
+
+    profiles: dict[str, SectionProfile] = {}
+
+    # New risk-driven path
+    if config.processes:
+        for proc in config.processes:
+            # Build an AffinityMatrix from risk → mitigating_links
+            high: list[str] = []
+            medium: list[str] = []
+            for ri in proc.risks:
+                if ri.severity >= 4:
+                    high.extend(ri.mitigating_type_names)
+                else:
+                    medium.extend(ri.mitigating_type_names)
+            affinity = AffinityMatrix(
+                HIGH=list(dict.fromkeys(high)),
+                MEDIUM=[m for m in dict.fromkeys(medium) if m not in high],
+            )
+
+            from controlnexus.core.models import DomainRegistry, RiskProfile
+
+            registry = DomainRegistry(**(proc.registry if isinstance(proc.registry, dict) else {}))
+            # Synthesize a risk profile from process risks
+            avg_sev = (
+                sum(r.severity for r in proc.risks) / len(proc.risks)
+                if proc.risks
+                else 3
+            )
+            risk_profile = RiskProfile(
+                inherent_risk=round(avg_sev),
+                regulatory_intensity=round(avg_sev),
+                control_density=round(avg_sev),
+                multiplier=max(r.multiplier for r in proc.risks) if proc.risks else 1.0,
+                rationale=f"Synthesized from {len(proc.risks)} risk instances",
+            )
+            section_id = proc.effective_section_id
+            profiles[section_id] = SectionProfile(
+                section_id=section_id,
+                domain=proc.domain,
+                risk_profile=risk_profile,
+                affinity=affinity,
+                registry=registry,
+            )
+        return profiles
+
+    # Legacy path: build from process_areas
+    for pa in config.process_areas:
+        profiles[pa.id] = SectionProfile(
+            section_id=pa.id,
+            domain=pa.domain,
+            risk_profile=pa.risk_profile,
+            affinity=pa.affinity,
+            registry=pa.registry,
+            exemplars=pa.exemplars if hasattr(pa, "exemplars") else [],
+        )
+    return profiles
 
 # -- 1. Regulatory Coverage Scan -----------------------------------------------
 
@@ -33,10 +108,10 @@ def regulatory_coverage_scan(
     """
     gaps: list[RegulatoryGap] = []
 
-    # Group controls by top-level section
+    # Group controls by top-level section (or process_id if available)
     controls_by_section: dict[str, list[FinalControlRecord]] = {}
     for ctrl in controls:
-        section_id = _extract_section_id(ctrl.hierarchy_id)
+        section_id = ctrl.process_id if ctrl.process_id else _extract_section_id(ctrl.hierarchy_id)
         controls_by_section.setdefault(section_id, []).append(ctrl)
 
     for section_id, section_controls in controls_by_section.items():
@@ -110,7 +185,7 @@ def ecosystem_balance_analysis(
 
     controls_by_section: dict[str, list[FinalControlRecord]] = {}
     for ctrl in controls:
-        section_id = _extract_section_id(ctrl.hierarchy_id)
+        section_id = ctrl.process_id if ctrl.process_id else _extract_section_id(ctrl.hierarchy_id)
         controls_by_section.setdefault(section_id, []).append(ctrl)
 
     for section_id, section_controls in controls_by_section.items():
@@ -342,3 +417,58 @@ def _score_evidence(evidence: str) -> tuple[int, list[str]]:
         missing.append("retention system")
 
     return score, missing
+
+
+# -- 5. Risk Coverage Scan (risk-aware) ----------------------------------------
+
+
+def risk_coverage_scan(
+    controls: list[FinalControlRecord],
+    config: Any,
+) -> list[RiskCoverageGap]:
+    """Identify risks in the catalog that have zero or insufficient controls.
+
+    For each risk in the catalog, checks whether any generated control
+    references that risk via ``risk_id``. Risks with severity >= 4 that
+    have zero coverage are flagged as high-severity gaps.
+
+    Args:
+        controls: Generated control records.
+        config: DomainConfig with risk_catalog.
+
+    Returns:
+        List of RiskCoverageGap entries for under-covered risks.
+    """
+    gaps: list[RiskCoverageGap] = []
+
+    if not hasattr(config, "risk_catalog") or not config.risk_catalog:
+        return gaps
+
+    # Count controls per risk_id
+    controls_per_risk: dict[str, int] = {}
+    for ctrl in controls:
+        if ctrl.risk_id:
+            controls_per_risk[ctrl.risk_id] = controls_per_risk.get(ctrl.risk_id, 0) + 1
+
+    for entry in config.risk_catalog:
+        actual = controls_per_risk.get(entry.id, 0)
+        # Expected: at least 1 for any cataloged risk; severity 4+ should have more
+        expected = 2 if entry.default_severity >= 4 else 1
+
+        if actual < expected:
+            gap_severity = "high" if entry.default_severity >= 4 and actual == 0 else (
+                "medium" if actual == 0 else "low"
+            )
+            gaps.append(
+                RiskCoverageGap(
+                    risk_id=entry.id,
+                    risk_name=entry.name,
+                    level_1=getattr(entry, "level_1", ""),
+                    severity=entry.default_severity,
+                    expected_control_count=expected,
+                    actual_control_count=actual,
+                    gap_severity=gap_severity,
+                )
+            )
+
+    return gaps

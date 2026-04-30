@@ -104,6 +104,27 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 ]
 
 
+# ── Risk catalog tool ────────────────────────────────────────────────────────
+
+RISK_CATALOG_LOOKUP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "risk_catalog_lookup",
+        "description": "Look up a risk catalog entry by ID. Returns the risk name, category, severity, and description.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "risk_id": {
+                    "type": "string",
+                    "description": "The risk catalog entry ID (e.g., 'RISK-001')",
+                },
+            },
+            "required": ["risk_id"],
+        },
+    },
+}
+
+
 # ── Lookup tools for slim-prompt / tool-calling mode ──────────────────────────
 
 PLACEMENT_LOOKUP_SCHEMA: dict[str, Any] = {

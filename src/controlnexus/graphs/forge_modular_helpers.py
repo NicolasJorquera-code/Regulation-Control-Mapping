@@ -25,61 +25,166 @@ def build_assignment_matrix(
     distribution_config: dict[str, Any] | None = None,
     *,
     section_filter: str | None = None,
+    process_filter: str | None = None,
 ) -> list[dict[str, Any]]:
     """Build a list of control assignments from configuration.
 
+    Uses the new BU → Process → Risk → ControlType model when processes
+    are available. Falls back to legacy section-based allocation when
+    only process_areas exist (without processes).
+
     Each assignment is a dict with keys:
-        section_id, section_name, control_type, business_unit_id,
-        business_unit_name, leaf_name
-
-    Args:
-        config: The loaded DomainConfig.
-        target_count: Total number of controls to generate.
-        distribution_config: Optional user overrides with keys:
-            - type_weights: dict[str, float] mapping type name to relative weight
-            - section_weights: dict[str, float] mapping section id to relative weight
-        section_filter: If set, only generate controls for this section ID
-            (e.g. ``"12.0"``).  All *target_count* controls will be allocated
-            to the single section.
+        process_id, process_name, section_id, section_name, domain,
+        risk_id, risk_severity, control_type, business_unit_id,
+        business_unit_name, leaf_name, hierarchy_id
     """
-    if not config.process_areas:
-        return _build_assignments_no_sections(config, target_count, distribution_config)
+    # If processes are available, use the new risk-driven allocation
+    if config.processes:
+        return _build_assignments_risk_driven(
+            config, target_count, distribution_config,
+            section_filter=section_filter,
+            process_filter=process_filter,
+        )
 
+    # Legacy fallback: section-based allocation
+    if config.process_areas:
+        return _build_assignments_legacy(config, target_count, distribution_config, section_filter=section_filter)
+
+    return _build_assignments_no_sections(config, target_count, distribution_config)
+
+
+def _build_assignments_risk_driven(
+    config: DomainConfig,
+    target_count: int,
+    distribution_config: dict[str, Any] | None = None,
+    *,
+    section_filter: str | None = None,
+    process_filter: str | None = None,
+) -> list[dict[str, Any]]:
+    """Build assignments from BU → Process → Risk → ControlType."""
+
+    # 1. Collect all (process, risk) pairs with their effective weights
+    weighted_risks: list[tuple[Any, Any, float]] = []
+    for process in config.processes:
+        if process_filter and process.id != process_filter:
+            continue
+        if section_filter and process.effective_section_id != section_filter:
+            continue
+        for risk in process.risks:
+            weight = risk.severity * risk.multiplier
+            weighted_risks.append((process, risk, weight))
+
+    if not weighted_risks:
+        return []
+
+    # 2. Allocate target_count across risks proportional to weight
+    total_weight = sum(w for _, _, w in weighted_risks)
+    if total_weight <= 0:
+        total_weight = len(weighted_risks)
+
+    # Proportional allocation with remainder distribution
+    raw_counts: list[tuple[Any, Any, float, float]] = []
+    for proc, risk, w in weighted_risks:
+        raw_counts.append((proc, risk, w, (w / total_weight) * target_count))
+
+    floored = [(p, r, w, int(raw)) for p, r, w, raw in raw_counts]
+    allocated = sum(f for _, _, _, f in floored)
+    remainder = target_count - allocated
+
+    # Sort by fractional part descending for remainder distribution
+    fractionals = sorted(
+        range(len(raw_counts)),
+        key=lambda i: raw_counts[i][3] - int(raw_counts[i][3]),
+        reverse=True,
+    )
+    risk_counts: list[tuple[Any, Any, int]] = [(p, r, f) for p, r, _, f in floored]
+    for i in range(remainder):
+        idx = fractionals[i % len(fractionals)]
+        p, r, c = risk_counts[idx]
+        risk_counts[idx] = (p, r, c + 1)
+
+    # 3. For each risk allocation, distribute across mitigated_by_types
+    assignments: list[dict[str, Any]] = []
+    for process, risk, count in risk_counts:
+        if count <= 0:
+            continue
+
+        # Use mitigating_links with effectiveness weighting if available
+        if risk.mitigating_links:
+            type_weights = {
+                link.control_type: link.effectiveness
+                for link in risk.mitigating_links
+            }
+            type_names = list(type_weights.keys())
+            type_counts = _distribute_by_weight(type_names, count, type_weights)
+        else:
+            type_names = risk.mitigating_type_names or [config.control_types[0].name]
+            type_counts = _distribute_by_weight(type_names, count)
+
+        # BU cycling within the process's owner_bu_ids
+        bu_ids = process.owner_bu_ids or ["BU-DEFAULT"]
+        bu_cycle = itertools.cycle(bu_ids)
+
+        for ct_name, ct_count in type_counts.items():
+            for _ in range(ct_count):
+                bu_id = next(bu_cycle)
+                bu = config.get_business_unit(bu_id)
+                section_id = process.effective_section_id
+                assignments.append(
+                    {
+                        "process_id": process.id,
+                        "process_name": process.name,
+                        "section_id": section_id,
+                        "section_name": process.name,
+                        "domain": process.domain,
+                        "risk_id": risk.risk_id,
+                        "risk_severity": risk.severity,
+                        "control_type": ct_name,
+                        "business_unit_id": bu_id,
+                        "business_unit_name": bu.name if bu else "Default",
+                        "leaf_name": f"{process.name} – {ct_name}",
+                        "hierarchy_id": f"{section_id}.1.1",
+                    }
+                )
+
+    return assignments[:target_count]
+
+
+def _build_assignments_legacy(
+    config: DomainConfig,
+    target_count: int,
+    distribution_config: dict[str, Any] | None = None,
+    *,
+    section_filter: str | None = None,
+) -> list[dict[str, Any]]:
+    """Legacy section-based assignment builder (backward compat)."""
     type_names = [ct.name for ct in config.control_types]
     section_ids = config.section_ids()
 
-    # Apply section filter if provided
     if section_filter:
         section_ids = [sid for sid in section_ids if sid == section_filter]
         if not section_ids:
             return []
 
-    # Determine per-type count
     type_counts = _distribute_by_weight(
         type_names,
         target_count,
         (distribution_config or {}).get("type_weights"),
     )
 
-    # Determine per-section count (weighted by risk multiplier)
     default_section_weights = {pa.id: pa.risk_profile.multiplier for pa in config.process_areas}
     section_weight_overrides = (distribution_config or {}).get("section_weights")
     section_weights = section_weight_overrides if section_weight_overrides else default_section_weights
     section_counts = _distribute_by_weight(section_ids, target_count, section_weights)
 
-    # Build BU cycle per section
     bu_cycle = _build_bu_cycles(config)
 
-    # Allocate assignments: distribute types across sections
     assignments: list[dict[str, Any]] = []
     type_remaining = dict(type_counts)
     section_remaining = dict(section_counts)
 
-    # Round-robin: iterate sections, for each section pick types that have affinity
     section_cycle = itertools.cycle(section_ids)
     type_cycle = itertools.cycle(type_names)
-    # Safety cap must be large enough that the cycle can visit every
-    # section×type combination even when only a few slots remain.
     max_iterations = max(target_count * 10, len(section_ids) * len(type_names) * 2)
 
     for _ in range(max_iterations):
@@ -90,7 +195,6 @@ def build_assignment_matrix(
         if section_remaining.get(section_id, 0) <= 0:
             continue
 
-        # Pick a type that still needs allocation
         for __ in range(len(type_names)):
             ct = next(type_cycle)
             if type_remaining.get(ct, 0) > 0:
@@ -105,7 +209,6 @@ def build_assignment_matrix(
         section_name = pa.name if pa else section_id
         domain = pa.domain if pa else ""
 
-        # Get BU
         bu_id, bu_name = _next_bu(bu_cycle, section_id, config)
 
         assignments.append(
@@ -249,12 +352,17 @@ def build_deterministic_spec(
 ) -> dict[str, Any]:
     """Build a spec dict from the assignment and config registry."""
     section_id = assignment["section_id"]
-    pa = config.get_process_area(section_id)
+    process_id = assignment.get("process_id")
 
-    roles = pa.registry.roles if pa else ["Analyst"]
-    systems = pa.registry.systems if pa else ["Enterprise System"]
-    triggers = pa.registry.event_triggers if pa else ["at each review cycle"]
-    evidence = pa.registry.evidence_artifacts if pa else ["documented approval"]
+    # Try process first, then fall back to process_area
+    proc = config.get_process(process_id) if process_id else None
+    pa = config.get_process_area(section_id) if not proc else None
+    registry_source = proc or pa
+
+    roles = registry_source.registry.roles if registry_source else ["Analyst"]
+    systems = registry_source.registry.systems if registry_source else ["Enterprise System"]
+    triggers = registry_source.registry.event_triggers if registry_source else ["at each review cycle"]
+    evidence = registry_source.registry.evidence_artifacts if registry_source else ["documented approval"]
 
     ct_name = assignment["control_type"]
 
@@ -276,6 +384,10 @@ def build_deterministic_spec(
         "selected_level_2": ct_name,
         "business_unit_id": assignment["business_unit_id"],
         "business_unit_name": assignment["business_unit_name"],
+        "process_id": assignment.get("process_id", ""),
+        "process_name": assignment.get("process_name", ""),
+        "risk_id": assignment.get("risk_id", ""),
+        "risk_severity": assignment.get("risk_severity", 0),
         "placement": placement,
         "method": method,
         "who": roles[idx % len(roles)],
@@ -283,7 +395,7 @@ def build_deterministic_spec(
         "what_detail": ct_cfg.definition[:120] if ct_cfg else "",
         "when": triggers[idx % len(triggers)] if triggers else "at each review cycle",
         "where_system": systems[idx % len(systems)] if systems else "Enterprise System",
-        "why_risk": f"to mitigate risk of control failures in {assignment.get('section_name', 'the process area')}",
+        "why_risk": f"to mitigate risk of control failures in {assignment.get('section_name', assignment.get('process_name', 'the process area'))}",
         "evidence": evidence[idx % len(evidence)] if evidence else "documented approval",
     }
 
@@ -352,6 +464,10 @@ def build_deterministic_enriched(
         "selected_level_2": selected_level_2,
         "business_unit_id": spec.get("business_unit_id", "BU-DEFAULT"),
         "business_unit_name": bu_name,
+        "process_id": spec.get("process_id", ""),
+        "process_name": spec.get("process_name", ""),
+        "risk_id": spec.get("risk_id", ""),
+        "risk_severity": spec.get("risk_severity", 0),
         "placement": spec.get("placement", "Detective"),
         "method": spec.get("method", "Manual"),
         "who": narrative.get("who", ""),
