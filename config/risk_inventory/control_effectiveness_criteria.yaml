@@ -1,0 +1,15 @@
+version: "1.0.0"
+design_criteria:
+  - "Maps to the risk root cause."
+  - "Is preventive and automated where appropriate."
+  - "Is repeatable and formally established."
+  - "Runs at a frequency sufficient for the exposure."
+  - "Has reliable systems, defined ownership, and management review."
+operating_criteria:
+  - "Operated consistently in the assessment period."
+  - "Has sufficient evidence."
+  - "Has monitored metrics."
+  - "Has no material open audit, regulatory, or self-identified issues."
+  - "Is adopted across the relevant scope."
+default_rating: "Satisfactory"
+conservative_environment_rule: "worse_of_design_and_operating"

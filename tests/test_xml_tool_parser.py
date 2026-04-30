@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from controlnexus.tools.xml_tool_parser import (
     format_tool_results,
     parse_xml_tool_calls,

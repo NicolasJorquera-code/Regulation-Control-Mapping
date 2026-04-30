@@ -4,11 +4,12 @@ An intelligent internal controls management system that identifies gaps in finan
 
 ## Overview
 
-ControlNexus operates in three layers:
+ControlNexus operates in four layers:
 
-1. **Analysis** -- Ingests existing control populations from Excel, runs 4 deterministic scanners (regulatory coverage, ecosystem balance, frequency coherence, evidence sufficiency), and produces a weighted gap report.
-2. **Dashboard** -- Streamlit-based HITL (Human-in-the-Loop) interface for reviewing gaps, accepting remediation targets, and testing individual agents.
-3. **Remediation** -- LangGraph-orchestrated multi-agent pipeline that generates new controls via SpecAgent, NarrativeAgent, EnricherAgent with deterministic validation, adversarial review, and deduplication.
+1. **Risk Inventory Builder** -- Creates process-specific risk inventory records with inherent risk, control mapping, control environment, residual risk, review/challenge, executive reporting, and Excel export.
+2. **Analysis** -- Ingests existing control populations from Excel, runs deterministic scanners, and produces a weighted gap report.
+3. **Dashboard** -- Streamlit-based HITL (Human-in-the-Loop) interface for reviewing risk inventory, controls, gaps, remediation targets, and agents.
+4. **Remediation** -- LangGraph-orchestrated multi-agent pipeline that generates new controls via SpecAgent, NarrativeAgent, EnricherAgent with deterministic validation, adversarial review, and deduplication.
 
 ## Quick Start
 
@@ -54,15 +55,17 @@ Supported LLM providers (configure one in `.env`):
 streamlit run src/controlnexus/ui/app.py
 ```
 
-Opens at `http://localhost:8501` with three tabs:
+Opens at `http://localhost:8501` with five tabs:
+- **Risk Inventory Builder** -- Build risk inventories, use Demo Mode, review residual risk, and export Excel
+- **Control Builder** -- Create DomainConfig profiles
+- **ControlForge Modular** -- Browse config profiles and run control generation
 - **Analysis** -- Upload Excel, run gap analysis, view gap dashboard
 - **Playground** -- Select and test any registered agent interactively
-- **ControlForge** -- Browse config profiles, explore the control taxonomy, and run the control generation pipeline
 
 ### Run Tests
 
 ```bash
-# Full test suite (258 tests)
+# Full test suite
 pytest tests/ -v
 
 # Lint
@@ -84,6 +87,7 @@ docker run -p 8501:8501 --env-file .env controlnexus
 ```
 src/controlnexus/
   core/           Models, state, config, constants, transport
+  risk_inventory/ Risk inventory models, calculators, graph, demo, export
   agents/         SpecAgent, NarrativeAgent, EnricherAgent,
                   AdversarialReviewer, DifferentiationAgent
   analysis/       Excel ingest, 4 scanners, analysis pipeline
@@ -95,16 +99,25 @@ src/controlnexus/
   memory/         ChromaDB vector store + embedder protocol
   tools/          5 function-calling tools + LangGraph ToolNode
   export/         Excel export for FinalControlRecord
-  ui/             Streamlit dashboard (3 tabs)
+  ui/             Streamlit dashboard (5 tabs)
 
 config/
+  risk_inventory/          Risk inventory scoring matrices and rules
   taxonomy.yaml             Control type taxonomy
   standards.yaml            5W standards, phrase bank, quality ratings
   placement_methods.yaml    Placement + method taxonomy
   sections/section_*.yaml   Per-section profiles (13 sections)
 
-tests/                      258 tests (unit + integration + e2e)
+tests/                      Unit + integration + e2e coverage
 ```
+
+## Risk Inventory Demo Mode
+
+The Risk Inventory Builder tab includes a top-right **Demo Mode** toggle. Turning it on loads deterministic Payment Exception Handling sample data for high-value payment processing. The demo requires no LLM credentials and populates risk records, inherent scores, linked controls, control effectiveness, residual risk, review comments, executive summary, validation findings, and Excel export.
+
+The Input / Upload view also supports local ingestion of PDF, TXT, and Markdown policy/procedure documents. Uploaded documents are parsed into process context, risk-category cues, control cues, exposure signals, obligations, systems, and stakeholders before the deterministic graph runs.
+
+See [docs/RISK_INVENTORY_BUILDER.md](docs/RISK_INVENTORY_BUILDER.md) for details.
 
 ## Data Flow
 

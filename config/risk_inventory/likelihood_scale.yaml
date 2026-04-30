@@ -1,0 +1,14 @@
+version: "1.0.0"
+scale:
+  1:
+    label: "Low"
+    definition: "Unlikely based on low exposure, limited transaction volume, or strong process characteristics."
+  2:
+    label: "Medium Low"
+    definition: "Plausible but not expected; exposure exists with limited historical pattern."
+  3:
+    label: "Medium High"
+    definition: "Reasonably likely given volume, complexity, manual activity, or known event drivers."
+  4:
+    label: "High"
+    definition: "Expected or recurring based on high exposure, history, weak process conditions, or frequent triggering events."

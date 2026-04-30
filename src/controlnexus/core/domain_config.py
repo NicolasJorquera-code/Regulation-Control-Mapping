@@ -549,7 +549,6 @@ class DomainConfig(BaseModel):
     def _validate_cross_references(self) -> "DomainConfig":
         known_types = {ct.name for ct in self.control_types}
         known_sections = {pa.id for pa in self.process_areas}
-        known_processes = {p.id for p in self.processes}
         known_placements = {p.name for p in self.placements}
         known_freq_tiers = {ft.label for ft in self.frequency_tiers}
         known_risk_ids = {r.id for r in self.risk_catalog}

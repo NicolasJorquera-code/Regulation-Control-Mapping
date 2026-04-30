@@ -314,7 +314,7 @@ def load_custom_css() -> None:
 
 def get_masthead_html(active_tab: str = "Control Builder") -> str:
     """Generate the Carbon masthead header HTML."""
-    tabs = ["Control Builder", "ControlForge Modular", "Analysis", "Playground"]
+    tabs = ["Risk Inventory Builder", "Control Builder", "ControlForge Modular", "Analysis", "Playground"]
     nav_items = []
     for tab in tabs:
         cls = "active" if tab == active_tab else ""

@@ -15,7 +15,7 @@ from typing import Any
 import streamlit as st
 import yaml
 
-from controlnexus.analysis.register_analyzer import RegisterSummary, analyze_register
+from controlnexus.analysis.register_analyzer import analyze_register
 from controlnexus.core.domain_config import DomainConfig
 
 logger = logging.getLogger(__name__)

@@ -368,7 +368,6 @@ def _render_full_generation(config: Any, config_path: Path) -> None:
                 set_emitter(EventEmitter())
 
         payload = result.get("plan_payload", {})
-        records = payload.get("final_records", [])
         st.session_state["modular_result"] = payload
 
         st.success(

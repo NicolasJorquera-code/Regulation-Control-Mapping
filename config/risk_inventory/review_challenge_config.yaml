@@ -1,0 +1,11 @@
+version: "1.0.0"
+review_fields:
+  - applicability
+  - risk_statement
+  - impact_scores
+  - likelihood_score
+  - control_mapping
+  - control_effectiveness
+  - residual_risk
+  - management_response
+default_review_status: "Pending Review"

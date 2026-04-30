@@ -1,0 +1,37 @@
+version: "1.0.0"
+dimensions:
+  financial_impact:
+    label: "Financial Impact"
+    scale:
+      1: "Minimal financial loss or immaterial processing cost."
+      2: "Meaningful loss, rework, or reserve impact within business tolerance."
+      3: "Significant loss, customer reimbursement, or management-level financial impact."
+      4: "Severe loss, capital, liquidity, or enterprise earnings impact."
+  regulatory_impact:
+    label: "Regulatory Impact"
+    scale:
+      1: "No expected regulatory notification or minor policy concern."
+      2: "Potential exam question, monitoring item, or isolated compliance issue."
+      3: "Likely regulatory criticism, reportable issue, or formal remediation."
+      4: "Severe regulatory action, enforcement exposure, or material breach."
+  reputational_impact:
+    label: "Reputational Impact"
+    scale:
+      1: "Limited internal visibility."
+      2: "Localized customer or stakeholder concern."
+      3: "Material client, market, board, or media attention."
+      4: "Severe franchise or public-trust impact."
+  customer_impact:
+    label: "Customer Impact"
+    scale:
+      1: "Limited or no customer disruption."
+      2: "Meaningful inconvenience for a small customer population."
+      3: "Significant disruption, financial harm, or complaint volume."
+      4: "Severe or widespread customer harm."
+  liquidity_impact:
+    label: "U.S. Financial System / Liquidity Impact"
+    scale:
+      1: "No meaningful liquidity or market-functioning impact."
+      2: "Localized operational liquidity pressure."
+      3: "Significant liquidity, settlement, or market-functioning concern."
+      4: "Severe financial-system, liquidity, or settlement disruption."

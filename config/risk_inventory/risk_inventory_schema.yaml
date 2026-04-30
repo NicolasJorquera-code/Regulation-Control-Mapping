@@ -1,0 +1,17 @@
+version: "1.0.0"
+system_of_record: "Pydantic RiskInventoryRun object graph"
+export_layer: "Excel workbook generated from object graph"
+required_top_level_objects:
+  - RiskInventoryRun
+  - RiskInventoryRecord
+  - RiskTaxonomyNode
+  - RiskApplicabilityAssessment
+  - RiskStatement
+  - ImpactAssessment
+  - LikelihoodAssessment
+  - InherentRiskAssessment
+  - ControlMapping
+  - ControlEnvironmentAssessment
+  - ResidualRiskAssessment
+  - ReviewChallengeRecord
+  - ValidationFinding

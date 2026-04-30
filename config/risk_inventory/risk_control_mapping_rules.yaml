@@ -1,0 +1,11 @@
+version: "1.0.0"
+default_mapping_strategy:
+  - "Prefer explicit control_id links from uploaded control data."
+  - "Then match taxonomy common controls to control names and descriptions."
+  - "Then match related_control_types to control_type metadata."
+  - "Flag any materialized risk with no mapped controls."
+coverage_labels:
+  strong: "Controls directly address root cause and include preventive or detective coverage."
+  partial: "Controls address part of the risk but leave meaningful coverage gaps."
+  weak: "Controls are only indirectly related or lack evidence."
+  none: "No adequate control mapped."

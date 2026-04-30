@@ -1,0 +1,323 @@
+version: "1.0.0"
+source_taxonomy: "config/risk_taxonomy.yaml"
+nodes:
+  - id: RIB-BPR
+    source_risk_id: OPS-BPR-001
+    level_1_category: Operational
+    level_2_category: Business Process Risk
+    definition: "Risk that process design, execution, ownership, or timeliness failures create operational loss, customer harm, or unmanaged exceptions."
+    typical_root_causes: ["manual workflow", "unclear ownership", "aging exceptions", "capacity constraints"]
+    example_risk_statements: ["Payment exceptions may not be investigated and resolved completely or timely, causing financial loss, customer harm, or downstream reporting errors."]
+    common_exposure_metrics: ["open exception count", "aged exception volume", "SLA breach rate", "high-value exception dollars"]
+    common_controls: ["Daily exception queue review", "Dual approval for high-value exception resolution", "SLA breach monitoring"]
+    related_control_types: ["Exception Reporting", "Authorization", "Reconciliation"]
+    likely_impact_dimensions: ["financial_impact", "customer_impact", "reputational_impact"]
+    applicable_business_units: ["Operations", "Treasury Operations", "Payment Operations"]
+    applicable_process_patterns: ["payment", "exception", "operations", "queue", "reconciliation"]
+    regulatory_relevance: ["UCC Article 4A", "Regulation E", "OCC Heightened Standards"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when the process depends on timely exception identification, investigation, approval, or closure."
+  - id: RIB-IFR
+    source_risk_id: OPS-FRD-I-006
+    level_1_category: Operational
+    level_2_category: Internal Fraud Risk
+    definition: "Risk of loss from employees or contractors intentionally bypassing procedures, limits, or segregation requirements."
+    typical_root_causes: ["excessive privileges", "weak segregation", "override abuse"]
+    example_risk_statements: ["Payment operations staff may bypass mandatory approval or queue procedures to conceal improper activity."]
+    common_exposure_metrics: ["override count", "same-user prepare/approve instances", "privileged user count"]
+    common_controls: ["Dual approval for high-value exception resolution", "Segregation of duties monitoring", "Supervisor override review"]
+    related_control_types: ["Segregation of Duties", "Authorization", "Surveillance"]
+    likely_impact_dimensions: ["financial_impact", "reputational_impact"]
+    applicable_business_units: ["Operations", "Internal Audit"]
+    applicable_process_patterns: ["approval", "override", "payment", "access"]
+    regulatory_relevance: ["OCC Operational Risk"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when users can alter, approve, or release transactions or exceptions."
+  - id: RIB-EFR
+    source_risk_id: OPS-FRD-E-004
+    level_1_category: Operational
+    level_2_category: External Fraud Risk
+    definition: "Risk of loss from external parties exploiting process, authentication, or transaction weaknesses."
+    typical_root_causes: ["social engineering", "fraudulent instructions", "weak authentication"]
+    example_risk_statements: ["External actors may submit fraudulent payment instructions or compromise accounts that feed payment exception activity."]
+    common_exposure_metrics: ["fraud attempt count", "confirmed fraud losses", "suspicious payment volume"]
+    common_controls: ["Fraud monitoring", "Customer callback verification", "Payment reconciliation"]
+    related_control_types: ["Automated Rules", "Surveillance", "Client Due Diligence and Transaction Monitoring"]
+    likely_impact_dimensions: ["financial_impact", "customer_impact", "reputational_impact"]
+    applicable_business_units: ["Fraud Operations", "Payment Operations"]
+    applicable_process_patterns: ["payment", "wire", "customer", "fraud"]
+    regulatory_relevance: ["BSA/AML", "Regulation E"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies where external parties can initiate, alter, or influence transaction activity."
+  - id: RIB-ORS
+    source_risk_id: OPS-BCT-001
+    level_1_category: Operational
+    level_2_category: Operational Resiliency Risk
+    definition: "Risk that critical operations cannot continue or recover within tolerance during disruption."
+    typical_root_causes: ["single points of failure", "untested continuity plans", "manual recovery gaps"]
+    example_risk_statements: ["Payment exception handling may be unable to continue during system or site disruption, delaying high-value payment resolution."]
+    common_exposure_metrics: ["RTO", "RPO", "manual backlog capacity", "critical system availability"]
+    common_controls: ["Business continuity testing", "Technology disaster recovery testing", "Incident escalation procedure"]
+    related_control_types: ["Business Continuity Planning and Awareness", "Technology Disaster Recovery", "Crisis Management"]
+    likely_impact_dimensions: ["customer_impact", "liquidity_impact", "reputational_impact"]
+    applicable_business_units: ["Operations", "Technology", "Business Continuity"]
+    applicable_process_patterns: ["payment", "critical", "system", "settlement", "continuity"]
+    regulatory_relevance: ["OCC Operational Resilience", "FFIEC Business Continuity"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies to critical processes with defined recovery expectations or customer/market impact."
+  - id: RIB-TPR
+    source_risk_id: OPS-TPT-004
+    level_1_category: Operational
+    level_2_category: Third Party Risk
+    definition: "Risk that vendors or external service providers fail to perform, comply, secure data, or support operations."
+    typical_root_causes: ["outsourced processing", "vendor system dependency", "weak SLA monitoring"]
+    example_risk_statements: ["External service providers supporting payments may fail to meet operational or incident response obligations."]
+    common_exposure_metrics: ["vendor SLA breaches", "outsourced transaction volume", "critical vendor count"]
+    common_controls: ["Vendor due diligence", "SLA breach monitoring", "SOC report review"]
+    related_control_types: ["Third Party Due Diligence", "Risk and Compliance Assessments", "Exception Reporting"]
+    likely_impact_dimensions: ["customer_impact", "regulatory_impact", "reputational_impact"]
+    applicable_business_units: ["Operations", "Third Party Risk Management"]
+    applicable_process_patterns: ["vendor", "service provider", "outsourced", "payment"]
+    regulatory_relevance: ["OCC Third Party Risk Management", "Federal Reserve SR 13-19"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when a third party performs, hosts, supports, or monitors material process activities."
+  - id: RIB-MDL
+    source_risk_id: OPS-BPR-002
+    level_1_category: Operational
+    level_2_category: Model Risk
+    definition: "Risk that quantitative models or rule engines are flawed, misused, or poorly governed."
+    typical_root_causes: ["untested rules", "model drift", "weak change control"]
+    example_risk_statements: ["Payment exception prioritization rules may incorrectly classify high-risk exceptions or miss reportable activity."]
+    common_exposure_metrics: ["rule exceptions", "false positive rate", "false negative rate"]
+    common_controls: ["Model validation", "System change management", "Rule performance monitoring"]
+    related_control_types: ["Verification and Validation", "System Change Management", "Internal and External Audits"]
+    likely_impact_dimensions: ["financial_impact", "regulatory_impact"]
+    applicable_business_units: ["Risk Management", "Technology", "Operations"]
+    applicable_process_patterns: ["model", "score", "rule", "algorithm"]
+    regulatory_relevance: ["Federal Reserve SR 11-7"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when decisions rely on models, scoring logic, automated rules, or prioritization algorithms."
+  - id: RIB-HCM
+    source_risk_id: TAL-001
+    level_1_category: Talent
+    level_2_category: Human Capital Risk
+    definition: "Risk that staffing, skill, training, or capacity constraints impair process execution."
+    typical_root_causes: ["insufficient staffing", "training gaps", "key-person dependency"]
+    example_risk_statements: ["Payment exception queues may not be staffed with sufficient trained personnel during volume spikes."]
+    common_exposure_metrics: ["staff vacancy rate", "case load per analyst", "training completion rate"]
+    common_controls: ["Staffing assessment", "Training and awareness", "Cross-training"]
+    related_control_types: ["Staffing and Resourcing Adequacy", "Training and Awareness Programs"]
+    likely_impact_dimensions: ["customer_impact", "financial_impact"]
+    applicable_business_units: ["Operations", "Human Resources"]
+    applicable_process_patterns: ["manual", "staff", "queue", "review"]
+    regulatory_relevance: ["OCC Operational Risk"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when process execution depends heavily on trained staff capacity."
+  - id: RIB-PHYAS
+    source_risk_id: OPS-BCT-004
+    level_1_category: Operational
+    level_2_category: Physical Assets Risk
+    definition: "Risk that physical facilities, equipment, or infrastructure loss disrupts operations."
+    typical_root_causes: ["site dependency", "equipment failure", "facility disruption"]
+    example_risk_statements: ["Loss of a payment operations site may delay exception resolution if alternate facilities are not ready."]
+    common_exposure_metrics: ["critical site count", "workspace recovery capacity", "equipment availability"]
+    common_controls: ["Physical safeguards", "Business continuity testing", "Alternate site readiness"]
+    related_control_types: ["Physical Safeguards", "Business Continuity Planning and Awareness"]
+    likely_impact_dimensions: ["customer_impact", "liquidity_impact"]
+    applicable_business_units: ["Operations", "Corporate Real Estate"]
+    applicable_process_patterns: ["site", "facility", "physical", "operations"]
+    regulatory_relevance: ["FFIEC Business Continuity"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when physical location or equipment is required to perform the process."
+  - id: RIB-DM
+    source_risk_id: OPS-FRP-001
+    level_1_category: Operational
+    level_2_category: Data Management Risk
+    definition: "Risk that data used or produced by the process is inaccurate, incomplete, unavailable, or not fit for purpose."
+    typical_root_causes: ["manual data entry", "interface breaks", "unreconciled data", "poor data ownership"]
+    example_risk_statements: ["Payment exception data may be inaccurate or incomplete, causing incorrect resolution, reporting, or escalation decisions."]
+    common_exposure_metrics: ["data quality exceptions", "reconciliation breaks", "missing required fields"]
+    common_controls: ["Payment reconciliation", "Data completeness checks", "Exception data quality review"]
+    related_control_types: ["Reconciliation", "Verification and Validation", "Documentation, Data, and Activity Completeness and Appropriateness Checks"]
+    likely_impact_dimensions: ["financial_impact", "regulatory_impact", "customer_impact"]
+    applicable_business_units: ["Operations", "Data Management"]
+    applicable_process_patterns: ["data", "reconciliation", "exception", "reporting"]
+    regulatory_relevance: ["BCBS 239", "OCC Operational Risk"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when process outcomes depend on complete, accurate, or timely data."
+  - id: RIB-IT
+    source_risk_id: OPS-BCT-004
+    level_1_category: Operational
+    level_2_category: Information Technology Risk
+    definition: "Risk that technology systems fail, perform poorly, or change incorrectly, impairing the business process."
+    typical_root_causes: ["system outage", "batch failure", "interface failure", "defective change"]
+    example_risk_statements: ["Payment exception workflow systems may fail or process data incorrectly, delaying investigation and resolution."]
+    common_exposure_metrics: ["system availability", "failed batch count", "incident count"]
+    common_controls: ["System monitoring", "Change management", "Disaster recovery testing"]
+    related_control_types: ["System Change Management", "Technology Disaster Recovery", "Automated Rules"]
+    likely_impact_dimensions: ["customer_impact", "liquidity_impact", "financial_impact"]
+    applicable_business_units: ["Technology", "Operations"]
+    applicable_process_patterns: ["system", "application", "workflow", "interface"]
+    regulatory_relevance: ["FFIEC IT Examination Handbook"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when systems are material to process execution or evidence retention."
+  - id: RIB-PCM
+    source_risk_id: OPS-BPR-004
+    level_1_category: Operational
+    level_2_category: Project and Change Management Risk
+    definition: "Risk that changes to process, systems, or products are poorly governed or implemented."
+    typical_root_causes: ["weak testing", "incomplete requirements", "poor release governance"]
+    example_risk_statements: ["Changes to payment exception rules or queues may be implemented without adequate testing or approval."]
+    common_exposure_metrics: ["failed change count", "emergency changes", "post-implementation incidents"]
+    common_controls: ["System change management", "User acceptance testing", "Release approval"]
+    related_control_types: ["System Change Management", "Authorization", "Verification and Validation"]
+    likely_impact_dimensions: ["financial_impact", "customer_impact", "regulatory_impact"]
+    applicable_business_units: ["Technology", "Operations"]
+    applicable_process_patterns: ["change", "release", "implementation", "project"]
+    regulatory_relevance: ["FFIEC IT Examination Handbook"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when process or system changes can alter risk outcomes."
+  - id: RIB-PRI
+    source_risk_id: OPS-FRD-E-001
+    level_1_category: Cyber
+    level_2_category: Privacy Risk
+    definition: "Risk that personal, customer, or confidential information is used, disclosed, retained, or accessed improperly."
+    typical_root_causes: ["excessive access", "improper disclosure", "weak data handling"]
+    example_risk_statements: ["Payment exception records may expose customer information to unauthorized personnel."]
+    common_exposure_metrics: ["privacy incidents", "users with sensitive data access", "data sharing exceptions"]
+    common_controls: ["Access restrictions", "Data security and protection", "Privacy incident escalation"]
+    related_control_types: ["Data Security and Protection", "System and Application Restrictions"]
+    likely_impact_dimensions: ["regulatory_impact", "customer_impact", "reputational_impact"]
+    applicable_business_units: ["Operations", "Privacy", "Technology"]
+    applicable_process_patterns: ["customer data", "privacy", "confidential", "access"]
+    regulatory_relevance: ["GLBA", "State privacy laws"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when customer, employee, or confidential information is processed."
+  - id: RIB-CYB
+    source_risk_id: CYB-001
+    level_1_category: Cyber
+    level_2_category: IT Security / Cybersecurity Risk
+    definition: "Risk of unauthorized access, misuse, disclosure, disruption, or destruction of systems or data."
+    typical_root_causes: ["excessive entitlement", "credential compromise", "weak monitoring"]
+    example_risk_statements: ["Unauthorized users may access payment exception queues and alter or view sensitive payment activity."]
+    common_exposure_metrics: ["privileged user count", "access review exceptions", "security incidents"]
+    common_controls: ["System entitlement review", "Data security and protection", "User access monitoring"]
+    related_control_types: ["System and Application Restrictions", "Data Security and Protection", "Surveillance"]
+    likely_impact_dimensions: ["financial_impact", "regulatory_impact", "reputational_impact"]
+    applicable_business_units: ["Technology", "Operations", "Information Security"]
+    applicable_process_patterns: ["access", "entitlement", "system", "cyber", "queue"]
+    regulatory_relevance: ["FFIEC Cybersecurity", "NIST CSF"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when system or data access can affect process integrity or confidentiality."
+  - id: RIB-PHYS
+    source_risk_id: OPS-BCT-004
+    level_1_category: Operational
+    level_2_category: Physical Security Risk
+    definition: "Risk that unauthorized physical access or inadequate site security compromises people, records, equipment, or operations."
+    typical_root_causes: ["weak badge access", "visitor control gaps", "secure area exposure"]
+    example_risk_statements: ["Unauthorized physical access to payment operations areas may compromise payment documentation or equipment."]
+    common_exposure_metrics: ["badge exceptions", "visitor violations", "restricted area incidents"]
+    common_controls: ["Physical safeguards", "Visitor access review", "Secure area monitoring"]
+    related_control_types: ["Physical Safeguards", "Surveillance"]
+    likely_impact_dimensions: ["reputational_impact", "customer_impact"]
+    applicable_business_units: ["Operations", "Corporate Security"]
+    applicable_process_patterns: ["physical", "site", "facility", "secure"]
+    regulatory_relevance: ["OCC Operational Risk"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when physical access could compromise process operations or evidence."
+  - id: RIB-CON
+    source_risk_id: OPS-TPT-003
+    level_1_category: Operational
+    level_2_category: Contract Risk
+    definition: "Risk that contractual obligations, rights, or terms are incomplete, unenforceable, or poorly monitored."
+    typical_root_causes: ["missing SLA", "weak audit rights", "unclear exit terms"]
+    example_risk_statements: ["Payment service contracts may lack adequate SLA, audit, or incident notification obligations."]
+    common_exposure_metrics: ["contracts missing SLA terms", "expired contracts", "unresolved contract exceptions"]
+    common_controls: ["Legal review", "Contract approval", "Vendor contract monitoring"]
+    related_control_types: ["Authorization", "Documentation, Data, and Activity Completeness and Appropriateness Checks"]
+    likely_impact_dimensions: ["financial_impact", "regulatory_impact"]
+    applicable_business_units: ["Legal", "Third Party Risk Management"]
+    applicable_process_patterns: ["contract", "vendor", "service provider", "SLA"]
+    regulatory_relevance: ["OCC Third Party Risk Management"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies where contract terms govern process performance, data, or recovery obligations."
+  - id: RIB-LIT
+    source_risk_id: OPS-BPR-001
+    level_1_category: Operational
+    level_2_category: Litigation Risk
+    definition: "Risk of claims, disputes, or legal proceedings from process failures, customer harm, or contractual breaches."
+    typical_root_causes: ["customer harm", "documented dispute", "missed obligation"]
+    example_risk_statements: ["Untimely or incorrect payment exception resolution may create customer disputes or legal claims."]
+    common_exposure_metrics: ["customer disputes", "legal claims", "loss events"]
+    common_controls: ["Complaint escalation", "Exception evidence retention", "Legal review"]
+    related_control_types: ["Risk Escalation Processes", "Documentation, Data, and Activity Completeness and Appropriateness Checks"]
+    likely_impact_dimensions: ["financial_impact", "reputational_impact", "customer_impact"]
+    applicable_business_units: ["Operations", "Legal"]
+    applicable_process_patterns: ["dispute", "customer harm", "complaint", "legal"]
+    regulatory_relevance: ["UDAAP", "UCC Article 4A"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies where process failure can create claims, disputes, or legal exposure."
+  - id: RIB-IP
+    source_risk_id: OPS-BPR-003
+    level_1_category: Operational
+    level_2_category: Intellectual Property Risk
+    definition: "Risk that proprietary methods, software, documentation, or confidential business information are misused or exposed."
+    typical_root_causes: ["poor data classification", "contractor access", "weak confidentiality terms"]
+    example_risk_statements: ["Payment operations procedures or proprietary workflow logic may be exposed through poor access or vendor handling."]
+    common_exposure_metrics: ["confidential document access", "third-party access", "data classification exceptions"]
+    common_controls: ["Access restrictions", "Confidentiality agreements", "Document retention controls"]
+    related_control_types: ["Data Security and Protection", "System and Application Restrictions"]
+    likely_impact_dimensions: ["reputational_impact", "financial_impact"]
+    applicable_business_units: ["Legal", "Technology", "Operations"]
+    applicable_process_patterns: ["confidential", "proprietary", "vendor", "documentation"]
+    regulatory_relevance: ["Contractual confidentiality"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies where proprietary process information or technology is shared or stored."
+  - id: RIB-EMP
+    source_risk_id: TAL-001
+    level_1_category: Talent
+    level_2_category: Employment Practices Risk
+    definition: "Risk of loss or regulatory concern from employment practices, conduct, supervision, or workplace obligations."
+    typical_root_causes: ["weak supervision", "training gaps", "conduct issues"]
+    example_risk_statements: ["Payment operations staffing and supervision gaps may create conduct, overtime, or training issues."]
+    common_exposure_metrics: ["training completion", "employee relations cases", "supervisor span of control"]
+    common_controls: ["Training and awareness", "Supervisor review", "Talent management practices"]
+    related_control_types: ["Training and Awareness Programs", "Talent Management Practices"]
+    likely_impact_dimensions: ["reputational_impact", "financial_impact"]
+    applicable_business_units: ["Human Resources", "Operations"]
+    applicable_process_patterns: ["employee", "training", "staff", "supervision"]
+    regulatory_relevance: ["Employment law"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when workforce practices or supervision materially affect the process."
+  - id: RIB-COM
+    source_risk_id: RCO-001
+    level_1_category: Regulatory Compliance
+    level_2_category: Compliance Risk
+    definition: "Risk of violating laws, regulations, rules, internal policies, or ethical standards."
+    typical_root_causes: ["regulatory obligation gaps", "weak monitoring", "policy noncompliance"]
+    example_risk_statements: ["Payment exception handling may fail to follow applicable funds transfer, sanctions, or customer protection requirements."]
+    common_exposure_metrics: ["policy exceptions", "regulatory breaches", "customer remediation items"]
+    common_controls: ["Compliance monitoring", "Policy attestation", "Exception escalation"]
+    related_control_types: ["Internal Compliance Monitoring", "Risk and Compliance Assessments", "Risk Escalation Processes"]
+    likely_impact_dimensions: ["regulatory_impact", "reputational_impact"]
+    applicable_business_units: ["Compliance", "Operations"]
+    applicable_process_patterns: ["regulatory", "compliance", "policy", "payment"]
+    regulatory_relevance: ["Regulation E", "BSA/AML", "OFAC", "UDAAP"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when the process is subject to laws, rules, policies, or regulatory expectations."
+  - id: RIB-RR
+    source_risk_id: OPS-FRP-002
+    level_1_category: Operational
+    level_2_category: Regulatory Reporting Risk
+    definition: "Risk that required regulatory, incident, or management reporting is inaccurate, incomplete, or late."
+    typical_root_causes: ["poor data lineage", "missed escalation", "manual reporting", "late incident classification"]
+    example_risk_statements: ["Reportable payment incidents may be identified, escalated, or reported late due to incomplete exception data."]
+    common_exposure_metrics: ["reporting SLA breaches", "late incident escalations", "report corrections"]
+    common_controls: ["Incident escalation procedure", "Regulatory reporting review", "Data completeness checks"]
+    related_control_types: ["Exception Reporting", "Risk Escalation Processes", "Verification and Validation"]
+    likely_impact_dimensions: ["regulatory_impact", "reputational_impact"]
+    applicable_business_units: ["Operations", "Regulatory Reporting", "Compliance"]
+    applicable_process_patterns: ["reporting", "incident", "escalation", "payment exception"]
+    regulatory_relevance: ["OCC incident notification", "Regulation E", "BSA/AML"]
+    entity_level_flag: false
+    default_applicability_guidance: "Applies when process events feed regulatory, incident, customer, or management reporting."

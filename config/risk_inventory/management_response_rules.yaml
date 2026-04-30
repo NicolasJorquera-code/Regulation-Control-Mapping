@@ -1,0 +1,6 @@
+version: "1.0.0"
+rules:
+  Low: "accept"
+  Medium: "monitor"
+  High: "mitigate"
+  Critical: "escalate"

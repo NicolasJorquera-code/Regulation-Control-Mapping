@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from controlnexus.ui.control_builder import (
     STEP_LABELS,
     TOTAL_STEPS,

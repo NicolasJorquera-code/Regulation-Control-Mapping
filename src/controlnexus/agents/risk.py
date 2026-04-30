@@ -13,7 +13,6 @@ import time
 from typing import Any
 
 from controlnexus.agents.base import BaseAgent, register_agent
-from controlnexus.exceptions import AgentExecutionException
 
 logger = logging.getLogger(__name__)
 

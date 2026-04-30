@@ -44,9 +44,7 @@ from controlnexus.core.config import (
 )
 from controlnexus.core.constants import (
     DEFAULT_QUALITY_RATING,
-    FREQUENCY_ORDERED_RULES,
     MAX_CONTROL_TARGET,
-    TYPE_CODE_MAP,
     build_control_id as _build_control_id_from_code,
     derive_frequency_from_when,
     type_to_code,

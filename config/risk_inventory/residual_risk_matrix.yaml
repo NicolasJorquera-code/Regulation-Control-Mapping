@@ -1,0 +1,52 @@
+version: "1.0.0"
+control_environment_scores:
+  Strong: 1
+  Satisfactory: 2
+  Improvement Needed: 3
+  Inadequate: 5
+matrix:
+  Low-1:
+    Strong: {rating: "Low", score: 1, label: "Low-1"}
+    Satisfactory: {rating: "Low", score: 2, label: "Low-2"}
+    Improvement Needed: {rating: "Low", score: 3, label: "Low-3"}
+    Inadequate: {rating: "Low", score: 5, label: "Low-5"}
+  Low-2:
+    Strong: {rating: "Low", score: 2, label: "Low-2"}
+    Satisfactory: {rating: "Low", score: 4, label: "Low-4"}
+    Improvement Needed: {rating: "Low", score: 6, label: "Low-6"}
+    Inadequate: {rating: "Low", score: 10, label: "Low-10"}
+  Low-3:
+    Strong: {rating: "Low", score: 3, label: "Low-3"}
+    Satisfactory: {rating: "Low", score: 6, label: "Low-6"}
+    Improvement Needed: {rating: "Low", score: 9, label: "Low-9"}
+    Inadequate: {rating: "Low", score: 15, label: "Low-15"}
+  Medium-4:
+    Strong: {rating: "Low", score: 4, label: "Low-4"}
+    Satisfactory: {rating: "Low", score: 8, label: "Low-8"}
+    Improvement Needed: {rating: "Low", score: 12, label: "Low-12"}
+    Inadequate: {rating: "Medium", score: 20, label: "Medium-20"}
+  Medium-6:
+    Strong: {rating: "Low", score: 6, label: "Low-6"}
+    Satisfactory: {rating: "Low", score: 12, label: "Low-12"}
+    Improvement Needed: {rating: "Low", score: 18, label: "Low-18"}
+    Inadequate: {rating: "Medium", score: 30, label: "Medium-30"}
+  High-8:
+    Strong: {rating: "Low", score: 8, label: "Low-8"}
+    Satisfactory: {rating: "Low", score: 16, label: "Low-16"}
+    Improvement Needed: {rating: "Medium", score: 24, label: "Medium-24"}
+    Inadequate: {rating: "High", score: 40, label: "High-40"}
+  High-9:
+    Strong: {rating: "Low", score: 9, label: "Low-9"}
+    Satisfactory: {rating: "Low", score: 18, label: "Low-18"}
+    Improvement Needed: {rating: "Medium", score: 27, label: "Medium-27"}
+    Inadequate: {rating: "High", score: 45, label: "High-45"}
+  Critical-12:
+    Strong: {rating: "Low", score: 12, label: "Low-12"}
+    Satisfactory: {rating: "Medium", score: 24, label: "Medium-24"}
+    Improvement Needed: {rating: "High", score: 36, label: "High-36"}
+    Inadequate: {rating: "Critical", score: 60, label: "Critical-60"}
+  Critical-16:
+    Strong: {rating: "Low", score: 16, label: "Low-16"}
+    Satisfactory: {rating: "Medium", score: 32, label: "Medium-32"}
+    Improvement Needed: {rating: "High", score: 48, label: "High-48"}
+    Inadequate: {rating: "Critical", score: 80, label: "Critical-80"}

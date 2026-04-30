@@ -1,0 +1,579 @@
+version: "1.1.0"
+scenario:
+  run_id: "DEMO-RI-PAYEX-001"
+  tenant_id: "demo-bank"
+  process_id: "PROC-PAY-EXCEPTION"
+  process_name: "Payment Exception Handling"
+  product: "High-value payment processing"
+  business_unit: "Payment Operations"
+  description: "Daily operations process for identifying, investigating, approving, resolving, reconciling, escalating, and reporting high-value payment exceptions across wire and same-day payment channels. The process handles customer-impacting exceptions, aged breaks, vendor-supported message repair, privileged workflow access, and potential incident notification triggers."
+  systems:
+    - "Payment Exception Workflow"
+    - "Wire Transfer Platform"
+    - "Core Banking Ledger"
+    - "Identity and Access Management"
+    - "Incident Management Portal"
+    - "Vendor SLA Portal"
+  stakeholders:
+    - "Payment Operations Manager"
+    - "Exception Analyst"
+    - "Treasury Operations"
+    - "Compliance Officer"
+    - "Information Security"
+    - "Technology Owner"
+    - "Vendor Manager"
+    - "Operational Risk Reviewer"
+controls:
+  - control_id: "CTRL-PAY-001"
+    control_name: "Daily exception queue review"
+    control_type: "Exception Reporting"
+    owner: "Payment Operations Manager"
+    frequency: "Daily"
+    description: "Exception analysts review open payment exceptions at the start and end of each business day, document investigation status, assign ownership, and escalate customer-impacting or aged items."
+    design_rating: "Satisfactory"
+    operating_rating: "Satisfactory"
+    design_rationale: "The control has defined queue ownership, documented aging thresholds, and escalation paths for customer-impacting and high-value items."
+    operating_rationale: "Three months of queue review evidence shows daily analyst review, supervisor sampling, and documented escalation for aged exceptions."
+    design_criteria_results:
+      mapped_to_root_cause: true
+      formalized: true
+      sufficient_frequency: true
+      preventive_or_detective_fit: true
+    operating_criteria_results:
+      operated_consistently: true
+      evidence_available: true
+      management_review: true
+    risk_mitigations:
+      RIB-BPR: "Daily queue review mitigates aging exceptions and unclear ownership by forcing same-day assignment, status updates, and escalation when service-level thresholds are at risk."
+      RIB-DM: "Queue review identifies missing cause codes, incomplete disposition notes, and unresolved reconciliation references before exceptions are closed."
+      RIB-RR: "Daily review surfaces customer-impacting or threshold-sensitive events that may require incident escalation or management reporting."
+    coverage_by_risk:
+      RIB-BPR: "strong"
+      RIB-DM: "partial"
+      RIB-RR: "partial"
+  - control_id: "CTRL-PAY-002"
+    control_name: "Dual approval for high-value exception resolution"
+    control_type: "Authorization"
+    owner: "Treasury Operations"
+    frequency: "Per high-value exception"
+    description: "High-value payment exceptions require independent operations manager approval before release, reversal, repair, or closure. The approver must be different from the preparer."
+    design_rating: "Strong"
+    operating_rating: "Satisfactory"
+    design_rationale: "The control is preventive, requires maker-checker segregation, and blocks release or closure until an independent approver records a decision."
+    operating_rationale: "Sample evidence supports independent approval, with two late approvals noted but no same-user prepare/approve exceptions."
+    risk_mitigations:
+      RIB-BPR: "Dual approval reduces the chance that high-value exceptions are resolved incorrectly, prematurely closed, or released without independent judgment."
+      RIB-IFR: "Preparer and approver segregation constrains override abuse for high-value payment exceptions."
+    coverage_by_risk:
+      RIB-BPR: "strong"
+  - control_id: "CTRL-PAY-003"
+    control_name: "Privileged payment queue entitlement review"
+    control_type: "System and Application Restrictions"
+    owner: "Technology Owner"
+    frequency: "Monthly for privileged users, quarterly for business users"
+    description: "Payment queue entitlements are reviewed by the application owner and business manager. Privileged users, emergency access, and segregation conflicts are tracked to closure."
+    design_rating: "Satisfactory"
+    operating_rating: "Improvement Needed"
+    design_rationale: "The entitlement review covers privileged and business-user access, but reviewer instructions do not yet require explicit evidence of segregation analysis."
+    operating_rationale: "The most recent monthly review found seven aged access exceptions and two incomplete manager attestations."
+    evidence_gaps:
+      - "Obtain closure evidence for aged privileged-access exceptions."
+      - "Add explicit segregation-of-duties review evidence to the monthly package."
+    operating_criteria_results:
+      operated_consistently: false
+      evidence_available: true
+      open_issues_considered: true
+    risk_mitigations:
+      RIB-CYB: "Entitlement review mitigates excessive access and unauthorized workflow changes by forcing management challenge of privileged users, emergency access, and segregation conflicts."
+    coverage_by_risk:
+      RIB-CYB: "partial"
+  - control_id: "CTRL-PAY-004"
+    control_name: "Payment exception reconciliation"
+    control_type: "Reconciliation"
+    owner: "Payment Operations Manager"
+    frequency: "Daily"
+    description: "Daily reconciliation compares exception workflow disposition, wire transfer platform status, and ledger settlement records. Unmatched breaks require aging, root cause, and closure evidence."
+    design_rating: "Strong"
+    operating_rating: "Satisfactory"
+    design_rationale: "The reconciliation uses three independent sources, requires break aging, and ties closure to documented root cause and ledger disposition."
+    operating_rationale: "Daily reconciliation evidence is complete for the prior quarter, with one aged break escalated according to procedure."
+    risk_mitigations:
+      RIB-DM: "Three-way reconciliation mitigates inaccurate or incomplete exception data by comparing workflow disposition to transaction and ledger records before closure."
+    coverage_by_risk:
+      RIB-DM: "strong"
+  - control_id: "CTRL-PAY-005"
+    control_name: "SLA breach and volume monitoring"
+    control_type: "Exception Reporting"
+    owner: "Payment Operations Manager"
+    frequency: "Daily dashboard, weekly management review"
+    description: "Workflow reporting highlights SLA breaches, aged items, repeat exceptions, and volume spikes for management review and escalation."
+    design_rating: "Satisfactory"
+    operating_rating: "Satisfactory"
+    design_rationale: "The dashboard covers aging, volume, breach thresholds, and high-value queues with weekly management review."
+    operating_rationale: "Dashboard evidence shows daily refreshes and weekly review notes, though vendor SLA data arrives one day after internal queue metrics."
+    risk_mitigations:
+      RIB-BPR: "SLA monitoring identifies aged items and capacity stress before unresolved exceptions create customer or settlement impact."
+      RIB-TPR: "The dashboard tracks vendor message repair timeliness and flags external support delays for vendor manager review."
+    coverage_by_risk:
+      RIB-BPR: "partial"
+      RIB-TPR: "partial"
+  - control_id: "CTRL-PAY-006"
+    control_name: "Incident escalation and reportability triage"
+    control_type: "Risk Escalation Processes"
+    owner: "Compliance Officer"
+    frequency: "Per threshold event"
+    description: "Potential reportable incidents are escalated to Compliance and Operational Risk through the incident portal, with triage documented against customer impact, outage duration, dollar exposure, and notification thresholds."
+    design_rating: "Satisfactory"
+    operating_rating: "Improvement Needed"
+    design_rationale: "The escalation procedure defines threshold factors and routes potential incidents to Compliance and Operational Risk."
+    operating_rationale: "Two prior-quarter events were escalated after the internal target because the initial queue review did not identify potential reportability."
+    evidence_gaps:
+      - "Retain Compliance triage memo for potential reportable payment incidents."
+      - "Confirm timer start for customer-impacting exceptions."
+    operating_criteria_results:
+      operated_consistently: false
+      evidence_available: true
+      timely_escalation: false
+    risk_mitigations:
+      RIB-RR: "Incident triage mitigates missed or late reporting by requiring Compliance review of threshold-sensitive payment exceptions."
+      RIB-ORS: "Escalation routes operational disruptions to incident management when payment exception handling may exceed tolerance."
+    coverage_by_risk:
+      RIB-RR: "partial"
+      RIB-ORS: "partial"
+  - control_id: "CTRL-PAY-007"
+    control_name: "Payment exception continuity exercise"
+    control_type: "Business Continuity Planning and Awareness"
+    owner: "Business Continuity Lead"
+    frequency: "Annual exercise with semiannual tabletop refresh"
+    description: "Payment Operations tests manual exception handling, alternate-site operations, key-person coverage, and vendor communication during workflow or site disruption."
+    design_rating: "Satisfactory"
+    operating_rating: "Satisfactory"
+    design_rationale: "The exercise covers system outage, site disruption, manual queue handling, and vendor communication procedures."
+    operating_rationale: "The latest exercise met the four-hour recovery objective but identified a manual capacity constraint for peak-volume days."
+    risk_mitigations:
+      RIB-ORS: "Continuity exercise mitigates operational disruption by validating manual processing capacity, alternate-site readiness, and recovery communication paths."
+    coverage_by_risk:
+      RIB-ORS: "partial"
+risks:
+  - taxonomy_node_id: "RIB-BPR"
+    risk_id: "RI-DEMO-001"
+    risk_description: "Payment exceptions may not be assigned, investigated, approved, or resolved within required timeframes, causing delayed high-value payments, incorrect closure, customer harm, or downstream rework."
+    risk_event: "A customer-impacting high-value wire exception remains unresolved beyond the same-day escalation threshold because ownership and approval steps are not completed on time."
+    applicability_rationale: "Business Process Risk materializes because the process relies on daily human review, aged queue management, independent approval, and timely escalation for 45 exceptions per business day."
+    confidence: 0.91
+    causes:
+      - "manual workflow"
+      - "aging exceptions"
+      - "unclear ownership"
+      - "capacity constraints during volume spikes"
+    consequences:
+      - "late or incorrect payment release"
+      - "customer or correspondent bank impact"
+      - "operational loss, fee reimbursement, or rework"
+      - "management escalation for SLA breaches"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 2
+      reputational_impact: 3
+      customer_impact: 3
+      liquidity_impact: 2
+    impact_rationales:
+      financial_impact: "Average daily exception value is $18.5M, so incorrect or delayed resolution could create meaningful loss, reimbursement, or settlement exposure."
+      regulatory_impact: "Regulatory impact is moderate because most exceptions are operational, but customer-impacting high-value delays can trigger escalation expectations."
+      reputational_impact: "Repeated high-value payment delays can affect treasury clients and correspondent relationships."
+      customer_impact: "Same-day and next-day expectations make customer impact significant when exceptions delay time-sensitive payments."
+      liquidity_impact: "Liquidity impact is limited to high-value items and short processing windows, not broad market settlement."
+    overall_impact_score: 3
+    overall_impact_rationale: "Overall impact is Significant because customer, financial, and reputational dimensions are all meaningful for high-value payment exception delays."
+    likelihood_score: 3
+    likelihood_rating: "Medium High"
+    likelihood_rationale: "Likelihood is Medium High because the queue operates daily, carries 45 exceptions per business day, and had a 6.4% aged exception breach rate in the prior quarter."
+    assumptions:
+      - "Daily volumes are based on the prior-quarter workflow dashboard."
+      - "High-value customer-impacting exceptions require same-day escalation."
+    exposure_metrics:
+      - metric_name: "open exception count"
+        metric_value: "45"
+        metric_unit: "exceptions per business day"
+        description: "Average daily open exception inflow observed in the workflow dashboard."
+        source: "Payment Exception Workflow dashboard, prior quarter"
+        supports: ["likelihood", "impact"]
+      - metric_name: "aged exception volume"
+        metric_value: "17"
+        metric_unit: "items over SLA at quarter-end"
+        description: "Open exceptions older than the defined same-day or next-day service level."
+        source: "SLA breach dashboard"
+        supports: ["likelihood"]
+      - metric_name: "SLA breach rate"
+        metric_value: "6.4%"
+        metric_unit: "prior-quarter exceptions"
+        description: "Share of payment exceptions that exceeded the documented resolution service level."
+        source: "Weekly management review deck"
+        supports: ["likelihood"]
+      - metric_name: "high-value exception dollars"
+        metric_value: "$18.5M"
+        metric_unit: "average daily exception value"
+        description: "Average aggregate value of high-value payment exceptions requiring investigation."
+        source: "Wire Transfer Platform and Core Banking Ledger"
+        supports: ["impact"]
+    mapped_controls: ["CTRL-PAY-001", "CTRL-PAY-002", "CTRL-PAY-005"]
+    recommended_action: "Continue weekly review of aged exceptions and require same-day supervisor sign-off when high-value customer-impacting items approach SLA breach."
+    review:
+      reviewer: "Payment Operations Manager"
+      challenge_comments: "Confirm whether the SLA threshold differs for correspondent bank exceptions and whether peak-volume staffing assumptions remain valid."
+      challenged_fields: ["applicability", "likelihood_score", "control_mapping"]
+    evidence_references:
+      - evidence_id: "PAYEX-EVID-001"
+        evidence_type: "Workflow dashboard"
+        description: "Prior-quarter queue volume, aging, and SLA breach report."
+        source: "Payment Exception Workflow dashboard export"
+  - taxonomy_node_id: "RIB-DM"
+    risk_id: "RI-DEMO-002"
+    risk_description: "Payment exception data may be inaccurate, incomplete, or unreconciled across workflow, wire platform, and ledger records, causing incorrect disposition, reporting errors, or delayed settlement correction."
+    risk_event: "An exception is closed in the workflow while the wire platform and ledger retain an unmatched break or missing root-cause data."
+    applicability_rationale: "Data Management Risk materializes because exception closure depends on accurate status, cause codes, approver data, and reconciliation across three systems."
+    confidence: 0.88
+    causes:
+      - "interface breaks"
+      - "manual data entry"
+      - "unreconciled data"
+      - "missing required fields"
+    consequences:
+      - "incorrect exception closure"
+      - "unresolved ledger or settlement break"
+      - "inaccurate management or incident reporting"
+      - "additional manual repair work"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 3
+      reputational_impact: 2
+      customer_impact: 3
+      liquidity_impact: 2
+    impact_rationales:
+      financial_impact: "Reconciliation breaks can affect high-value wires and require payment repair or reimbursement."
+      regulatory_impact: "Incomplete data can impair incident triage, audit trails, and regulatory inquiry response."
+      reputational_impact: "Reputational impact is lower than customer and financial impact unless data errors recur or affect external clients."
+      customer_impact: "Incorrect exception status can delay customer notification or payment release."
+      liquidity_impact: "Liquidity exposure is limited to specific high-value items rather than broad settlement operations."
+    overall_impact_score: 3
+    overall_impact_rationale: "Overall impact is Significant because inaccurate exception and reconciliation data can drive incorrect operational decisions and customer-impacting outcomes."
+    likelihood_score: 3
+    likelihood_rating: "Medium High"
+    likelihood_rationale: "Likelihood is Medium High because reconciliation occurs daily, 11 breaks were open at month-end, and 3.8% of reviewed exceptions missed a required cause or approver field."
+    assumptions:
+      - "Ledger and workflow reconciliation is performed daily."
+      - "Required field completeness is measured from quality assurance sampling."
+    exposure_metrics:
+      - metric_name: "reconciliation breaks"
+        metric_value: "11"
+        metric_unit: "open breaks at month-end"
+        description: "Open workflow-to-ledger or workflow-to-wire-platform differences."
+        source: "Daily payment exception reconciliation log"
+        supports: ["likelihood", "impact"]
+      - metric_name: "missing required fields"
+        metric_value: "3.8%"
+        metric_unit: "sampled exceptions"
+        description: "Exceptions missing required root cause, approver, or disposition fields."
+        source: "Quality assurance sample"
+        supports: ["likelihood"]
+      - metric_name: "data quality exceptions"
+        metric_value: "29"
+        metric_unit: "message repairs per month"
+        description: "Average monthly payment messages requiring data repair before resolution."
+        source: "Wire Transfer Platform repair queue"
+        supports: ["likelihood"]
+    mapped_controls: ["CTRL-PAY-004", "CTRL-PAY-001"]
+    recommended_action: "Add monthly quality assurance sampling for required exception fields and track repeat data defects by upstream message source."
+    review:
+      reviewer: "Operations Data Steward"
+      challenge_comments: "Validate whether upstream message repair data is complete enough to support this likelihood rating."
+      challenged_fields: ["impact_scores", "exposure_metrics", "control_mapping"]
+    evidence_references:
+      - evidence_id: "PAYEX-EVID-002"
+        evidence_type: "Reconciliation log"
+        description: "Daily workflow-to-ledger reconciliation and aged break detail."
+        source: "Payment Operations reconciliation workbook"
+  - taxonomy_node_id: "RIB-CYB"
+    risk_id: "RI-DEMO-003"
+    risk_description: "Unauthorized or excessive access to payment exception queues may allow users to view sensitive payment details, alter exception status, or bypass payment repair controls."
+    risk_event: "A privileged workflow user retains access after role change and modifies exception status or payment repair details without appropriate business approval."
+    applicability_rationale: "Cybersecurity Risk materializes because the process uses privileged workflow roles, sensitive payment data, emergency access, and workflow status changes that can affect transaction disposition."
+    confidence: 0.89
+    causes:
+      - "excessive entitlement"
+      - "credential compromise"
+      - "weak segregation monitoring"
+      - "delayed access removal"
+    consequences:
+      - "unauthorized payment queue changes"
+      - "customer or confidential data exposure"
+      - "fraud, operational loss, or audit issue"
+      - "regulatory or information security escalation"
+    impact_scores:
+      financial_impact: 4
+      regulatory_impact: 3
+      reputational_impact: 4
+      customer_impact: 3
+      liquidity_impact: 2
+    impact_rationales:
+      financial_impact: "Privileged access can affect high-value payment disposition and repair activity, creating severe loss potential in a plausible misuse scenario."
+      regulatory_impact: "Unauthorized access to payment data can trigger information security, privacy, and supervisory concerns."
+      reputational_impact: "Access misuse affecting payment queues would be visible to business clients and control stakeholders."
+      customer_impact: "Customers may experience delayed, misdirected, or exposed high-value payment activity."
+      liquidity_impact: "Liquidity impact is lower because misuse is more likely to affect specific payments than broad settlement."
+    overall_impact_score: 4
+    overall_impact_rationale: "Overall impact is Severe because privileged payment queue access can affect high-value transaction integrity, sensitive data, and client trust."
+    likelihood_score: 3
+    likelihood_rating: "Medium High"
+    likelihood_rationale: "Likelihood is Medium High because privileged access reviews occur monthly but the most recent review found seven aged exceptions, two incomplete attestations, and recurring emergency-access use."
+    assumptions:
+      - "Privileged access exceptions are unresolved until closure evidence is attached."
+      - "Emergency-access use remains active for payment support during outage windows."
+    exposure_metrics:
+      - metric_name: "privileged user count"
+        metric_value: "18"
+        metric_unit: "privileged workflow users"
+        description: "Users with administrative or elevated payment queue permissions."
+        source: "Identity and Access Management entitlement extract"
+        supports: ["impact", "likelihood"]
+      - metric_name: "access review exceptions"
+        metric_value: "7"
+        metric_unit: "open items over 30 days"
+        description: "Aged access exceptions pending closure evidence after manager review."
+        source: "Monthly entitlement review"
+        supports: ["likelihood"]
+      - metric_name: "security incidents"
+        metric_value: "2"
+        metric_unit: "access alerts in the prior quarter"
+        description: "Payment queue access alerts escalated to Information Security for review."
+        source: "Security monitoring queue"
+        supports: ["likelihood"]
+    mapped_controls: ["CTRL-PAY-003"]
+    recommended_action: "Accelerate closure of aged privileged-access exceptions, require segregation review evidence, and add Information Security sign-off for emergency-access recertification."
+    review:
+      reviewer: "Information Security"
+      challenge_comments: "Challenge whether monthly privileged access review is frequent and complete enough for payment queue administrators."
+      challenged_fields: ["likelihood_score", "control_operating_effectiveness", "recommended_action"]
+    evidence_references:
+      - evidence_id: "PAYEX-EVID-003"
+        evidence_type: "Entitlement review"
+        description: "Monthly privileged-user review showing aged exceptions and incomplete attestations."
+        source: "Identity and Access Management certification package"
+  - taxonomy_node_id: "RIB-RR"
+    risk_id: "RI-DEMO-004"
+    risk_description: "Reportable payment incidents or management reporting events may be identified, escalated, classified, or reported late because threshold evaluation is incomplete or exception data is not routed to Compliance in time."
+    risk_event: "A customer-impacting exception with potential notification implications is not escalated to Compliance until after the internal reportability triage target."
+    applicability_rationale: "Regulatory Reporting Risk materializes because exception events can involve customer impact, outage duration, dollar exposure, and notification thresholds that require timely Compliance triage."
+    confidence: 0.85
+    causes:
+      - "missed escalation"
+      - "manual reporting"
+      - "late incident classification"
+      - "incomplete threshold data"
+    consequences:
+      - "late incident notification analysis"
+      - "inaccurate management reporting"
+      - "regulatory challenge or remediation"
+      - "delayed customer-impact response"
+    impact_scores:
+      financial_impact: 2
+      regulatory_impact: 4
+      reputational_impact: 3
+      customer_impact: 2
+      liquidity_impact: 1
+    impact_rationales:
+      financial_impact: "Financial exposure is moderate because reporting failures primarily drive remediation and potential penalties rather than direct payment loss."
+      regulatory_impact: "Regulatory impact is severe when reportability triage or notification timing is missed."
+      reputational_impact: "Late or corrected incident reporting can reduce confidence from regulators and executive stakeholders."
+      customer_impact: "Customer impact depends on the underlying exception event and is usually indirect for reporting failures."
+      liquidity_impact: "Liquidity impact is minimal because the risk is classification and reporting rather than settlement disruption."
+    overall_impact_score: 4
+    overall_impact_rationale: "Overall impact is Severe because the regulatory dimension drives the risk when incident or threshold-sensitive payment events are escalated late."
+    likelihood_score: 2
+    likelihood_rating: "Medium Low"
+    likelihood_rationale: "Likelihood is Medium Low because threshold events are less frequent than daily operational exceptions, but two prior-quarter events missed the internal escalation target."
+    assumptions:
+      - "Compliance triage is required for threshold-sensitive payment exceptions."
+      - "Incident portal timestamps are the system of record for escalation timeliness."
+    exposure_metrics:
+      - metric_name: "reporting SLA breaches"
+        metric_value: "3"
+        metric_unit: "triage breaches in the prior quarter"
+        description: "Potential incident reviews not completed within the internal reportability triage target."
+        source: "Incident Management Portal"
+        supports: ["likelihood"]
+      - metric_name: "late incident escalations"
+        metric_value: "2"
+        metric_unit: "customer-impacting events"
+        description: "Events escalated to Compliance after the expected timer start."
+        source: "Compliance incident triage log"
+        supports: ["likelihood", "impact"]
+      - metric_name: "report corrections"
+        metric_value: "4"
+        metric_unit: "management report reclassifications"
+        description: "Prior-quarter payment exception items reclassified after management report issuance."
+        source: "Weekly operational risk report"
+        supports: ["impact"]
+    mapped_controls: ["CTRL-PAY-006", "CTRL-PAY-001"]
+    recommended_action: "Clarify reportability timer start, add Compliance triage checklist fields to the exception workflow, and require same-day escalation for customer-impacting threshold events."
+    review:
+      reviewer: "Compliance Officer"
+      challenge_comments: "Review reportability thresholds with Compliance before final approval."
+      challenged_fields: ["impact_scores", "likelihood_score", "management_response"]
+    evidence_references:
+      - evidence_id: "PAYEX-EVID-004"
+        evidence_type: "Incident triage log"
+        description: "Prior-quarter reportability triage timestamps and late escalation detail."
+        source: "Incident Management Portal"
+  - taxonomy_node_id: "RIB-ORS"
+    risk_id: "RI-DEMO-005"
+    risk_description: "Payment exception handling may not continue within tolerance during workflow outage, staffing disruption, site disruption, or third-party service interruption, delaying high-value payment resolution."
+    risk_event: "A workflow outage forces manual exception handling during peak volume and the manual process cannot clear customer-impacting high-value exceptions within the four-hour recovery target."
+    applicability_rationale: "Operational Resiliency Risk materializes because the process is time-sensitive, system-dependent, vendor-supported, and subject to defined recovery expectations."
+    confidence: 0.84
+    causes:
+      - "single points of failure"
+      - "manual recovery gaps"
+      - "untested peak-volume workarounds"
+      - "vendor communication delay"
+    consequences:
+      - "delayed high-value payment repair"
+      - "customer and treasury operations impact"
+      - "breach of recovery tolerance"
+      - "incident management escalation"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 2
+      reputational_impact: 3
+      customer_impact: 4
+      liquidity_impact: 4
+    impact_rationales:
+      financial_impact: "Manual recovery delays can create loss, fee reimbursement, or compensation exposure for high-value clients."
+      regulatory_impact: "Regulatory impact is moderate unless disruption triggers reportability or recurring resilience weaknesses."
+      reputational_impact: "Sustained payment repair delays can reduce client and executive confidence."
+      customer_impact: "Customer impact is severe when high-value payment resolution misses time-sensitive obligations."
+      liquidity_impact: "Liquidity impact is severe in a disruption that delays high-value settlement repair during peak processing."
+    overall_impact_score: 4
+    overall_impact_rationale: "Overall impact is Severe because customer and liquidity dimensions can be severe during a payment workflow outage or capacity disruption."
+    likelihood_score: 2
+    likelihood_rating: "Medium Low"
+    likelihood_rationale: "Likelihood is Medium Low because major disruptions are not daily, but the latest exercise found manual capacity limits against peak-volume assumptions."
+    assumptions:
+      - "The payment exception workflow is the primary queue of record."
+      - "Manual processing capacity is based on the latest continuity exercise."
+    exposure_metrics:
+      - metric_name: "RTO"
+        metric_value: "4"
+        metric_unit: "hours"
+        description: "Target recovery time objective for payment exception operations."
+        source: "Business continuity plan"
+        supports: ["impact"]
+      - metric_name: "RPO"
+        metric_value: "15"
+        metric_unit: "minutes"
+        description: "Target data recovery point for workflow transaction status."
+        source: "Technology disaster recovery standard"
+        supports: ["impact"]
+      - metric_name: "manual backlog capacity"
+        metric_value: "125"
+        metric_unit: "exceptions per day"
+        description: "Maximum manual processing capacity demonstrated in the latest exercise."
+        source: "Continuity exercise after-action report"
+        supports: ["likelihood", "impact"]
+      - metric_name: "critical system availability"
+        metric_value: "99.72%"
+        metric_unit: "prior-quarter availability"
+        description: "Payment Exception Workflow availability in the prior quarter."
+        source: "Technology service dashboard"
+        supports: ["likelihood"]
+    mapped_controls: ["CTRL-PAY-007", "CTRL-PAY-006"]
+    recommended_action: "Increase manual processing surge capacity, document vendor contact procedures, and retest peak-volume exception handling within the recovery objective."
+    review:
+      reviewer: "Business Continuity Lead"
+      challenge_comments: "Confirm whether manual workarounds have capacity for peak payment volume."
+      challenged_fields: ["impact_scores", "likelihood_score", "control_mapping"]
+    evidence_references:
+      - evidence_id: "PAYEX-EVID-005"
+        evidence_type: "Continuity exercise"
+        description: "Annual exercise results, manual processing capacity, and recovery objective evidence."
+        source: "Business continuity after-action report"
+  - taxonomy_node_id: "RIB-TPR"
+    risk_id: "RI-DEMO-006"
+    risk_description: "Third-party payment service providers may fail to meet message repair, incident notification, security, or continuity obligations, delaying exception resolution or weakening evidence for vendor oversight."
+    risk_event: "A payment message repair vendor misses SLA commitments during a processing issue and does not provide timely incident or root-cause information to Payment Operations."
+    applicability_rationale: "Third Party Risk materializes because external providers support payment routing, message repair, SLA reporting, and continuity communication for the exception process."
+    confidence: 0.82
+    causes:
+      - "outsourced processing"
+      - "vendor system dependency"
+      - "weak SLA monitoring"
+      - "delayed incident notification"
+    consequences:
+      - "late payment repair or resolution"
+      - "incomplete vendor oversight evidence"
+      - "customer or correspondent bank impact"
+      - "third-party risk escalation"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 3
+      reputational_impact: 3
+      customer_impact: 3
+      liquidity_impact: 2
+    impact_rationales:
+      financial_impact: "Vendor failure can delay or misroute high-value repair activity and create reimbursement or operational loss exposure."
+      regulatory_impact: "Vendor incident and continuity failures can create oversight and notification concerns."
+      reputational_impact: "Service-provider issues are visible to treasury clients when payment repair is delayed."
+      customer_impact: "Customer impact is significant when vendor-supported message repair misses high-value deadlines."
+      liquidity_impact: "Liquidity impact is limited because internal operations can manually resolve some vendor delays."
+    overall_impact_score: 3
+    overall_impact_rationale: "Overall impact is Significant because vendor performance can affect payment repair timing, customer outcomes, and oversight evidence."
+    likelihood_score: 2
+    likelihood_rating: "Medium Low"
+    likelihood_rationale: "Likelihood is Medium Low because vendor SLA breach exposure occurred five times last quarter, but the breaches were concentrated in message repair rather than all payment exception activity."
+    assumptions:
+      - "Vendor SLA dashboard covers message repair and exception support activities."
+      - "Critical vendor inventory is current for the payment exception process."
+    exposure_metrics:
+      - metric_name: "vendor SLA breaches"
+        metric_value: "5"
+        metric_unit: "message repair misses in the prior quarter"
+        description: "Third-party support items that missed documented repair or response service levels."
+        source: "Vendor SLA Portal"
+        supports: ["likelihood"]
+      - metric_name: "outsourced transaction volume"
+        metric_value: "38%"
+        metric_unit: "cross-border payment messages"
+        description: "Share of cross-border payment messages supported by a third-party processor."
+        source: "Vendor manager quarterly review"
+        supports: ["impact"]
+      - metric_name: "critical vendor count"
+        metric_value: "2"
+        metric_unit: "critical third parties"
+        description: "Vendors rated critical for payment routing, message repair, or continuity support."
+        source: "Third-party risk inventory"
+        supports: ["impact"]
+    mapped_controls: ["CTRL-PAY-005"]
+    recommended_action: "Collect vendor SLA evidence, document root-cause review for missed message repair targets, and request current SOC and continuity attestations."
+    review:
+      reviewer: "Vendor Manager"
+      challenge_comments: "Add vendor-specific evidence once third-party payment processor data is uploaded."
+      challenged_fields: ["exposure_metrics", "control_mapping", "recommended_action"]
+    evidence_references:
+      - evidence_id: "PAYEX-EVID-006"
+        evidence_type: "Vendor oversight"
+        description: "Vendor SLA dashboard and quarterly third-party performance review."
+        source: "Vendor SLA Portal"
+executive_summary:
+  headline: "Payment Exception Handling shows one high residual access risk and several medium residual risks tied to escalation, resiliency, and evidence quality."
+  key_messages:
+    - "Six material risk records were generated from a realistic high-value payment exception process, including specific exposure metrics and evidence references."
+    - "Privileged payment queue access is the highest residual concern because aged entitlement exceptions weaken an otherwise defined access review."
+    - "Regulatory reporting and operational resiliency require business challenge because reportability triage and manual recovery evidence are not yet fully mature."
+  top_residual_risks:
+    - "IT Security / Cybersecurity Risk: High-36"
+    - "Regulatory Reporting Risk: Medium-24"
+    - "Operational Resiliency Risk: Medium-24"
+  recommended_actions:
+    - "Close aged privileged-access exceptions and add segregation evidence to monthly entitlement review."
+    - "Clarify incident reportability timer starts and add Compliance triage fields to the workflow."
+    - "Retest manual exception handling at peak volume and collect vendor SLA and continuity evidence."

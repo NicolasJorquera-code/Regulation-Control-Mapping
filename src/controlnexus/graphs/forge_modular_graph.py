@@ -25,9 +25,9 @@ from controlnexus.graphs.graph_infra import (
     _get_agent,
     _get_client,
     _run_async_in_loop,
-    get_emitter,
+    get_emitter as get_emitter,  # noqa: F401 - public re-export for existing callers/tests
     reset_caches,
-    set_emitter,
+    set_emitter as set_emitter,  # noqa: F401 - public re-export for existing callers/tests
 )
 from controlnexus.graphs.state import add as _add
 from controlnexus.graphs.forge_modular_helpers import (
@@ -58,7 +58,6 @@ from controlnexus.tools.schemas import (
     METHOD_LOOKUP_SCHEMA,
     PLACEMENT_LOOKUP_SCHEMA,
     REGULATORY_LOOKUP_SCHEMA,
-    RISK_CATALOG_LOOKUP_SCHEMA,
     TAXONOMY_VALIDATOR_SCHEMA,
 )
 from controlnexus.validation.validator import build_retry_appendix, validate

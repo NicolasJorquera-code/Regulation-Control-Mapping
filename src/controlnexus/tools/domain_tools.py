@@ -292,7 +292,7 @@ def dc_exemplar_lookup(
                 "exemplars": [e.model_dump() for e in pa.exemplars],
             }
 
-    return {"section_id": section_id, "process_id": process_id, "exemplars": [], "error": f"Unknown section/process"}
+    return {"section_id": section_id, "process_id": process_id, "exemplars": [], "error": "Unknown section/process"}
 
 
 # ── Risk catalog tool ────────────────────────────────────────────────────────

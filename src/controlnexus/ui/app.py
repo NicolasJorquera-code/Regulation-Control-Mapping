@@ -52,10 +52,13 @@ def main() -> None:
     # Masthead
     st.markdown(get_masthead_html(st.session_state.active_tab), unsafe_allow_html=True)
 
-    # Four main tabs
-    tab_builder, tab_modular, tab_analysis, tab_playground = st.tabs(
-        ["Control Builder", "ControlForge Modular", "Analysis", "Playground"]
+    # Main tabs
+    tab_risk_inventory, tab_builder, tab_modular, tab_analysis, tab_playground = st.tabs(
+        ["Risk Inventory Builder", "Control Builder", "ControlForge Modular", "Analysis", "Playground"]
     )
+
+    with tab_risk_inventory:
+        _render_risk_inventory_tab()
 
     with tab_builder:
         _render_control_builder_tab()
@@ -134,6 +137,13 @@ def _render_control_builder_tab() -> None:
     from controlnexus.ui.control_builder import render_control_builder_tab
 
     render_control_builder_tab()
+
+
+def _render_risk_inventory_tab() -> None:
+    """Risk Inventory Builder tab: end-to-end risk inventory experience."""
+    from controlnexus.ui.risk_inventory_tab import render_risk_inventory_tab
+
+    render_risk_inventory_tab()
 
 
 def _render_modular_tab() -> None:

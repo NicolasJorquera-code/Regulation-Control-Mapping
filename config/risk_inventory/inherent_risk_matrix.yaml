@@ -1,0 +1,22 @@
+version: "1.0.0"
+matrix:
+  1:
+    1: {rating: "Low", score: 1, label: "Low-1"}
+    2: {rating: "Low", score: 2, label: "Low-2"}
+    3: {rating: "Low", score: 3, label: "Low-3"}
+    4: {rating: "Medium", score: 4, label: "Medium-4"}
+  2:
+    1: {rating: "Low", score: 2, label: "Low-2"}
+    2: {rating: "Medium", score: 4, label: "Medium-4"}
+    3: {rating: "Medium", score: 6, label: "Medium-6"}
+    4: {rating: "High", score: 8, label: "High-8"}
+  3:
+    1: {rating: "Low", score: 3, label: "Low-3"}
+    2: {rating: "Medium", score: 6, label: "Medium-6"}
+    3: {rating: "High", score: 9, label: "High-9"}
+    4: {rating: "Critical", score: 12, label: "Critical-12"}
+  4:
+    1: {rating: "Medium", score: 4, label: "Medium-4"}
+    2: {rating: "High", score: 8, label: "High-8"}
+    3: {rating: "Critical", score: 12, label: "Critical-12"}
+    4: {rating: "Critical", score: 16, label: "Critical-16"}
