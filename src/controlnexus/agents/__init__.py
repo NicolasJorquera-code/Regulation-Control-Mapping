@@ -6,6 +6,8 @@ from controlnexus.agents.config_proposer import ConfigProposerAgent
 from controlnexus.agents.differentiator import DifferentiationAgent
 from controlnexus.agents.enricher import EnricherAgent
 from controlnexus.agents.narrative import NarrativeAgent
+from controlnexus.agents.policy_ingestion import PolicyIngestionAgent
+from controlnexus.agents.risk import RiskAgent
 from controlnexus.agents.spec import SpecAgent
 
 __all__ = [
@@ -17,6 +19,8 @@ __all__ = [
     "DifferentiationAgent",
     "EnricherAgent",
     "NarrativeAgent",
+    "PolicyIngestionAgent",
+    "RiskAgent",
     "SpecAgent",
     "register_agent",
 ]

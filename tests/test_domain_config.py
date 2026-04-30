@@ -296,3 +296,299 @@ class TestBankingStandardParity:
     def test_section_exemplars_present(self, config: DomainConfig):
         for pa in config.process_areas:
             assert len(pa.exemplars) >= 1, f"Section '{pa.id}' has no exemplars"
+
+
+# ── Two-Tier Risk Taxonomy Tests ──────────────────────────────────────────────
+
+PIVOT_DEMO = PROFILES_DIR / "community_bank_pivot_demo.yaml"
+
+
+class TestTwoTierRiskTaxonomy:
+    """Test new models: RiskLevel1Category, MitigationLink, ResolvedRisk."""
+
+    def test_mitigation_link_creation(self):
+        from controlnexus.core.domain_config import MitigationLink
+
+        link = MitigationLink(control_type="Authorization", effectiveness=0.8, line_of_defense=2)
+        assert link.control_type == "Authorization"
+        assert link.effectiveness == 0.8
+        assert link.line_of_defense == 2
+
+    def test_mitigation_link_defaults(self):
+        from controlnexus.core.domain_config import MitigationLink
+
+        link = MitigationLink(control_type="Auth")
+        assert link.effectiveness == 1.0
+        assert link.line_of_defense is None
+
+    def test_mitigation_link_frozen(self):
+        from controlnexus.core.domain_config import MitigationLink
+
+        link = MitigationLink(control_type="Auth")
+        with pytest.raises(Exception):
+            link.control_type = "Other"
+
+    def test_risk_level1_category(self):
+        from controlnexus.core.domain_config import RiskLevel1Category
+
+        cat = RiskLevel1Category(
+            name="Operational", code="OPS", definition="Operational risks",
+            sub_groups=["IT", "Fraud", "People"],
+        )
+        assert cat.code == "OPS"
+        assert len(cat.sub_groups) == 3
+
+    def test_risk_catalog_entry_two_tier(self):
+        from controlnexus.core.domain_config import MitigationLink, RiskCatalogEntry
+
+        entry = RiskCatalogEntry(
+            id="OPS-001", name="IT Failure",
+            level_1="Operational", level_1_code="OPS", sub_group="IT",
+            default_mitigating_links=[
+                MitigationLink(control_type="Automated Rules", effectiveness=0.9),
+            ],
+            grounding="BCBS",
+        )
+        assert entry.level_1 == "Operational"
+        assert entry.sub_group == "IT"
+        assert len(entry.default_mitigating_links) == 1
+
+    def test_risk_catalog_entry_legacy_coercion(self):
+        """Legacy category + default_mitigating_types should coerce to new schema."""
+        from controlnexus.core.domain_config import RiskCatalogEntry
+
+        entry = RiskCatalogEntry(
+            id="R-1", name="Test",
+            category="Operational",
+            default_mitigating_types=["Auth", "Rec"],
+        )
+        assert entry.level_1 == "Operational"
+        assert len(entry.default_mitigating_links) == 2
+        assert entry.default_mitigating_links[0].control_type == "Auth"
+
+    def test_risk_instance_legacy_coercion(self):
+        """Legacy mitigated_by_types should coerce to mitigating_links."""
+        from controlnexus.core.domain_config import RiskInstance
+
+        ri = RiskInstance(
+            risk_id="R1",
+            mitigated_by_types=["Authorization", "Reconciliation"],
+        )
+        assert len(ri.mitigating_links) == 2
+        assert ri.mitigating_type_names == ["Authorization", "Reconciliation"]
+
+    def test_risk_instance_direct_links(self):
+        """Direct mitigating_links should work without coercion."""
+        from controlnexus.core.domain_config import MitigationLink, RiskInstance
+
+        ri = RiskInstance(
+            risk_id="R1",
+            mitigating_links=[
+                MitigationLink(control_type="Auth", effectiveness=0.8),
+            ],
+        )
+        assert len(ri.mitigating_links) == 1
+        assert ri.mitigating_links[0].effectiveness == 0.8
+        assert ri.mitigating_type_names == ["Auth"]
+
+    def test_resolved_risk_frozen(self):
+        from controlnexus.core.domain_config import ResolvedRisk
+
+        rr = ResolvedRisk(
+            risk_id="R1", risk_name="Test", level_1="Ops",
+            severity=4, selected_control_type="Auth",
+        )
+        assert rr.severity == 4
+        with pytest.raises(Exception):
+            rr.severity = 5
+
+    def test_process_config_apqc_migration(self):
+        """Legacy apqc_section_id should migrate to domain_metadata."""
+        from controlnexus.core.domain_config import ProcessConfig
+
+        proc = ProcessConfig(
+            id="P1", name="Test", apqc_section_id="4.0",
+        )
+        assert proc.domain_metadata == {"apqc_section_id": "4.0"}
+        assert proc.hierarchy_id == "4.0"
+        assert proc.effective_section_id == "4.0"
+
+    def test_process_config_domain_metadata(self):
+        """Direct domain_metadata should work."""
+        from controlnexus.core.domain_config import ProcessConfig
+
+        proc = ProcessConfig(
+            id="P1", name="Test",
+            domain_metadata={"apqc_section_id": "5.0", "custom": "val"},
+            hierarchy_id="5.0",
+        )
+        assert proc.effective_section_id == "5.0"
+        assert proc.domain_metadata["custom"] == "val"
+
+    def test_bu_processes_computed(self):
+        """BU.processes should be computed from ProcessConfig.owner_bu_ids."""
+        from controlnexus.core.domain_config import ProcessConfig
+
+        config = _minimal_config(
+            business_units=[
+                BusinessUnitConfig(id="BU-1", name="Retail"),
+                BusinessUnitConfig(id="BU-2", name="Ops"),
+            ],
+            processes=[
+                ProcessConfig(id="P1", name="Lending", owner_bu_ids=["BU-1"]),
+                ProcessConfig(id="P2", name="Settlement", owner_bu_ids=["BU-1", "BU-2"]),
+            ],
+        )
+        assert config.bu_processes("BU-1") == ["P1", "P2"]
+        assert config.bu_processes("BU-2") == ["P2"]
+
+    def test_pivot_demo_loads_with_legacy_fields(self):
+        """community_bank_pivot_demo.yaml uses legacy fields and should load cleanly."""
+        config = load_domain_config(PIVOT_DEMO)
+        assert len(config.processes) == 2
+        assert len(config.risk_catalog) == 3
+        proc = config.get_process("PROC-LENDING")
+        assert proc is not None
+        assert proc.effective_section_id == "1.0"
+        assert len(proc.risks) == 1
+        assert proc.risks[0].mitigating_type_names == ["Authorization"]
+
+    def test_cross_ref_validates_l1_categories(self):
+        """Unknown level_1 in risk_catalog should be caught by validator."""
+        from controlnexus.core.domain_config import RiskCatalogEntry, RiskLevel1Category
+
+        with pytest.raises(ValueError, match="level_1.*not in declared categories"):
+            _minimal_config(
+                risk_level_1_categories=[
+                    RiskLevel1Category(name="Operational", code="OPS", definition="ops"),
+                ],
+                risk_catalog=[
+                    RiskCatalogEntry(id="R1", name="Test", level_1="Unknown"),
+                ],
+            )
+
+    def test_cross_ref_validates_mitigating_links(self):
+        """Unknown control type in default_mitigating_links should be caught."""
+        from controlnexus.core.domain_config import MitigationLink, RiskCatalogEntry
+
+        with pytest.raises(ValueError, match="unknown type.*Nonexistent"):
+            _minimal_config(
+                risk_catalog=[
+                    RiskCatalogEntry(
+                        id="R1", name="Test",
+                        default_mitigating_links=[
+                            MitigationLink(control_type="Nonexistent"),
+                        ],
+                    ),
+                ],
+            )
+
+
+# ── Healthcare Fixture Tests ──────────────────────────────────────────────────
+
+HEALTHCARE_DEMO = PROFILES_DIR / "healthcare_demo.yaml"
+
+
+class TestHealthcareFixture:
+    """Verify healthcare_demo.yaml loads and demonstrates domain-agnosticism."""
+
+    def test_loads_without_error(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        assert config.name == "healthcare-demo"
+
+    def test_has_non_banking_control_types(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        type_names = {ct.name for ct in config.control_types}
+        assert "Access Control" in type_names
+        assert "Clinical Review" in type_names
+        assert "Reconciliation" not in type_names
+
+    def test_processes_use_domain_metadata(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        ehr = config.get_process("PROC-EHR")
+        assert ehr is not None
+        assert ehr.domain_metadata.get("system_class") == "EHR"
+        assert "apqc_section_id" not in ehr.domain_metadata
+
+    def test_hierarchy_ids_are_non_apqc(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        for proc in config.processes:
+            assert not proc.hierarchy_id[0].isdigit(), (
+                f"Process {proc.id} hierarchy_id '{proc.hierarchy_id}' "
+                f"looks APQC-like, should be domain-specific"
+            )
+
+    def test_risk_catalog_has_l1_categories(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        assert len(config.risk_level_1_categories) == 2
+        cat_names = {c.name for c in config.risk_level_1_categories}
+        assert "Regulatory Compliance" in cat_names
+        assert "Operational" in cat_names
+
+    def test_risk_mitigation_links_coerced(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        ehr = config.get_process("PROC-EHR")
+        assert ehr is not None
+        risk = ehr.risks[0]
+        assert risk.mitigating_type_names == ["Access Control", "Audit Trail"]
+
+    def test_bu_processes_computed(self):
+        config = load_domain_config(HEALTHCARE_DEMO)
+        clin_procs = config.bu_processes("BU-CLIN")
+        assert "PROC-EHR" in clin_procs
+        assert "PROC-MEDADMIN" in clin_procs
+
+    def test_assignment_matrix_builds(self):
+        from controlnexus.graphs.forge_modular_helpers import build_assignment_matrix
+
+        config = load_domain_config(HEALTHCARE_DEMO)
+        assignments = build_assignment_matrix(config, target_count=5)
+        assert len(assignments) > 0
+        for a in assignments:
+            assert a["control_type"] in {"Access Control", "Audit Trail", "Clinical Review", "Incident Reporting"}
+
+
+# ── DomainProfile Tests ───────────────────────────────────────────────────────
+
+
+class TestDomainProfile:
+    """Test DomainProfile and DomainProfileRegistry."""
+
+    def test_profile_creation(self):
+        from controlnexus.core.domain_profile import DomainProfile
+
+        config = _minimal_config()
+        profile = DomainProfile(name="test", config=config)
+        assert profile.name == "test"
+        assert profile.risk_catalog_size == 0
+        assert profile.l1_category_count == 0
+
+    def test_default_control_id_builder(self):
+        from controlnexus.core.domain_profile import DefaultControlIdBuilder
+
+        builder = DefaultControlIdBuilder()
+        assert builder.build_id("4.1", "REC", 1) == "CTRL-0401-REC-001"
+        assert builder.build_id("12.3", "AUT", 42) == "CTRL-1203-AUT-042"
+
+    def test_registry_manual_register(self):
+        from controlnexus.core.domain_profile import DomainProfile, DomainProfileRegistry
+
+        config = _minimal_config()
+        profile = DomainProfile(name="test", config=config)
+        registry = DomainProfileRegistry()
+        registry.register("test", profile)
+        assert registry.get("test") is profile
+        assert "test" in registry.available_domains
+
+    def test_registry_get_unknown_returns_none(self):
+        from controlnexus.core.domain_profile import DomainProfileRegistry
+
+        registry = DomainProfileRegistry()
+        assert registry.get("nonexistent") is None
+
+    def test_registry_default_builder(self):
+        from controlnexus.core.domain_profile import DomainProfileRegistry
+
+        registry = DomainProfileRegistry()
+        builder = registry.get_builder("anything")
+        assert builder.build_id("1.0", "TST", 1) == "CTRL-0100-TST-001"

@@ -1,9 +1,10 @@
 """ControlNexus Streamlit Dashboard.
 
-Main entry point for the three-tab web UI:
-  1. ControlForge — configuration explorer and section runner
-  2. Analysis — upload controls Excel, run gap analysis, view dashboard
-  3. Playground — interactive agent testing environment
+Main entry point for the four-tab web UI:
+  1. Control Builder — guided wizard for creating DomainConfig
+  2. ControlForge Modular — config-driven control generation
+  3. Analysis — upload controls Excel, run gap analysis, view dashboard
+  4. Playground — interactive agent testing environment
 
 Launch:
     streamlit run src/controlnexus/ui/app.py
@@ -46,18 +47,18 @@ def main() -> None:
 
     # Session state defaults
     if "active_tab" not in st.session_state:
-        st.session_state.active_tab = "ControlForge"
+        st.session_state.active_tab = "Control Builder"
 
     # Masthead
     st.markdown(get_masthead_html(st.session_state.active_tab), unsafe_allow_html=True)
 
     # Four main tabs
-    tab_controlforge, tab_modular, tab_analysis, tab_playground = st.tabs(
-        ["ControlForge", "ControlForge Modular", "Analysis", "Playground"]
+    tab_builder, tab_modular, tab_analysis, tab_playground = st.tabs(
+        ["Control Builder", "ControlForge Modular", "Analysis", "Playground"]
     )
 
-    with tab_controlforge:
-        _render_controlforge_tab()
+    with tab_builder:
+        _render_control_builder_tab()
 
     with tab_modular:
         _render_modular_tab()
@@ -128,11 +129,11 @@ def _render_playground_tab() -> None:
     render_playground()
 
 
-def _render_controlforge_tab() -> None:
-    """ControlForge tab: browse config, run pipeline."""
-    from controlnexus.ui.controlforge_tab import render_controlforge
+def _render_control_builder_tab() -> None:
+    """Control Builder tab: guided wizard for creating DomainConfig."""
+    from controlnexus.ui.control_builder import render_control_builder_tab
 
-    render_controlforge()
+    render_control_builder_tab()
 
 
 def _render_modular_tab() -> None:

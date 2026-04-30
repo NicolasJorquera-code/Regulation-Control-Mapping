@@ -101,21 +101,160 @@ def render_modular_tab() -> None:
     if config_path is None:
         return
 
-    # ── Generation settings ───────────────────────────────────────────────
-    st.markdown("---")
-    st.markdown("### Generation Settings")
+    # ── Config Summary ────────────────────────────────────────────────────
+    with st.expander("Profile Summary", expanded=False):
+        cols = st.columns(4)
+        cols[0].metric("Control Types", len(config.control_types))
+        cols[1].metric("Processes", len(config.processes))
+        cols[2].metric("Risk Catalog", len(config.risk_catalog))
+        cols[3].metric("L1 Categories", len(config.risk_level_1_categories))
+        if config.risk_level_1_categories:
+            st.caption(
+                "Risk categories: "
+                + ", ".join(f"**{c.name}** ({c.code})" for c in config.risk_level_1_categories)
+            )
 
+    # ── Quick Section Run ─────────────────────────────────────────────────
+    _render_quick_section_run(config, config_path)
+
+    # ── Full Generation (all sections) ────────────────────────────────────
+    with st.expander("Full Generation (All Sections)", expanded=False):
+        _render_full_generation(config, config_path)
+
+    # ── Display full-run results ──────────────────────────────────────────
+    _render_results(
+        session_key="modular_result",
+        table_key="modular_controls",
+        csv_key="modular_export_csv",
+        json_key="modular_export_json",
+        config_name=config.name,
+    )
+
+
+# ── Quick Section Run ─────────────────────────────────────────────────────────
+
+
+def _render_quick_section_run(config: Any, config_path: Path) -> None:
+    """Generate controls for a single process (or legacy process area)."""
+    st.markdown("---")
+    st.markdown("### Quick Process Run")
+    st.caption("Generate controls for a single process or APQC process area.")
+
+    # Support both new processes and legacy process_areas
+    processes = getattr(config, "processes", []) or []
+    process_areas = getattr(config, "process_areas", []) or []
+    items = processes or process_areas
+
+    if not items:
+        st.info("No processes defined in this config.")
+        return
+
+    col_sec, col_count = st.columns([3, 1])
+    with col_sec:
+        section_options = list(range(len(items)))
+        selected_idx = st.selectbox(
+            "Process",
+            options=section_options,
+            format_func=lambda i: f"{items[i].id} — {items[i].name}",
+            key="qsr_section",
+        )
+    with col_count:
+        qsr_count = st.number_input(
+            "Controls",
+            min_value=1,
+            max_value=50,
+            value=5,
+            key="qsr_count",
+        )
+
+    qsr_llm = st.toggle(
+        "Enable LLM Generation",
+        value=False,
+        key="qsr_llm",
+        help="Uses LLM agents for richer output. Requires API credentials.",
+    )
+    if qsr_llm:
+        from controlnexus.core.transport import build_client_from_env
+
+        if build_client_from_env() is None:
+            st.warning(
+                "No LLM credentials found. Generation will use deterministic fallback."
+            )
+
+    selected_item = items[selected_idx]
+
+    if st.button(
+        f"Generate {qsr_count} controls for {selected_item.id}",
+        type="primary",
+        use_container_width=True,
+        key="qsr_generate",
+    ):
+        with st.status(
+            f"Generating {qsr_count} controls for {selected_item.id}: {selected_item.name}…",
+            expanded=True,
+        ) as status:
+            emitter = EventEmitter()
+            listener = StreamlitEventListener(status)
+            emitter.on(listener)
+            set_emitter(emitter)
+
+            try:
+                graph = build_forge_graph().compile()
+                input_state: dict[str, Any] = {
+                    "config_path": str(config_path),
+                    "target_count": qsr_count,
+                    "llm_enabled": qsr_llm,
+                }
+                # Use process_filter for new configs, section_filter for legacy
+                if processes:
+                    input_state["process_filter"] = selected_item.id
+                else:
+                    input_state["section_filter"] = selected_item.id
+                result = graph.invoke(input_state, config={"recursion_limit": 300})
+            finally:
+                set_emitter(EventEmitter())
+
+        payload = result.get("plan_payload", {})
+        st.session_state["section_run_result"] = payload
+
+        st.success(
+            f"Generated **{payload.get('total_controls', 0)}** controls "
+            f"for **{selected_item.id}: {selected_item.name}**"
+        )
+
+        tool_log = result.get("tool_calls_log", [])
+        if tool_log:
+            with st.expander(f"Tool Usage ({len(tool_log)} calls)", expanded=False):
+                st.dataframe(pd.DataFrame(tool_log), hide_index=True)
+
+    # Display section-run results
+    _render_results(
+        session_key="section_run_result",
+        table_key="qsr_controls",
+        csv_key="qsr_export_csv",
+        json_key="qsr_export_json",
+        config_name=config.name,
+    )
+
+
+# ── Full Generation ───────────────────────────────────────────────────────────
+
+
+def _render_full_generation(config: Any, config_path: Path) -> None:
+    """Full multi-section generation settings and execution."""
     target_count = st.number_input(
         "Number of controls to generate",
         min_value=1,
         max_value=500,
         value=10,
+        key="full_gen_count",
     )
 
     llm_enabled = st.toggle(
         "Enable LLM Generation",
         value=False,
         help="Uses LLM agents for richer control output. Requires API credentials (ICA/OpenAI/Anthropic).",
+        key="full_gen_llm",
     )
     if llm_enabled:
         from controlnexus.core.transport import build_client_from_env
@@ -127,12 +266,28 @@ def render_modular_tab() -> None:
                 "deterministic fallback."
             )
 
+    # Generation mode toggle
+    generation_mode = st.radio(
+        "Generation Mode",
+        options=["synthetic", "policy_first"],
+        index=0,
+        horizontal=True,
+        help=(
+            "**Synthetic**: Generate controls from catalog risks and config. "
+            "**Policy First**: Ingest a policy document to derive risks "
+            "(requires LLM — stub implementation)."
+        ),
+        key="full_gen_mode",
+    )
+    if generation_mode == "policy_first" and not llm_enabled:
+        st.info("Policy-first mode works best with LLM enabled. Currently uses synthetic fallback.")
+
     # Optional distribution customization
     distribution_config: dict[str, Any] | None = None
 
     with st.expander("Customize Distribution", expanded=False):
         st.caption(
-            "Adjust relative weights for control type and section emphasis. Leave defaults for even/risk-weighted distribution."
+            "Adjust relative weights for control type and process emphasis. Leave defaults for even/risk-weighted distribution."
         )
 
         type_names = [ct.name for ct in config.control_types]
@@ -147,24 +302,35 @@ def render_modular_tab() -> None:
                 if w != 1.0:
                     type_changed = True
 
+        # Support both new processes and legacy process_areas
+        processes = getattr(config, "processes", []) or []
+        process_areas = getattr(config, "process_areas", []) or []
+        items = processes or process_areas
+
         section_weights: dict[str, float] = {}
         section_changed = False
 
-        if config.process_areas:
-            st.markdown("**Section Emphasis:**")
-            s_cols = st.columns(min(len(config.process_areas), 4))
-            for i, pa in enumerate(config.process_areas):
+        if items:
+            st.markdown("**Process Emphasis:**")
+            s_cols = st.columns(min(len(items), 4))
+            for i, item in enumerate(items):
                 with s_cols[i % len(s_cols)]:
+                    # Get default weight: from risk_profile multiplier (legacy) or 1.0 (new)
+                    default_w = 1.0
+                    if hasattr(item, "risk_profile") and hasattr(item.risk_profile, "multiplier"):
+                        default_w = float(item.risk_profile.multiplier)
+                    elif hasattr(item, "risks") and item.risks:
+                        default_w = float(max(r.multiplier for r in item.risks))
                     w = st.slider(
-                        f"{pa.id}: {pa.name[:20]}",
+                        f"{item.id}: {item.name[:20]}",
                         0.0,
                         10.0,
-                        float(pa.risk_profile.multiplier),
+                        default_w,
                         0.5,
-                        key=f"sw_{pa.id}",
+                        key=f"sw_{item.id}",
                     )
-                    section_weights[pa.id] = w
-                    if w != pa.risk_profile.multiplier:
+                    section_weights[item.id] = w
+                    if w != default_w:
                         section_changed = True
 
         if type_changed or section_changed:
@@ -191,11 +357,12 @@ def render_modular_tab() -> None:
                     "config_path": str(config_path),
                     "target_count": target_count,
                     "llm_enabled": llm_enabled,
+                    "generation_mode": generation_mode,
                 }
                 if distribution_config:
                     input_state["distribution_config"] = distribution_config
 
-                result = graph.invoke(input_state)
+                result = graph.invoke(input_state, config={"recursion_limit": 300})
             finally:
                 # Reset to no-op emitter so other tabs aren't affected
                 set_emitter(EventEmitter())
@@ -214,52 +381,77 @@ def render_modular_tab() -> None:
             with st.expander(f"Tool Usage ({len(tool_log)} calls)", expanded=False):
                 st.dataframe(pd.DataFrame(tool_log), hide_index=True)
 
-    # ── Display results ───────────────────────────────────────────────────
-    payload = st.session_state.get("modular_result")
-    if payload:
-        records = payload.get("final_records", [])
-        if records:
-            st.markdown("### Generated Controls")
 
-            # Summary metrics
-            mcol1, mcol2, mcol3 = st.columns(3)
-            mcol1.metric("Total Controls", len(records))
-            types_used = set(r.get("control_type", "") for r in records)
-            mcol2.metric("Control Types Used", len(types_used))
-            bus_used = set(r.get("business_unit_name", "") for r in records)
-            mcol3.metric("Business Units Used", len(bus_used))
+# ── Shared results display ────────────────────────────────────────────────────
 
-            # All available columns for the toggler
-            all_cols = [
-                "control_id",
-                "hierarchy_id",
-                "leaf_name",
-                "selected_level_1",
-                "selected_level_2",
-                "business_unit_id",
-                "business_unit_name",
-                "who",
-                "what",
-                "when",
-                "frequency",
-                "where",
-                "why",
-                "full_description",
-                "quality_rating",
-                "evidence",
-            ]
 
-            render_data_table(
-                records=records,
-                default_columns=[
-                    "control_id",
-                    "business_unit_name",
-                    "selected_level_1",
-                    "selected_level_2",
-                    "frequency",
-                    "full_description",
-                ],
-                all_columns=all_cols,
-                key="modular_controls",
-                export_filename=f"{payload.get('config_name', 'controls')}_controls.csv",
-            )
+def _render_results(
+    session_key: str,
+    table_key: str,
+    csv_key: str,
+    json_key: str,
+    config_name: str,
+) -> None:
+    """Display generated controls from session state."""
+    payload = st.session_state.get(session_key)
+    if not payload:
+        return
+    records = payload.get("final_records", [])
+    if not records:
+        return
+
+    st.markdown("### Generated Controls")
+
+    # Summary metrics
+    mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+    mcol1.metric("Total Controls", len(records))
+    types_used = set(r.get("control_type", "") for r in records)
+    mcol2.metric("Control Types Used", len(types_used))
+    bus_used = set(r.get("business_unit_name", "") for r in records)
+    mcol3.metric("Business Units Used", len(bus_used))
+    processes_used = set(r.get("process_name", "") for r in records if r.get("process_name"))
+    mcol4.metric("Processes", len(processes_used) if processes_used else "–")
+
+    # Controls table
+    all_cols = [
+        "control_id", "hierarchy_id", "leaf_name",
+        "selected_level_1", "selected_level_2",
+        "business_unit_id", "business_unit_name",
+        "process_id", "process_name",
+        "risk_id", "risk_name", "risk_severity",
+        "who", "what", "when", "frequency",
+        "where", "why", "full_description",
+        "quality_rating", "evidence",
+    ]
+    render_data_table(
+        records=records,
+        default_columns=[
+            "control_id", "business_unit_name",
+            "process_name", "risk_id",
+            "selected_level_1", "selected_level_2",
+            "frequency", "full_description",
+        ],
+        all_columns=all_cols,
+        key=table_key,
+        export_filename=f"{config_name}_controls.csv",
+    )
+
+    # Downloads
+    import json as _json
+    dl1, dl2 = st.columns(2)
+    with dl1:
+        st.download_button(
+            "📥 Download CSV",
+            data=pd.DataFrame(records).to_csv(index=False),
+            file_name=f"{config_name}_controls.csv",
+            mime="text/csv",
+            key=csv_key,
+        )
+    with dl2:
+        st.download_button(
+            "📥 Download JSON",
+            data=_json.dumps(records, indent=2),
+            file_name=f"{config_name}_controls.json",
+            mime="application/json",
+            key=json_key,
+        )

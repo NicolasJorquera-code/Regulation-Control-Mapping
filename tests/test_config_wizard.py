@@ -1,10 +1,10 @@
-"""Tests for controlnexus.ui.config_wizard (unit tests for helpers, no Streamlit)."""
+"""Tests for controlnexus.ui.control_builder (unit tests for helpers, no Streamlit)."""
 
 from __future__ import annotations
 
 import pytest
 
-from controlnexus.ui.config_wizard import (
+from controlnexus.ui.control_builder import (
     STEP_LABELS,
     TOTAL_STEPS,
     _auto_code,

@@ -1,0 +1,1956 @@
+# ==============================================================================
+# Risk Taxonomy — CTB 2025 Risk Universe (two-tier, canonical)
+# ==============================================================================
+#
+# Faithful to the source Risk Universe (Risk_Taxonomy_Breakdown.docx).
+# Definitions grounded in:
+#   - OCC Comptroller's Handbook (Bank Supervision Process, Risk Governance)
+#   - Basel Committee on Banking Supervision (BCBS) operational risk event types
+#   - EBA Final RTS on Operational Risk Losses (August 2025) — Level 2 categories
+#   - Federal Reserve SR 11-7 (Model Risk), SR 13-19 (Third-Party)
+#   - FFIEC IT Examination Handbook
+#   - COSO ERM Integrated Framework (2017)
+#   - ISO 31000:2018
+#   - NIST CSF 2.0
+#   - PCI DSS 4.0 (PAN / cardholder data references)
+#
+# Schema: aligned to an EXTENDED RiskCatalogEntry (see deliverable_plan.md §3):
+#   id                          — stable identifier, L1 code + sequential
+#   name                        — Level 2 risk name
+#   level_1                     — parent category name
+#   level_1_code                — 3-letter category code
+#   sub_group                   — present only for Operational risks
+#   default_severity            — 1-5, tunable per RiskInstance
+#   description                 — 2-4 sentence definition
+#   default_mitigating_types    — control type names from banking_standard.yaml
+#   grounding                   — source citation
+#
+# Intent: drop-in as `risk_catalog` inside a DomainConfig YAML. Tier-1 categories
+# are declared separately under `risk_level_1_categories` so the hierarchy is
+# first-class rather than inferred from strings.
+# ==============================================================================
+
+metadata:
+  name: "ctb-2025-risk-universe"
+  version: "1.0.0"
+  tier_count: 2
+  source_document: "Risk_Taxonomy_Breakdown.docx (CTB 2025)"
+  schema_extension_required: true
+  schema_notes: >
+    Assumes RiskCatalogEntry is extended with level_1, level_1_code, sub_group,
+    and default_mitigating_types fields, and that DomainConfig carries a
+    parallel risk_level_1_categories list. See deliverable_plan.md §3.
+  grounding_sources:
+    - "OCC Comptroller's Handbook — Bank Supervision Process"
+    - "OCC Comptroller's Handbook — Corporate and Risk Governance"
+    - "BCBS Operational Risk Event Types (Basel II/III)"
+    - "EBA Final RTS on Operational Risk Losses (August 2025)"
+    - "Federal Reserve SR 11-7 (Model Risk Management)"
+    - "Federal Reserve SR 13-19 (Third-Party Risk Management)"
+    - "FFIEC IT Examination Handbook"
+    - "COSO ERM Integrated Framework (2017)"
+    - "ISO 31000:2018"
+    - "NIST Cybersecurity Framework 2.0"
+    - "PCI DSS 4.0"
+
+# ==============================================================================
+# LEVEL 1 CATEGORIES
+# ==============================================================================
+
+risk_level_1_categories:
+
+  - name: Strategy
+    code: STR
+    definition: >
+      Risk to earnings, capital, or enterprise value arising from adverse
+      business decisions, improper implementation of decisions, or failure
+      to respond to changes in the operating environment. Reflects the
+      compatibility of strategic goals, the strategies developed to achieve
+      them, the resources deployed, and the quality of execution.
+    grounding: "OCC — Strategic Risk"
+
+  - name: Market Place
+    code: MKT
+    definition: >
+      Risk that external market, macroeconomic, political, demographic, or
+      technological conditions shift in ways that adversely affect competitive
+      position, earnings trajectory, or ability to execute strategy. Distinct
+      from Financial Markets risk (direct exposure to market prices).
+    grounding: "COSO ERM — External Environment"
+
+  - name: Reputation
+    code: REP
+    definition: >
+      Risk to current or projected earnings, capital, or franchise value
+      arising from negative public opinion. Affects ability to establish new
+      relationships or services and to continue servicing existing ones, and
+      may expose the institution to litigation or a decline in customer base.
+    grounding: "OCC — Reputation Risk"
+
+  - name: Regulatory Compliance
+    code: RCO
+    definition: >
+      Risk to earnings, capital, or franchise value arising from violations
+      of, or non-conformance with, laws, rules, regulations, prescribed
+      practices, internal policies, or ethical standards. Also arises where
+      rules governing products or activities are ambiguous or untested.
+    grounding: "OCC — Compliance Risk"
+
+  - name: Cyber
+    code: CYB
+    definition: >
+      Risk of loss arising from unauthorized access, use, disclosure,
+      disruption, modification, or destruction of information systems,
+      networks, or data. Includes threats from malicious external actors,
+      insider misuse, and unintended exposure through third-party connections.
+    grounding: "NIST CSF 2.0; FFIEC IT Examination Handbook"
+
+  - name: Financial Markets
+    code: FMK
+    definition: >
+      Risk to earnings, capital, and liquidity arising from adverse movements
+      in interest rates, funding costs, foreign exchange rates, equity and
+      commodity prices, market volatility, and the availability of funding.
+      Encompasses interest rate risk, price risk, and liquidity risk under
+      OCC supervisory categories.
+    grounding: "OCC — Interest Rate, Liquidity, and Price Risk"
+
+  - name: Credit
+    code: CRD
+    definition: >
+      Risk to earnings or capital arising from an obligor's failure to meet
+      the terms of any contract with the institution or otherwise fail to
+      perform as agreed. Present in all activities where success depends on
+      counterparty, issuer, or borrower performance.
+    grounding: "OCC — Credit Risk"
+
+  - name: Talent
+    code: TAL
+    definition: >
+      Risk to strategy execution, operational performance, and culture
+      arising from inability to attract, develop, retain, motivate, or
+      transition the workforce required to deliver the institution's
+      objectives. Distinct from HR compliance risk (→ Regulatory Compliance).
+    grounding: "COSO ERM — People and Culture"
+
+  - name: Operational
+    code: OPS
+    definition: >
+      Risk of loss resulting from inadequate or failed internal processes,
+      people, and systems or from external events. Includes legal risk but
+      excludes strategic and reputational risk. Organized through nine
+      functional sub-groups that map to the Basel operational risk event
+      types.
+    grounding: "BCBS Operational Risk Event Types; OCC — Operational Risk"
+    sub_groups:
+      - Legal
+      - Technology
+      - Information
+      - Third Party
+      - Business Continuity
+      - Business Process
+      - Financial Reporting
+      - Fraud
+      - Other
+
+# ==============================================================================
+# RISK CATALOG (Level 2 — 114 entries)
+# ==============================================================================
+
+risk_catalog:
+
+  # ─────────────────────────────────────────────────────────── Strategy (STR)
+  - id: STR-001
+    name: Strategic Planning and Execution
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 4
+    description: >
+      Risk that the enterprise strategic plan is poorly conceived,
+      inadequately communicated, or ineffectively executed, producing
+      misallocation of capital and human resources relative to long-term
+      objectives.
+    default_mitigating_types:
+      - Authorization
+      - Risk and Compliance Assessments
+      - Internal and External Audits
+      - Risk Limit Setting
+    grounding: "OCC Corporate and Risk Governance Booklet"
+
+  - id: STR-002
+    name: Alignment of Business Activities to Strategic Objectives
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 3
+    description: >
+      Risk that day-to-day business activities, investments, or product
+      decisions drift away from the board-approved strategic plan and risk
+      appetite, producing unmanaged exposure or missed targets.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Authorization
+      - Exception Reporting
+      - Risk Escalation Processes
+
+  - id: STR-003
+    name: Integration with Dealers
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 4
+    description: >
+      Risk specific to the CTB dealer-integrated operating model that dealer
+      partnerships, incentive structures, information flows, or shared
+      technology platforms fail to support enterprise objectives or expose
+      the institution to misaligned conduct, financial, or reputational
+      outcomes.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Authorization
+      - Risk and Compliance Assessments
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: STR-004
+    name: Business Model
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 4
+    description: >
+      Risk that the institution's core business model — revenue streams,
+      competitive positioning, value proposition — becomes unsustainable or
+      uncompetitive due to structural shifts in the industry, customer
+      behavior, or regulatory environment.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Risk Escalation Processes
+      - Internal and External Audits
+
+  - id: STR-005
+    name: Budgeting and Forecasting
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 3
+    description: >
+      Risk that financial plans, capital projections, and operating forecasts
+      are based on flawed assumptions, incomplete data, or inadequate stress
+      scenarios, leading to resource misallocation or capital shortfalls.
+    default_mitigating_types:
+      - Verification and Validation
+      - Authorization
+      - Reconciliation
+      - Risk and Compliance Assessments
+
+  - id: STR-006
+    name: Technology Innovation and Implementation
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 4
+    description: >
+      Strategic risk arising from pace, direction, and execution of
+      technology adoption — failure to invest in necessary capabilities,
+      over-investment in unproven technologies, or inability to translate
+      technology initiatives into business outcomes. Distinct from
+      operational technology risk.
+    default_mitigating_types:
+      - Authorization
+      - System Change Management
+      - Risk and Compliance Assessments
+      - Third Party Due Diligence
+
+  - id: STR-007
+    name: Corporate Culture
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 4
+    description: >
+      Risk that prevailing norms, values, and behaviors across the enterprise
+      are inconsistent with stated objectives, risk appetite, or ethical
+      standards, undermining strategy execution, conduct outcomes, and
+      long-term franchise value.
+    default_mitigating_types:
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+      - Internal Compliance Monitoring
+      - Talent Management Practices
+
+  - id: STR-008
+    name: Strategic Initiatives
+    level_1: Strategy
+    level_1_code: STR
+    default_severity: 4
+    description: >
+      Risk that discrete enterprise initiatives — mergers, divestitures,
+      product launches, market entries, transformation programs — fail to
+      achieve stated objectives, overrun budgets, or introduce unintended
+      risk exposures.
+    default_mitigating_types:
+      - Authorization
+      - Risk and Compliance Assessments
+      - Verification and Validation
+      - Internal and External Audits
+
+  # ──────────────────────────────────────────────────────── Market Place (MKT)
+  - id: MKT-001
+    name: Competitive Landscape
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 3
+    description: >
+      Risk of erosion in market share, margins, or relevance arising from new
+      competitor entry, consolidation, or shifts in the basis of competition
+      (price, service, technology, distribution).
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Risk Escalation Processes
+
+  - id: MKT-002
+    name: Macroeconomic Environment
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 4
+    description: >
+      Risk arising from changes in broad economic conditions — unemployment,
+      GDP growth, inflation, monetary policy, housing markets — that affect
+      loan demand, credit quality, funding costs, and consumer financial
+      health.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Exception Reporting
+      - Risk Limit Setting
+
+  - id: MKT-003
+    name: Global and Political Environment
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 3
+    description: >
+      Risk arising from geopolitical events, trade policy shifts, cross-border
+      tensions, elections, or regulatory regime changes that affect the
+      operating environment or markets in which the institution competes.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Risk Escalation Processes
+
+  - id: MKT-004
+    name: Emerging Markets
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 3
+    description: >
+      Risk that exposure to, or strategic dependence on, developing markets
+      produces adverse outcomes due to political instability, currency
+      volatility, weak legal frameworks, or underdeveloped infrastructure.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Risk Limit Setting
+
+  - id: MKT-005
+    name: Demographics
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 2
+    description: >
+      Risk that long-term shifts in population structure — age, income,
+      household formation, geographic distribution — alter the addressable
+      market, product suitability, or workforce availability.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+
+  - id: MKT-006
+    name: Consumer Behavior, Spending, Financial Health, and Debt Levels
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 4
+    description: >
+      Risk that changes in consumer income, savings behavior, discretionary
+      spending, or aggregate household debt adversely affect credit card
+      usage, loan performance, and deposit flows.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Exception Reporting
+      - Surveillance
+
+  - id: MKT-007
+    name: Changing Consumer Needs
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 3
+    description: >
+      Risk that shifts in consumer preferences, expectations around digital
+      experience, or demand for new product categories outpace the
+      institution's ability to adapt its offerings and distribution.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+
+  - id: MKT-008
+    name: Breakthrough Technologies
+    level_1: Market Place
+    level_1_code: MKT
+    default_severity: 4
+    description: >
+      Risk of strategic displacement by disruptive technologies — embedded
+      finance, generative AI, distributed ledger, open banking platforms —
+      whose adoption curve outpaces the institution's ability to respond.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Authorization
+
+  # ───────────────────────────────────────────────────────── Reputation (REP)
+  - id: REP-001
+    name: Social Media
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 3
+    description: >
+      Risk of reputational harm arising from adverse customer, employee,
+      activist, or third-party discourse on social platforms, including
+      viral complaints, coordinated campaigns, and misinformation.
+    default_mitigating_types:
+      - Surveillance
+      - Crisis Management
+      - Risk Escalation Processes
+
+  - id: REP-002
+    name: Marketing
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 3
+    description: >
+      Risk that marketing communications are inaccurate, misleading,
+      non-compliant (UDAAP, advertising regulations), or inconsistent with
+      institutional values, damaging stakeholder trust.
+    default_mitigating_types:
+      - Authorization
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Internal Compliance Monitoring
+
+  - id: REP-003
+    name: Corporate Communications
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 3
+    description: >
+      Risk that internal or external corporate communications — press
+      releases, investor materials, executive statements — contain errors,
+      inconsistencies, or disclosures that damage stakeholder confidence.
+    default_mitigating_types:
+      - Authorization
+      - Verification and Validation
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: REP-004
+    name: Products and Service Quality
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 4
+    description: >
+      Risk that product design flaws, service defects, or inconsistent
+      delivery quality produce customer harm, regulatory attention, or
+      public criticism that damages franchise value.
+    default_mitigating_types:
+      - Verification and Validation
+      - Exception Reporting
+      - Risk and Compliance Assessments
+
+  - id: REP-005
+    name: Customer Service
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 3
+    description: >
+      Risk that customer experience, interactions, perceptions, preferences,
+      expectations, and satisfaction outcomes produce negative word-of-mouth,
+      attrition, or complaints that scale into reputational damage.
+    default_mitigating_types:
+      - Surveillance
+      - Exception Reporting
+      - Training and Awareness Programs
+
+  - id: REP-006
+    name: Third Party Actions
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 4
+    description: >
+      Risk that actions of vendors, service providers, dealers, or other
+      third parties acting on behalf of or in association with the
+      institution cause reputational harm attributable to the institution.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Surveillance
+      - Risk Escalation Processes
+
+  - id: REP-007
+    name: Media Relations
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 3
+    description: >
+      Risk arising from adverse coverage by news media, analyst commentary,
+      or industry publications, including during active regulatory or legal
+      matters.
+    default_mitigating_types:
+      - Crisis Management
+      - Authorization
+      - Risk Escalation Processes
+
+  - id: REP-008
+    name: Crisis Management (Reputational)
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 4
+    description: >
+      Risk that the institution's response to an active crisis event is slow,
+      uncoordinated, inconsistent, or otherwise amplifies rather than
+      mitigates reputational damage. Related to, but distinct from,
+      Operational.Business_Continuity.Crisis_Management (operational response).
+    default_mitigating_types:
+      - Crisis Management
+      - Business Continuity Planning and Awareness
+      - Risk Escalation Processes
+
+  - id: REP-009
+    name: Sales Practices
+    level_1: Reputation
+    level_1_code: REP
+    default_severity: 5
+    description: >
+      Risk that sales conduct — incentive-driven behavior, cross-selling,
+      product suitability, disclosure practices — produces customer harm or
+      regulatory findings that damage reputation. Reflects the Wells Fargo
+      archetype as the defining exemplar.
+    default_mitigating_types:
+      - Internal Compliance Monitoring
+      - Surveillance
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+
+  # ──────────────────────────────────────────── Regulatory Compliance (RCO)
+  - id: RCO-001
+    name: Anti-Money Laundering and Terrorist Financing
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 5
+    description: >
+      Risk of failure to detect, prevent, and report money laundering,
+      terrorist financing, and related financial crime in compliance with
+      the Bank Secrecy Act, USA PATRIOT Act, OFAC sanctions, and FinCEN
+      regulations.
+    default_mitigating_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Surveillance
+      - Risk Escalation Processes
+      - Training and Awareness Programs
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: RCO-002
+    name: Privacy Breaches
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 5
+    description: >
+      Risk of non-compliance with privacy laws and regulations (GLBA, state
+      privacy laws, GDPR where applicable, PIPEDA for Canadian operations)
+      through unauthorized collection, use, disclosure, or retention of
+      personal information.
+    default_mitigating_types:
+      - Data Security and Protection
+      - System and Application Restrictions
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Training and Awareness Programs
+
+  - id: RCO-003
+    name: Records Retention
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 3
+    description: >
+      Risk of non-compliance with regulatory and legal record retention
+      obligations — preservation periods, legal holds, destruction
+      requirements — across physical and electronic records.
+    default_mitigating_types:
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Data Security and Protection
+      - Internal and External Audits
+
+  - id: RCO-004
+    name: Laws and Regulations
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 4
+    description: >
+      Risk of non-compliance with the broad set of substantive banking laws
+      and regulations — lending, deposits, securities, tax, consumer
+      protection, fair lending — applicable to the institution's activities.
+    default_mitigating_types:
+      - Internal Compliance Monitoring
+      - Risk and Compliance Assessments
+      - Training and Awareness Programs
+      - Authorization
+
+  - id: RCO-005
+    name: Frequency and Complexity of New Laws or Regulations
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 3
+    description: >
+      Risk that the pace, volume, or complexity of new or amended regulations
+      exceeds the institution's capacity to interpret, operationalize, and
+      monitor compliance, creating gaps or inefficient overcompliance.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+
+  - id: RCO-006
+    name: Regulatory Reporting Requirements
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 4
+    description: >
+      Risk of inaccurate, incomplete, or untimely regulatory filings and
+      reports (Call Reports, FR Y-9C, HMDA, CCAR, stress test submissions,
+      BSA reporting), including both content errors and submission failures.
+    default_mitigating_types:
+      - Verification and Validation
+      - Reconciliation
+      - Authorization
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: RCO-007
+    name: Consumer Protection
+    level_1: Regulatory Compliance
+    level_1_code: RCO
+    default_severity: 5
+    description: >
+      Risk of non-compliance with consumer protection laws and regulations
+      (TILA, RESPA, EFTA, FCRA, ECOA, UDAAP, CFPB rules), including fair
+      and transparent disclosure, non-discriminatory treatment, and
+      protection from unfair, deceptive, or abusive acts and practices.
+    default_mitigating_types:
+      - Internal Compliance Monitoring
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+
+  # ──────────────────────────────────────────────────────────── Cyber (CYB)
+  - id: CYB-001
+    name: Digital Fraud and Account Takeover
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 5
+    description: >
+      Risk of unauthorized actors gaining control of legitimate customer
+      digital banking accounts through credential theft, SIM swapping,
+      session hijacking, or authentication bypass, and conducting fraudulent
+      transactions under the customer's identity.
+    default_mitigating_types:
+      - Automated Rules
+      - Surveillance
+      - System and Application Restrictions
+      - Exception Reporting
+
+  - id: CYB-002
+    name: Third Party Service Disruption or Fraud (Cyber)
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 4
+    description: >
+      Cyber risk propagated through third-party service providers — via
+      compromise of the vendor's systems, fraudulent actions by vendor
+      personnel, or disruption of critical vendor-provided services — that
+      affects the institution's customers, data, or operations.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Data Security and Protection
+      - Business Continuity Planning and Awareness
+      - Surveillance
+
+  - id: CYB-003
+    name: Business Disruption from Cyber Threats
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 5
+    description: >
+      Risk of material disruption to customer-facing services, internal
+      operations, or payment systems caused by ransomware, destructive
+      malware, distributed denial of service, or other cyber attacks.
+    default_mitigating_types:
+      - Business Continuity Planning and Awareness
+      - Technology Disaster Recovery
+      - Surveillance
+      - Crisis Management
+
+  - id: CYB-004
+    name: PII Data Breach
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 5
+    description: >
+      Risk of unauthorized access to or exfiltration of personally
+      identifiable information — names, addresses, Social Security numbers,
+      dates of birth, account numbers — triggering customer harm, regulatory
+      breach notification obligations, and reputational damage.
+    default_mitigating_types:
+      - Data Security and Protection
+      - System and Application Restrictions
+      - Surveillance
+      - Risk Escalation Processes
+
+  - id: CYB-005
+    name: PAN Data Breach
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 5
+    description: >
+      Risk of unauthorized access to or exfiltration of Primary Account
+      Numbers and cardholder data, triggering PCI DSS violations, card
+      network penalties, mandatory reissuance costs, and customer fraud
+      exposure.
+    default_mitigating_types:
+      - Data Security and Protection
+      - System and Application Restrictions
+      - Internal and External Audits
+      - Surveillance
+
+  - id: CYB-006
+    name: Artificial Intelligence (Cyber)
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 4
+    description: >
+      Emerging cyber risk arising from adversarial use of AI — deepfakes,
+      voice cloning, automated vulnerability discovery, AI-assisted social
+      engineering — and from vulnerabilities in the institution's own AI
+      systems (prompt injection, model extraction, training data poisoning).
+    default_mitigating_types:
+      - Surveillance
+      - Training and Awareness Programs
+      - System Change Management
+      - Authorization
+
+  - id: CYB-007
+    name: Phishing and Social Engineering
+    level_1: Cyber
+    level_1_code: CYB
+    default_severity: 4
+    description: >
+      Risk that employees, contractors, or customers are deceived through
+      fraudulent emails, calls, texts, or in-person approaches into
+      disclosing credentials, authorizing transactions, or installing
+      malicious software.
+    default_mitigating_types:
+      - Training and Awareness Programs
+      - Automated Rules
+      - Surveillance
+      - Risk Escalation Processes
+
+  # ────────────────────────────────────────────────── Financial Markets (FMK)
+  - id: FMK-001
+    name: Interest Rates
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 4
+    description: >
+      Risk to earnings and economic value of equity arising from changes in
+      interest rates, affecting both the banking book (net interest income,
+      repricing mismatches, basis risk, option risk) and trading positions.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Exception Reporting
+      - Verification and Validation
+      - Authorization
+
+  - id: FMK-002
+    name: Funding
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 4
+    description: >
+      Risk that the institution cannot secure stable, cost-effective funding
+      to support its asset base, including concentration in volatile funding
+      sources, loss of market access, or mispriced wholesale funding.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Exception Reporting
+      - Authorization
+
+  - id: FMK-003
+    name: Liquidity
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 5
+    description: >
+      Risk that the institution cannot meet its obligations as they come due
+      without incurring unacceptable losses, including funding liquidity risk
+      (inability to raise cash) and market liquidity risk (inability to
+      unwind positions without material price impact).
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Exception Reporting
+      - Verification and Validation
+      - Business Continuity Planning and Awareness
+
+  - id: FMK-004
+    name: Capital Inadequacy
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 5
+    description: >
+      Risk that regulatory or economic capital falls below required
+      thresholds due to unexpected losses, rapid asset growth, or model
+      underestimation, limiting the institution's ability to absorb shocks
+      and continue operating.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Verification and Validation
+      - Authorization
+      - Risk and Compliance Assessments
+
+  - id: FMK-005
+    name: Securities and Derivative Instruments
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 4
+    description: >
+      Risk of loss on positions in fixed income, equity, or derivative
+      instruments — held for trading, available-for-sale, or hedging — due
+      to adverse price movements, basis changes, or counterparty default.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Reconciliation
+      - Verification and Validation
+      - Surveillance
+
+  - id: FMK-006
+    name: Foreign Exchange Rates
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 3
+    description: >
+      Risk to earnings or capital arising from movements in currency exchange
+      rates, affecting non-USD-denominated assets, liabilities, revenues,
+      and translated foreign subsidiary results.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Reconciliation
+      - Exception Reporting
+
+  - id: FMK-007
+    name: Market Volatility
+    level_1: Financial Markets
+    level_1_code: FMK
+    default_severity: 3
+    description: >
+      Risk arising from elevated or sudden changes in asset price volatility,
+      affecting trading position values, hedge effectiveness, collateral
+      requirements, and customer trading behavior.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Surveillance
+      - Exception Reporting
+
+  # ─────────────────────────────────────────────────────────── Credit (CRD)
+  - id: CRD-001
+    name: Customer Default
+    level_1: Credit
+    level_1_code: CRD
+    default_severity: 5
+    description: >
+      Risk that retail customers fail to repay credit card balances, personal
+      loans, or other extensions of credit, resulting in charge-offs net of
+      recoveries.
+    default_mitigating_types:
+      - Authorization
+      - Verification and Validation
+      - Exception Reporting
+      - Automated Rules
+
+  - id: CRD-002
+    name: Counterparty
+    level_1: Credit
+    level_1_code: CRD
+    default_severity: 4
+    description: >
+      Risk that a counterparty to a derivatives, securities financing, or
+      similar transaction defaults before final settlement of the
+      transaction's cash flows, exposing the institution to replacement cost
+      risk.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Authorization
+      - Surveillance
+      - Third Party Due Diligence
+
+  - id: CRD-003
+    name: Concentration and Geographic Exposure
+    level_1: Credit
+    level_1_code: CRD
+    default_severity: 4
+    description: >
+      Risk that otherwise unrelated exposures share a common characteristic
+      — obligor, industry, geography, product type, funding source — that
+      becomes a common source of weakness, producing losses large enough to
+      threaten the institution's health.
+    default_mitigating_types:
+      - Risk Limit Setting
+      - Exception Reporting
+      - Risk and Compliance Assessments
+
+  - id: CRD-004
+    name: Collections
+    level_1: Credit
+    level_1_code: CRD
+    default_severity: 4
+    description: >
+      Risk that collections operations fail to recover delinquent balances
+      efficiently, fairly, and in compliance with consumer protection laws
+      (FDCPA, state collections laws), affecting loss rates and exposing
+      the institution to regulatory and reputational harm.
+    default_mitigating_types:
+      - Internal Compliance Monitoring
+      - Exception Reporting
+      - Training and Awareness Programs
+      - Authorization
+
+  - id: CRD-005
+    name: Modeling (Credit)
+    level_1: Credit
+    level_1_code: CRD
+    default_severity: 4
+    description: >
+      Risk arising from use of credit models — origination scorecards, PD/LGD/
+      EAD models, CECL allowance models, stress models — producing adverse
+      outcomes due to flawed design, data, implementation, or application.
+      Governed by SR 11-7 model risk management expectations.
+    default_mitigating_types:
+      - Verification and Validation
+      - Authorization
+      - Internal and External Audits
+      - System Change Management
+    grounding: "Federal Reserve SR 11-7 — Model Risk Management"
+
+  - id: CRD-006
+    name: Account Acquisition
+    level_1: Credit
+    level_1_code: CRD
+    default_severity: 4
+    description: >
+      Risk that new account origination practices — underwriting standards,
+      channel mix, incentive design, marketing targeting — introduce
+      obligors whose credit performance falls short of expectations or
+      whose acquisition violates fair lending or UDAAP standards.
+    default_mitigating_types:
+      - Authorization
+      - Internal Compliance Monitoring
+      - Automated Rules
+      - Verification and Validation
+
+  # ─────────────────────────────────────────────────────────── Talent (TAL)
+  - id: TAL-001
+    name: Recruitment and Retention
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 3
+    description: >
+      Risk that the institution cannot attract or retain personnel with the
+      skills, experience, and capacity required for current and planned
+      operations, particularly in competitive or specialized roles (risk,
+      cyber, data, compliance).
+    default_mitigating_types:
+      - Staffing and Resourcing Adequacy
+      - Talent Management Practices
+
+  - id: TAL-002
+    name: Succession Planning
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 3
+    description: >
+      Risk that the absence of identified, prepared successors for critical
+      roles — executive, technical, and control-function leadership —
+      creates continuity exposure upon departure, illness, or promotion of
+      incumbents.
+    default_mitigating_types:
+      - Talent Management Practices
+      - Staffing and Resourcing Adequacy
+      - Authorization
+
+  - id: TAL-003
+    name: Performance and Compensation
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 3
+    description: >
+      Risk that performance management and compensation practices fail to
+      align employee behavior with enterprise objectives, risk appetite,
+      and conduct standards, or create incentives for excessive risk taking
+      or misconduct.
+    default_mitigating_types:
+      - Talent Management Practices
+      - Internal Compliance Monitoring
+      - Authorization
+
+  - id: TAL-004
+    name: Training
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 3
+    description: >
+      Risk that mandatory and role-based training programs fail to deliver
+      the knowledge, skills, or awareness required for employees to perform
+      their roles safely and in compliance with applicable standards.
+    default_mitigating_types:
+      - Training and Awareness Programs
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: TAL-005
+    name: People Management
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 3
+    description: >
+      Risk arising from ineffective supervision, performance management,
+      conflict resolution, or employee relations practices, producing
+      productivity loss, attrition, grievances, or legal exposure.
+    default_mitigating_types:
+      - Talent Management Practices
+      - Risk Escalation Processes
+      - Training and Awareness Programs
+
+  - id: TAL-006
+    name: Employee Engagement and Communication
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 2
+    description: >
+      Risk that low employee engagement or ineffective internal communication
+      weakens execution quality, elevates turnover, and reduces the
+      effectiveness of cultural and conduct programs.
+    default_mitigating_types:
+      - Talent Management Practices
+      - Training and Awareness Programs
+
+  - id: TAL-007
+    name: Learning and Growth
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 2
+    description: >
+      Risk that inadequate investment in employee development, career
+      pathing, and capability building leaves the workforce unable to keep
+      pace with evolving business needs.
+    default_mitigating_types:
+      - Training and Awareness Programs
+      - Talent Management Practices
+
+  - id: TAL-008
+    name: Culture (Talent Lens)
+    level_1: Talent
+    level_1_code: TAL
+    default_severity: 3
+    description: >
+      Risk arising from cultural patterns within the workforce that undermine
+      enterprise values, risk awareness, or conduct standards. Observed
+      through the talent lens (behaviors, engagement, reporting willingness);
+      overlaps with STR-007 Corporate_Culture at the strategic layer.
+    default_mitigating_types:
+      - Talent Management Practices
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+
+  # ═══════════════════════════════════════════════════════ Operational (OPS)
+  # ────────────────────────────────────────────────── OPS / Legal sub-group
+  - id: OPS-LEG-001
+    name: Litigation
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Legal
+    default_severity: 4
+    description: >
+      Risk of loss arising from claims, lawsuits, class actions, or other
+      legal proceedings brought against the institution by customers,
+      counterparties, employees, regulators, or third parties.
+    default_mitigating_types:
+      - Risk Escalation Processes
+      - Authorization
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: OPS-LEG-002
+    name: Liability
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Legal
+    default_severity: 3
+    description: >
+      Risk of financial obligation arising from the institution's acts or
+      omissions, including tort liability, statutory liability, and
+      contingent liabilities not yet the subject of active litigation.
+    default_mitigating_types:
+      - Authorization
+      - Verification and Validation
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: OPS-LEG-003
+    name: Intellectual Property Protection and Infringement
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Legal
+    default_severity: 2
+    description: >
+      Risk of loss arising from failure to protect the institution's
+      intellectual property (trademarks, patents, copyrights, trade secrets)
+      or from inadvertent infringement of others' intellectual property
+      rights.
+    default_mitigating_types:
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Authorization
+      - Internal and External Audits
+
+  - id: OPS-LEG-004
+    name: Contract
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Legal
+    default_severity: 3
+    description: >
+      Risk that contracts with customers, vendors, partners, or employees
+      are poorly drafted, incompletely executed, improperly stored, or
+      inadequately monitored for performance and expiration.
+    default_mitigating_types:
+      - Authorization
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Verification and Validation
+
+  - id: OPS-LEG-005
+    name: Conflict of Interest
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Legal
+    default_severity: 3
+    description: >
+      Risk that undisclosed or unmanaged conflicts of interest — among
+      employees, between business lines, or with third parties — compromise
+      the institution's obligations to customers, integrity of decisions,
+      or compliance with fiduciary duties.
+    default_mitigating_types:
+      - Internal Compliance Monitoring
+      - Segregation of Duties
+      - Authorization
+      - Training and Awareness Programs
+
+  # ─────────────────────────────────────────── OPS / Technology sub-group
+  - id: OPS-TEC-001
+    name: Technology Availability
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk that technology systems, platforms, or services required for
+      business operations become unavailable due to hardware failure,
+      capacity constraints, software defects, or operational incidents.
+    default_mitigating_types:
+      - Technology Disaster Recovery
+      - Business Continuity Planning and Awareness
+      - Surveillance
+      - Exception Reporting
+
+  - id: OPS-TEC-002
+    name: Technology Security
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk that technology controls fail to prevent unauthorized access,
+      modification, or exfiltration at the system or infrastructure layer.
+      Distinct from Cyber L1 in that it addresses the control-side posture
+      of the institution's own technology estate.
+    default_mitigating_types:
+      - System and Application Restrictions
+      - Data Security and Protection
+      - Surveillance
+      - Internal and External Audits
+
+  - id: OPS-TEC-003
+    name: Technology Functionality
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 3
+    description: >
+      Risk that deployed technology systems do not deliver the intended
+      functionality, produce incorrect results, or degrade in performance
+      under load, affecting the business processes they support.
+    default_mitigating_types:
+      - System Change Management
+      - Verification and Validation
+      - Exception Reporting
+
+  - id: OPS-TEC-004
+    name: Technology Recoverability
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk that systems, data, or infrastructure cannot be recovered within
+      required recovery time and recovery point objectives following a
+      disruption, outage, or disaster event.
+    default_mitigating_types:
+      - Technology Disaster Recovery
+      - Business Continuity Planning and Awareness
+      - Verification and Validation
+
+  - id: OPS-TEC-005
+    name: Data Integrity
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk that data within technology systems is inadvertently or
+      maliciously altered, corrupted, duplicated, or lost, compromising
+      the reliability of downstream reporting, decisioning, and operations.
+    default_mitigating_types:
+      - Reconciliation
+      - Verification and Validation
+      - Automated Rules
+      - Data Security and Protection
+
+  - id: OPS-TEC-006
+    name: Software and Hardware Lifecycle
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 3
+    description: >
+      Risk arising from management of technology assets across their
+      lifecycle — procurement, deployment, patching, upgrading,
+      decommissioning — including unsupported end-of-life components and
+      delayed security updates.
+    default_mitigating_types:
+      - System Change Management
+      - Third Party Due Diligence
+      - Internal and External Audits
+
+  - id: OPS-TEC-007
+    name: Technology Change Management
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk that changes to production systems (deployments, configuration
+      changes, schema migrations) introduce defects, outages, or security
+      exposures due to inadequate planning, testing, approval, or rollback
+      procedures.
+    default_mitigating_types:
+      - System Change Management
+      - Authorization
+      - Segregation of Duties
+      - Verification and Validation
+
+  - id: OPS-TEC-008
+    name: Technology Incident Management
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk that technology incidents are not detected, classified, escalated,
+      contained, or resolved promptly and correctly, producing avoidable
+      impact duration, data loss, or regulatory notification failures.
+    default_mitigating_types:
+      - Risk Escalation Processes
+      - Exception Reporting
+      - Crisis Management
+      - Surveillance
+
+  - id: OPS-TEC-009
+    name: Technology Third Party Service Dependency
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Technology
+    default_severity: 4
+    description: >
+      Risk arising from dependence on third-party technology providers
+      (cloud, SaaS, managed services, payment processors) whose performance,
+      availability, or security shortfalls propagate into the institution's
+      operations.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Business Continuity Planning and Awareness
+      - Surveillance
+
+  # ────────────────────────────────────────── OPS / Information sub-group
+  - id: OPS-INF-001
+    name: Information Availability
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 3
+    description: >
+      Risk that information required for business decisions or operations is
+      not accessible when needed, due to system unavailability, poor
+      information architecture, or retrieval failures.
+    default_mitigating_types:
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Technology Disaster Recovery
+      - Business Continuity Planning and Awareness
+
+  - id: OPS-INF-002
+    name: Information Security
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 4
+    description: >
+      Risk of unauthorized access to, use of, or disclosure of sensitive
+      information, viewed at the information-asset level independent of the
+      underlying technology systems.
+    default_mitigating_types:
+      - Data Security and Protection
+      - System and Application Restrictions
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: OPS-INF-003
+    name: Information Reliability
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 3
+    description: >
+      Risk that information used for decisioning or reporting is
+      inconsistent, untimely, or otherwise not trustworthy, even when it is
+      not technically corrupted.
+    default_mitigating_types:
+      - Verification and Validation
+      - Reconciliation
+      - Internal and External Audits
+
+  - id: OPS-INF-004
+    name: Information Integrity
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 4
+    description: >
+      Risk that information is altered — intentionally or inadvertently — in
+      ways that break its semantic accuracy or provenance. Related to but
+      distinct from OPS-TEC-005 Data_Integrity, which addresses the
+      system-level guarantee.
+    default_mitigating_types:
+      - Verification and Validation
+      - Reconciliation
+      - Automated Rules
+
+  - id: OPS-INF-005
+    name: Information Confidentiality
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 4
+    description: >
+      Risk that information classified as confidential, restricted, or
+      privileged is disclosed to parties not authorized to receive it,
+      including internal over-sharing.
+    default_mitigating_types:
+      - Data Security and Protection
+      - System and Application Restrictions
+      - Training and Awareness Programs
+
+  - id: OPS-INF-006
+    name: Information Quality
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 3
+    description: >
+      Risk that the institution's data lacks completeness, accuracy,
+      timeliness, consistency, validity, or uniqueness required for its
+      intended use, including regulatory reporting and model inputs.
+    default_mitigating_types:
+      - Reconciliation
+      - Verification and Validation
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: OPS-INF-007
+    name: PCI Requirements
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 5
+    description: >
+      Risk of non-compliance with PCI DSS 4.0 requirements for the storage,
+      processing, and transmission of cardholder data, exposing the
+      institution to card network fines, forensic investigation costs, and
+      loss of card processing privileges.
+    default_mitigating_types:
+      - Data Security and Protection
+      - System and Application Restrictions
+      - Internal and External Audits
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    grounding: "PCI DSS 4.0"
+
+  - id: OPS-INF-008
+    name: Information Third Party Service Dependency
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Information
+    default_severity: 4
+    description: >
+      Risk arising from dependence on third parties that host, process, or
+      transmit institutional information, including cloud providers, SaaS
+      platforms, and data brokers.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Data Security and Protection
+      - Internal and External Audits
+
+  # ────────────────────────────────────────── OPS / Third Party sub-group
+  - id: OPS-TPT-001
+    name: Vendor Performance and SLA
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Third Party
+    default_severity: 3
+    description: >
+      Risk that vendors fail to meet contractual service level agreements,
+      quality standards, or performance obligations, degrading downstream
+      institutional operations or customer outcomes.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Exception Reporting
+      - Verification and Validation
+
+  - id: OPS-TPT-002
+    name: Vendor Reputation
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Third Party
+    default_severity: 3
+    description: >
+      Risk that a vendor's own reputational issues (enforcement actions,
+      public controversies, associated parties) transfer to the institution
+      through continued engagement.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Surveillance
+      - Risk Escalation Processes
+
+  - id: OPS-TPT-003
+    name: Contractual Obligations
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Third Party
+    default_severity: 3
+    description: >
+      Risk arising from failure to understand, monitor, or enforce
+      contractual obligations — termination rights, liability caps, audit
+      rights, exit provisions — with third parties.
+    default_mitigating_types:
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Authorization
+      - Internal and External Audits
+
+  - id: OPS-TPT-004
+    name: Vendor Management
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Third Party
+    default_severity: 4
+    description: >
+      Risk that the institution's vendor management lifecycle — onboarding,
+      ongoing monitoring, risk tiering, performance management, offboarding
+      — is inadequate to manage the full population of third-party
+      relationships per OCC and Federal Reserve third-party guidance.
+    default_mitigating_types:
+      - Third Party Due Diligence
+      - Risk and Compliance Assessments
+      - Authorization
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+    grounding: "OCC Third Party Risk Management Guidance; Fed SR 13-19"
+
+  # ──────────────────────────────── OPS / Business Continuity sub-group
+  - id: OPS-BCT-001
+    name: Operational Resiliency
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Continuity
+    default_severity: 4
+    description: >
+      Risk that the institution cannot sustain delivery of critical
+      operations through disruption, whether caused by technology failure,
+      natural disaster, pandemic, or other stress event, in line with
+      operational resilience supervisory expectations.
+    default_mitigating_types:
+      - Business Continuity Planning and Awareness
+      - Technology Disaster Recovery
+      - Crisis Management
+
+  - id: OPS-BCT-002
+    name: Business Interruption
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Continuity
+    default_severity: 4
+    description: >
+      Risk of material loss from unplanned cessation or degradation of
+      business operations, including associated revenue loss, contractual
+      penalties, and recovery costs.
+    default_mitigating_types:
+      - Business Continuity Planning and Awareness
+      - Technology Disaster Recovery
+      - Crisis Management
+
+  - id: OPS-BCT-003
+    name: Crisis Management (Operational)
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Continuity
+    default_severity: 4
+    description: >
+      Risk that operational crisis response — activation of contingency
+      plans, command structure, stakeholder communication, decision rights
+      — fails to contain impact. Distinct from REP-008 which addresses the
+      reputational dimension.
+    default_mitigating_types:
+      - Crisis Management
+      - Business Continuity Planning and Awareness
+      - Risk Escalation Processes
+
+  - id: OPS-BCT-004
+    name: Disaster Recovery
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Continuity
+    default_severity: 4
+    description: >
+      Risk that recovery from a declared disaster event — whether
+      technology, physical, or personnel — exceeds defined recovery time
+      objectives or recovery point objectives, producing extended impact
+      on customers and counterparties.
+    default_mitigating_types:
+      - Technology Disaster Recovery
+      - Business Continuity Planning and Awareness
+      - Verification and Validation
+
+  # ─────────────────────────────────── OPS / Business Process sub-group
+  - id: OPS-BPR-001
+    name: Ineffective Processes and Operations
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Process
+    default_severity: 3
+    description: >
+      Risk that end-to-end business processes are poorly designed, manually
+      intensive, error-prone, or unfit for current volumes, producing
+      execution errors, capacity constraints, or cost inefficiencies. Maps
+      to Basel "Execution, Delivery & Process Management" event type.
+    default_mitigating_types:
+      - Verification and Validation
+      - Reconciliation
+      - Automated Rules
+      - Internal and External Audits
+    grounding: "BCBS Operational Risk — Execution, Delivery & Process Management"
+
+  - id: OPS-BPR-002
+    name: Models (Non-Credit)
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Process
+    default_severity: 4
+    description: >
+      Risk arising from the use of quantitative models across the enterprise
+      — pricing, valuation, AML/fraud detection, capital, stress —
+      producing adverse outcomes due to flawed design, data, implementation,
+      or application, under SR 11-7 model risk management expectations.
+    default_mitigating_types:
+      - Verification and Validation
+      - Authorization
+      - Internal and External Audits
+      - System Change Management
+    grounding: "Federal Reserve SR 11-7 — Model Risk Management"
+
+  - id: OPS-BPR-003
+    name: Documentation
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Process
+    default_severity: 3
+    description: >
+      Risk that process documentation, procedures, and standard operating
+      manuals are inaccurate, outdated, or inaccessible, producing execution
+      errors, onboarding failures, and audit findings.
+    default_mitigating_types:
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+      - Internal and External Audits
+      - Training and Awareness Programs
+
+  - id: OPS-BPR-004
+    name: Project Management
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Business Process
+    default_severity: 3
+    description: >
+      Risk that enterprise projects are poorly planned, resourced,
+      prioritized, or executed, producing schedule slippage, budget
+      overruns, and failure to deliver intended business outcomes.
+    default_mitigating_types:
+      - Authorization
+      - Risk and Compliance Assessments
+      - Internal and External Audits
+
+  # ────────────────────────────── OPS / Financial Reporting sub-group
+  - id: OPS-FRP-001
+    name: Financial Reporting Integrity
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Financial Reporting
+    default_severity: 5
+    description: >
+      Risk of errors, omissions, or misstatements in financial statements
+      affecting accuracy, completeness, or authorization of reported
+      figures. Governed by SOX Section 404 internal control requirements
+      for public institutions.
+    default_mitigating_types:
+      - Reconciliation
+      - Authorization
+      - Verification and Validation
+      - Segregation of Duties
+    grounding: "SOX Section 404; PCAOB AS 5"
+
+  - id: OPS-FRP-002
+    name: Valuation
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Financial Reporting
+    default_severity: 4
+    description: >
+      Risk of material error in the valuation of assets, liabilities, or
+      off-balance-sheet exposures, especially for illiquid or Level 3 fair
+      value items requiring significant judgment.
+    default_mitigating_types:
+      - Verification and Validation
+      - Authorization
+      - Internal and External Audits
+      - Segregation of Duties
+
+  - id: OPS-FRP-003
+    name: Timeliness of Reporting
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Financial Reporting
+    default_severity: 3
+    description: >
+      Risk that financial and regulatory reporting fails to meet prescribed
+      deadlines, producing regulatory sanctions, market confidence impact,
+      and reporting backlog.
+    default_mitigating_types:
+      - Exception Reporting
+      - Authorization
+      - Reconciliation
+
+  - id: OPS-FRP-004
+    name: Accounting and Disclosure
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Financial Reporting
+    default_severity: 4
+    description: >
+      Risk of incorrect application of accounting standards (GAAP, IFRS)
+      or incomplete disclosure of material items in filings, producing
+      restatement risk and supervisory findings.
+    default_mitigating_types:
+      - Authorization
+      - Verification and Validation
+      - Internal and External Audits
+      - Documentation, Data, and Activity Completeness and Appropriateness Checks
+
+  - id: OPS-FRP-005
+    name: Financial Reporting Control Environment
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Financial Reporting
+    default_severity: 4
+    description: >
+      Risk that the design and operation of internal controls over financial
+      reporting (ICFR) fail to provide reasonable assurance regarding the
+      reliability of financial reporting, as evaluated under SOX 404 and
+      COSO frameworks.
+    default_mitigating_types:
+      - Segregation of Duties
+      - Authorization
+      - Internal and External Audits
+      - Reconciliation
+    grounding: "COSO Internal Control — Integrated Framework; SOX Section 404"
+
+  # ─────────────────────────────── OPS / Fraud — Internal sub-group
+  - id: OPS-FRD-I-001
+    name: Theft of Customer Data or Company Assets
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      Internal fraud event involving unauthorized taking of customer data,
+      customer funds, or institutional assets by employees or insiders.
+      Maps to Basel "Internal Fraud — Unauthorized Activity / Theft and
+      Fraud" Level 2 categories.
+    default_mitigating_types:
+      - Segregation of Duties
+      - System and Application Restrictions
+      - Surveillance
+      - Talent Management Practices
+    grounding: "BCBS Operational Risk — Internal Fraud"
+
+  - id: OPS-FRD-I-002
+    name: Collusion
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      Risk of fraud involving coordination between internal personnel, or
+      between internal personnel and external parties, to circumvent
+      controls, defeat segregation of duties, or facilitate unauthorized
+      activity.
+    default_mitigating_types:
+      - Segregation of Duties
+      - Surveillance
+      - Internal and External Audits
+      - Risk Escalation Processes
+
+  - id: OPS-FRD-I-003
+    name: Bribery and Corruption
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      Risk of employees or agents giving or receiving improper benefits to
+      influence business decisions, in violation of FCPA, UK Bribery Act,
+      or analogous laws.
+    default_mitigating_types:
+      - Internal Compliance Monitoring
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+      - Authorization
+
+  - id: OPS-FRD-I-004
+    name: Asset Misappropriation
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 4
+    description: >
+      Internal fraud involving misuse or misdirection of institutional
+      assets — expense fraud, payroll fraud, procurement fraud, improper
+      use of credentials or access.
+    default_mitigating_types:
+      - Segregation of Duties
+      - Authorization
+      - Reconciliation
+      - Exception Reporting
+
+  - id: OPS-FRD-I-005
+    name: Embezzlement and Accounting Fraud
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      Internal fraud involving falsification of accounting records to
+      conceal theft, manipulate reported results, or misappropriate funds.
+    default_mitigating_types:
+      - Segregation of Duties
+      - Reconciliation
+      - Internal and External Audits
+      - Verification and Validation
+
+  - id: OPS-FRD-I-006
+    name: Intentional Procedure or Limit Violations
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 4
+    description: >
+      Risk that personnel knowingly bypass mandatory procedures, exceed
+      authorized limits, or conceal exceptions from review, whether for
+      personal gain, convenience, or misguided customer service.
+    default_mitigating_types:
+      - Authorization
+      - Exception Reporting
+      - Surveillance
+      - Risk Escalation Processes
+
+  # ─────────────────────────────── OPS / Fraud — External sub-group
+  - id: OPS-FRD-E-001
+    name: Unauthorized Access to Customer Data (External)
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      External fraud event involving unauthorized external party access to
+      customer data, distinct from systemic cyber breaches, typically
+      involving targeted social engineering or fraudulent authentication.
+    default_mitigating_types:
+      - System and Application Restrictions
+      - Surveillance
+      - Automated Rules
+      - Training and Awareness Programs
+
+  - id: OPS-FRD-E-002
+    name: Fraudulent Credit Card Applications
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      Risk of credit card applications submitted with stolen or synthetic
+      identity information, producing first-party fraud losses and
+      regulatory identity-verification findings.
+    default_mitigating_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Automated Rules
+      - Verification and Validation
+      - Surveillance
+
+  - id: OPS-FRD-E-003
+    name: Stolen or Counterfeit Credit Cards
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 4
+    description: >
+      Risk of fraudulent transactions executed on stolen or counterfeit
+      physical card instruments, net of card network chargeback and
+      recovery mechanisms.
+    default_mitigating_types:
+      - Automated Rules
+      - Surveillance
+      - Exception Reporting
+
+  - id: OPS-FRD-E-004
+    name: Account Takeovers (External)
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      External fraud event involving takeover of an existing customer
+      account, viewed from the fraud-loss perspective. Overlaps with
+      CYB-001 Digital_Fraud_and_Account_Takeover, which views the same
+      event from the cyber-incident perspective.
+    default_mitigating_types:
+      - Automated Rules
+      - Surveillance
+      - System and Application Restrictions
+      - Exception Reporting
+
+  - id: OPS-FRD-E-005
+    name: Identity Theft
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 5
+    description: >
+      Risk of loss arising from use of stolen or synthetic identities to
+      open accounts, obtain credit, or execute transactions, under
+      FCRA/FACTA Red Flags Rule identity theft prevention requirements.
+    default_mitigating_types:
+      - Client Due Diligence and Transaction Monitoring
+      - Automated Rules
+      - Verification and Validation
+      - Surveillance
+    grounding: "FTC Red Flags Rule (16 CFR §681)"
+
+  - id: OPS-FRD-E-006
+    name: Social Engineering (External Fraud)
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 4
+    description: >
+      External fraud event involving manipulation of customers or employees
+      to disclose credentials, authorize transactions, or take other actions
+      that enable fraud. Overlaps with CYB-007 from the cyber lens.
+    default_mitigating_types:
+      - Training and Awareness Programs
+      - Automated Rules
+      - Surveillance
+
+  - id: OPS-FRD-E-007
+    name: Artificial Intelligence (External Fraud)
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Fraud
+    default_severity: 4
+    description: >
+      Emerging external fraud risk arising from adversarial use of AI —
+      synthetic identity generation, deepfake voice authentication bypass,
+      AI-assisted phishing at scale, automated credential stuffing.
+      Overlaps with CYB-006 from the cyber lens.
+    default_mitigating_types:
+      - Automated Rules
+      - Surveillance
+      - Training and Awareness Programs
+      - System Change Management
+
+  # ────────────────────────────────────────────── OPS / Other sub-group
+  - id: OPS-OTH-001
+    name: Physical Security
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Other
+    default_severity: 3
+    description: >
+      Risk to employees, customers, physical assets, and facilities arising
+      from unauthorized access, theft, vandalism, workplace violence, or
+      natural hazards. Maps to Basel "Damage to Physical Assets" event type.
+    default_mitigating_types:
+      - Physical Safeguards
+      - Surveillance
+      - Business Continuity Planning and Awareness
+    grounding: "BCBS Operational Risk — Damage to Physical Assets"
+
+  - id: OPS-OTH-002
+    name: Ethical Conduct
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Other
+    default_severity: 4
+    description: >
+      Risk of loss or reputational harm arising from employee, management,
+      or agent conduct inconsistent with the institution's code of conduct
+      and ethical standards, independent of whether the conduct is unlawful.
+    default_mitigating_types:
+      - Training and Awareness Programs
+      - Risk Escalation Processes
+      - Internal Compliance Monitoring
+      - Talent Management Practices
+
+  - id: OPS-OTH-003
+    name: Climate Risk
+    level_1: Operational
+    level_1_code: OPS
+    sub_group: Other
+    default_severity: 3
+    description: >
+      Risk arising from physical climate hazards (acute events, chronic
+      shifts) and from transition risks (policy, technology, market
+      responses to decarbonization), affecting credit exposures, facilities,
+      operations, and strategic positioning. Cross-cutting risk with
+      manifestations in credit, operational, and strategic dimensions.
+    default_mitigating_types:
+      - Risk and Compliance Assessments
+      - Business Continuity Planning and Awareness
+      - Physical Safeguards
+    grounding: "OCC Principles for Climate-Related Financial Risk Management; BCBS CCRFR Principles"
+
+# ==============================================================================
+# END OF RISK CATALOG — 114 Level 2 entries across 9 Level 1 categories
+# ==============================================================================

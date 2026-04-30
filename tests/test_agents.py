@@ -413,3 +413,41 @@ class TestCallLlmWithXmlTools:
 
         assert agent.total_input_tokens == 300
         assert agent.total_output_tokens == 80
+
+
+# -- PolicyIngestionAgent -------------------------------------------------------
+
+
+class TestPolicyIngestionAgent:
+    """Tests for the PolicyIngestionAgent stub."""
+
+    async def test_registered(self):
+        assert "PolicyIngestionAgent" in AGENT_REGISTRY
+
+    async def test_no_policy_text_returns_empty(self):
+        from controlnexus.agents.policy_ingestion import PolicyIngestionAgent
+
+        ctx = AgentContext()
+        agent = PolicyIngestionAgent(ctx)
+        result = await agent.execute()
+        assert result["processes"] == []
+        assert result["risks"] == []
+        assert result["risk_instances"] == []
+        assert result["provenance"] == ""
+
+    async def test_with_policy_text_no_llm(self):
+        from controlnexus.agents.policy_ingestion import PolicyIngestionAgent
+
+        ctx = AgentContext()
+        agent = PolicyIngestionAgent(ctx)
+        result = await agent.execute(policy_text="Some policy document text.")
+        assert result["processes"] == []
+        assert "stub" in result["provenance"]
+
+    async def test_with_policy_text_and_llm_stub(self, mock_context):
+        from controlnexus.agents.policy_ingestion import PolicyIngestionAgent
+
+        agent = PolicyIngestionAgent(mock_context)
+        result = await agent.execute(policy_text="Some policy.", llm_enabled=True)
+        assert result["processes"] == []
+        assert "stub" in result["provenance"]

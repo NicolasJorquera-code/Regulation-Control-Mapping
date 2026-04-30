@@ -153,6 +153,12 @@ class FinalControlRecord(BaseModel):
     selected_level_2: str = ""
     business_unit_id: str = "BU-UNSPECIFIED"
     business_unit_name: str = "Unspecified"
+    process_id: str = ""
+    process_name: str = ""
+    risk_id: str = ""
+    risk_name: str = ""
+    risk_severity: int = 0
+    source_process_step: str | None = None
     placement: str = "Detective"
     method: str = "Manual"
     who: str = ""
@@ -169,7 +175,7 @@ class FinalControlRecord(BaseModel):
     evidence: str = ""
 
     def to_export_dict(self) -> dict[str, Any]:
-        """Return the 19-key dict matching export columns."""
+        """Return the export dict matching export columns."""
         return {
             "control_id": self.control_id,
             "hierarchy_id": self.hierarchy_id,
@@ -178,6 +184,11 @@ class FinalControlRecord(BaseModel):
             "selected_level_2": self.selected_level_2,
             "business_unit_id": self.business_unit_id,
             "business_unit_name": self.business_unit_name,
+            "process_id": self.process_id,
+            "process_name": self.process_name,
+            "risk_id": self.risk_id,
+            "risk_name": self.risk_name,
+            "risk_severity": self.risk_severity,
             "who": self.who,
             "what": self.what,
             "when": self.when,
@@ -247,9 +258,22 @@ class GapReport(BaseModel):
     balance_gaps: list[BalanceGap] = Field(default_factory=list)
     frequency_issues: list[FrequencyIssue] = Field(default_factory=list)
     evidence_issues: list[EvidenceIssue] = Field(default_factory=list)
+    risk_coverage_gaps: list["RiskCoverageGap"] = Field(default_factory=list)
     historical_regressions: list[HistoricalRegression] = Field(default_factory=list)
     overall_score: float = 0.0
     summary: str = ""
+
+
+class RiskCoverageGap(BaseModel):
+    """A risk in the catalog that has zero or insufficient controls mapped to it."""
+
+    risk_id: str
+    risk_name: str
+    level_1: str = ""
+    severity: int = 3
+    expected_control_count: int = 1
+    actual_control_count: int = 0
+    gap_severity: str = "medium"  # "high" | "medium" | "low"
 
 
 # -- Pipeline State (future LangGraph state) -----------------------------------

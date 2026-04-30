@@ -58,6 +58,7 @@ from controlnexus.tools.schemas import (
     METHOD_LOOKUP_SCHEMA,
     PLACEMENT_LOOKUP_SCHEMA,
     REGULATORY_LOOKUP_SCHEMA,
+    RISK_CATALOG_LOOKUP_SCHEMA,
     TAXONOMY_VALIDATOR_SCHEMA,
 )
 from controlnexus.validation.validator import build_retry_appendix, validate
@@ -143,8 +144,15 @@ class ForgeState(TypedDict, total=False):
     provider: str  # "ica", "openai", "anthropic" — set by init_node
     ica_tool_calling: bool  # True = XML tool simulation — set by init_node
 
+    # Generation mode: "synthetic" (default) or "policy_first"
+    generation_mode: str
+
     # Distribution overrides from UI
     distribution_config: dict[str, Any]
+
+    # Optional section/process filter
+    section_filter: str
+    process_filter: str
 
     # Target
     target_count: int
@@ -155,6 +163,7 @@ class ForgeState(TypedDict, total=False):
     current_assignment: dict[str, Any]
 
     # Per-control pipeline
+    current_risk: dict[str, Any]
     current_spec: dict[str, Any]
     current_narrative: dict[str, Any]
     current_enriched: dict[str, Any]
@@ -162,6 +171,10 @@ class ForgeState(TypedDict, total=False):
     validation_passed: bool
     validation_failures: list[str]
     retry_appendix: str
+
+    # Policy ingestion output (set by policy_ingest_node when mode=policy_first)
+    policy_risks: list[dict[str, Any]]
+    policy_processes: list[dict[str, Any]]
 
     # Accumulated output
     generated_records: Annotated[list[dict[str, Any]], _add]
@@ -185,8 +198,13 @@ def init_node(state: ForgeState) -> dict[str, Any]:
     domain_config = load_domain_config(Path(config_path))
     target = state.get("target_count", 10)
     dist_cfg = state.get("distribution_config")
+    section_filter = state.get("section_filter")
 
-    assignments = build_assignment_matrix(domain_config, target, dist_cfg)
+    assignments = build_assignment_matrix(
+        domain_config, target, dist_cfg,
+        section_filter=section_filter,
+        process_filter=state.get("process_filter"),
+    )
     logger.info("init_node: built %d assignments for target_count=%d", len(assignments), target)
 
     _emit_event(
@@ -204,12 +222,30 @@ def init_node(state: ForgeState) -> dict[str, Any]:
     return {
         "domain_config": domain_config.model_dump(),
         "llm_enabled": state.get("llm_enabled", False),
+        "generation_mode": state.get("generation_mode", "synthetic"),
         "provider": provider,
         "ica_tool_calling": ica_tool_calling,
         "assignments": assignments,
         "current_idx": 0,
         "generated_records": [],
         "tool_calls_log": [],
+    }
+
+
+def policy_ingest_node(state: ForgeState) -> dict[str, Any]:
+    """Ingest policy/process documents and augment config with derived risks.
+
+    This is a stub that passes through without modification when no policy
+    ingestion agent is available. When ``PolicyIngestionAgent`` is wired up,
+    it will produce transient ``ProcessConfig`` + ``RiskInstance`` sets from
+    a policy document attached in state.
+    """
+    logger.info("policy_ingest_node: mode=%s (stub — passing through)", state.get("generation_mode"))
+    _emit_event(EventType.AGENT_STARTED, "PolicyIngestion (stub)")
+    _emit_event(EventType.AGENT_COMPLETED, "PolicyIngestion (stub — no-op)", agent="PolicyIngestion", elapsed=0.0)
+    return {
+        "policy_risks": state.get("policy_risks", []),
+        "policy_processes": state.get("policy_processes", []),
     }
 
 
@@ -235,6 +271,120 @@ def select_node(state: ForgeState) -> dict[str, Any]:
         "retry_count": 0,
         "validation_passed": False,
     }
+
+
+# ── Risk Agent Node ───────────────────────────────────────────────────────────
+
+
+def risk_agent_node(state: ForgeState) -> dict[str, Any]:
+    """Resolve risk context for the current assignment (deterministic or LLM)."""
+    assignment = state["current_assignment"]
+    config = DomainConfig(**state["domain_config"])
+    risk_id = assignment.get("risk_id", "")
+
+    if not risk_id:
+        # No risk in assignment — skip risk resolution
+        return {"current_risk": {}}
+
+    # Deterministic path: look up from catalog
+    catalog_entry = config.get_risk_catalog_entry(risk_id)
+    process_id = assignment.get("process_id", "")
+    proc = config.get_process(process_id) if process_id else None
+
+    risk_instance = None
+    if proc:
+        for ri in proc.risks:
+            if ri.risk_id == risk_id:
+                risk_instance = ri
+                break
+
+    if catalog_entry:
+        current_risk = {
+            "risk_id": risk_id,
+            "risk_name": catalog_entry.name,
+            "risk_category": catalog_entry.level_1 or catalog_entry.category,
+            "level_1": catalog_entry.level_1,
+            "sub_group": catalog_entry.sub_group,
+            "severity": risk_instance.severity if risk_instance else catalog_entry.default_severity,
+            "multiplier": risk_instance.multiplier if risk_instance else 1.0,
+            "description": catalog_entry.description,
+            "mitigating_links": [
+                link.model_dump() for link in (risk_instance.mitigating_links if risk_instance else catalog_entry.default_mitigating_links)
+            ],
+            "mitigated_by_types": list(risk_instance.mitigating_type_names) if risk_instance else [
+                link.control_type for link in catalog_entry.default_mitigating_links
+            ],
+            "rationale": risk_instance.rationale if risk_instance else "",
+        }
+        return {"current_risk": current_risk}
+
+    if not state.get("llm_enabled"):
+        return {
+            "current_risk": {
+                "risk_id": risk_id,
+                "risk_name": f"Risk {risk_id}",
+                "risk_category": "Operational",
+                "level_1": "Operational",
+                "sub_group": None,
+                "severity": assignment.get("risk_severity", 3),
+                "multiplier": 1.0,
+                "description": "",
+                "mitigating_links": [],
+                "mitigated_by_types": [],
+                "rationale": "",
+            }
+        }
+
+    # LLM path
+    _emit_event(EventType.AGENT_STARTED, "RiskAgent")
+    t0 = time.monotonic()
+    try:
+        agent = _get_agent("RiskAgent")
+        if agent is None:
+            return {"current_risk": {"risk_id": risk_id, "risk_name": f"Risk {risk_id}", "severity": 3}}
+
+        result = _run_async_in_loop(
+            agent.execute(
+                risk_id=risk_id,
+                process_id=process_id,
+                process_name=assignment.get("process_name", ""),
+                risk_catalog=[r.model_dump() for r in config.risk_catalog],
+                process_risks=[ri.model_dump() for ri in proc.risks] if proc else [],
+                registry=proc.registry.model_dump() if proc else {},
+            )
+        )
+        elapsed = time.monotonic() - t0
+        _emit_event(
+            EventType.AGENT_COMPLETED,
+            f"RiskAgent ({elapsed:.1f}s)",
+            agent="RiskAgent",
+            elapsed=elapsed,
+        )
+        return {"current_risk": result}
+    except Exception:
+        logger.warning("risk_agent_node failed — using minimal fallback", exc_info=True)
+        elapsed = time.monotonic() - t0
+        _emit_event(
+            EventType.AGENT_FAILED,
+            f"RiskAgent failed ({elapsed:.1f}s)",
+            agent="RiskAgent",
+            elapsed=elapsed,
+        )
+        return {
+            "current_risk": {
+                "risk_id": risk_id,
+                "risk_name": f"Risk {risk_id}",
+                "risk_category": "Operational",
+                "level_1": "Operational",
+                "sub_group": None,
+                "severity": assignment.get("risk_severity", 3),
+                "multiplier": 1.0,
+                "description": "",
+                "mitigating_links": [],
+                "mitigated_by_types": [],
+                "rationale": "",
+            }
+        }
 
 
 # ── Agent nodes ───────────────────────────────────────────────────────────────
@@ -611,9 +761,12 @@ def finalize_node(state: ForgeState) -> dict[str, Any]:
 
 
 def after_init(state: ForgeState) -> str:
-    """Route after init: skip to finalize if no assignments were built."""
+    """Route after init: policy_ingest if policy_first mode, else select or finalize."""
     if not state.get("assignments"):
         return "finalize"
+    mode = state.get("generation_mode", "synthetic")
+    if mode == "policy_first":
+        return "policy_ingest"
     return "select"
 
 
@@ -639,16 +792,18 @@ def has_more(state: ForgeState) -> str:
 def build_forge_graph() -> StateGraph:
     """Build and return the ControlForge Modular graph.
 
-    Topology (8 nodes)::
+    Topology (9 nodes)::
 
-        init → select → spec → narrative → validate
+        init → select → risk_agent → spec → narrative → validate
             → [enrich | narrative (retry)]
             → merge → [select (loop) | finalize] → END
     """
     graph = StateGraph(ForgeState)
 
     graph.add_node("init", init_node)
+    graph.add_node("policy_ingest", policy_ingest_node)
     graph.add_node("select", select_node)
+    graph.add_node("risk_agent", risk_agent_node)
     graph.add_node("spec", spec_node)
     graph.add_node("narrative", narrative_node)
     graph.add_node("validate", validate_node)
@@ -662,10 +817,13 @@ def build_forge_graph() -> StateGraph:
         after_init,
         {
             "select": "select",
+            "policy_ingest": "policy_ingest",
             "finalize": "finalize",
         },
     )
-    graph.add_edge("select", "spec")
+    graph.add_edge("policy_ingest", "select")
+    graph.add_edge("select", "risk_agent")
+    graph.add_edge("risk_agent", "spec")
     graph.add_edge("spec", "narrative")
     graph.add_edge("narrative", "validate")
     graph.add_conditional_edges(

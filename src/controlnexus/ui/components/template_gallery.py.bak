@@ -1,0 +1,86 @@
+"""Template gallery — starter config selector for Control Builder."""
+
+from __future__ import annotations
+
+import copy
+import logging
+from pathlib import Path
+from typing import Any
+
+import streamlit as st
+import yaml
+
+logger = logging.getLogger(__name__)
+
+
+def _profiles_dir() -> Path:
+    """Resolve the config/profiles directory."""
+    candidates = [
+        Path.cwd() / "config" / "profiles",
+        Path(__file__).resolve().parents[4] / "config" / "profiles",
+    ]
+    for c in candidates:
+        if c.is_dir():
+            return c
+    return candidates[0]
+
+
+def _load_profile_summary(path: Path) -> dict[str, Any] | None:
+    """Load a profile YAML and return a summary dict."""
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None
+        return {
+            "path": str(path),
+            "name": data.get("name", path.stem.replace("_", " ").title()),
+            "description": data.get("description", ""),
+            "types_count": len(data.get("control_types", [])),
+            "bus_count": len(data.get("business_units", [])),
+            "sections_count": len(data.get("process_areas", [])),
+            "data": data,
+        }
+    except Exception:
+        logger.debug("Failed to load profile %s", path)
+        return None
+
+
+def render_template_gallery(key_prefix: str = "tpl") -> dict[str, Any] | None:
+    """Render a gallery of starter config templates.
+
+    Returns the selected template's full data dict (deep-copied),
+    or None if nothing was selected.
+    """
+    profiles_path = _profiles_dir()
+    yaml_files = sorted(profiles_path.glob("*.yaml")) if profiles_path.is_dir() else []
+
+    summaries = []
+    for yf in yaml_files:
+        s = _load_profile_summary(yf)
+        if s:
+            summaries.append(s)
+
+    if not summaries:
+        st.info("No config templates found in `config/profiles/`.")
+        return None
+
+    cols = st.columns(min(len(summaries), 3))
+    for i, summary in enumerate(summaries):
+        with cols[i % len(cols)]:
+            with st.container(border=True):
+                st.markdown(f"**{summary['name']}**")
+                if summary["description"]:
+                    st.caption(summary["description"][:100])
+                st.caption(
+                    f"{summary['types_count']} types, "
+                    f"{summary['bus_count']} BUs, "
+                    f"{summary['sections_count']} sections"
+                )
+                if st.button(
+                    "Use Template",
+                    key=f"{key_prefix}_use_{i}",
+                    use_container_width=True,
+                ):
+                    return copy.deepcopy(summary["data"])
+
+    return None

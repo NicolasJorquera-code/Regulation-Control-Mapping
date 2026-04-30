@@ -266,6 +266,42 @@ def load_custom_css() -> None:
     .status-warning {{ color: {_COLORS["support_warning"]}; }}
     .status-info {{ color: {_COLORS["support_info"]}; }}
 
+    /* === Wizard Step Indicator === */
+    .wizard-step {{
+        padding: {_SPACING["03"]} {_SPACING["05"]};
+        border-radius: 4px;
+        margin-bottom: {_SPACING["02"]};
+        font-size: {_TYPOGRAPHY["size_02"]};
+    }}
+    .wizard-step.active {{
+        background-color: {_COLORS["interactive_01"]};
+        color: {_COLORS["text_inverse"]};
+        font-weight: {_TYPOGRAPHY["weight_medium"]};
+    }}
+
+    /* === Metric with Border === */
+    .cn-metric-bordered {{
+        border-left: 3px solid {_COLORS["interactive_01"]};
+        padding-left: {_SPACING["04"]};
+    }}
+
+    /* === Template Card === */
+    .template-card {{
+        background-color: {_COLORS["ui_01"]};
+        border: 1px solid {_COLORS["ui_03"]};
+        border-radius: 4px;
+        padding: {_SPACING["05"]};
+        transition: border-color 0.15s ease;
+    }}
+    .template-card:hover {{
+        border-color: {_COLORS["interactive_01"]};
+    }}
+
+    /* === Form Spacing === */
+    .form-section {{
+        margin-bottom: {_SPACING["06"]};
+    }}
+
     /* === Hide Streamlit Branding === */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
@@ -276,9 +312,9 @@ def load_custom_css() -> None:
     st.markdown(css, unsafe_allow_html=True)
 
 
-def get_masthead_html(active_tab: str = "ControlForge") -> str:
+def get_masthead_html(active_tab: str = "Control Builder") -> str:
     """Generate the Carbon masthead header HTML."""
-    tabs = ["ControlForge", "Analysis", "Playground"]
+    tabs = ["Control Builder", "ControlForge Modular", "Analysis", "Playground"]
     nav_items = []
     for tab in tabs:
         cls = "active" if tab == active_tab else ""

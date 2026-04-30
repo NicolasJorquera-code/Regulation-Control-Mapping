@@ -1,0 +1,124 @@
+name: "community-bank-pivot-demo"
+description: "Community bank config using the BU → Process → Risk → Control model."
+
+control_types:
+  - name: Authorization
+    definition: "Review and validation of documentation, transaction information, or other details to determine whether they are appropriate, complete, or accurate before allowing a process or activity to continue."
+    code: AUT
+    min_frequency_tier: Quarterly
+    placement_categories: [Preventive]
+
+  - name: Reconciliation
+    definition: "Comparison of features, transactions, activities, or data to validate the accuracy, completeness, or appropriateness of the target outputs."
+    code: REC
+    min_frequency_tier: Monthly
+    placement_categories: [Detective]
+
+  - name: Exception Reporting
+    definition: "Creation of reports and alerts to identify risk limit breaches, system capacity constraints or breakdowns, ageing items, outstanding requests or activities that need to be closed out or resolved."
+    code: EXR
+    min_frequency_tier: Monthly
+    placement_categories: [Detective]
+
+risk_catalog:
+  - id: "RISK-LENDING-001"
+    name: "Unauthorized Loan Origination"
+    category: "Operational"
+    default_severity: 3
+    description: "Risk of loan origination without proper credit assessment and approval."
+
+  - id: "RISK-SETTLE-001"
+    name: "Settlement Reconciliation Failure"
+    category: "Operational"
+    default_severity: 4
+    description: "Risk of undetected settlement errors due to inadequate reconciliation."
+
+  - id: "RISK-SETTLE-002"
+    name: "Settlement Exception Buildup"
+    category: "Operational"
+    default_severity: 3
+    description: "Risk of unresolved settlement exceptions accumulating over time."
+
+business_units:
+  - id: "BU-001"
+    name: "Retail Banking"
+    description: "Consumer deposits, personal loans, and branch-based financial services."
+    processes: ["PROC-LENDING"]
+    primary_sections: ["1.0"]
+    regulatory_exposure: ["SOX", "OCC"]
+
+  - id: "BU-002"
+    name: "Operations"
+    description: "Transaction processing, payment settlement, and back-office support."
+    processes: ["PROC-SETTLEMENT"]
+    primary_sections: ["2.0"]
+    regulatory_exposure: ["SOX"]
+
+processes:
+  - id: "PROC-LENDING"
+    name: "Lending Operations"
+    domain: "lending_operations"
+    apqc_section_id: "1.0"
+    owner_bu_ids: ["BU-001"]
+    risks:
+      - risk_id: "RISK-LENDING-001"
+        severity: 3
+        multiplier: 1.8
+        mitigated_by_types: ["Authorization"]
+        rationale: "Lending carries credit and compliance risk."
+    registry:
+      roles:
+        - Loan Officer
+        - Credit Analyst
+        - Branch Manager
+      systems:
+        - Loan Origination System
+        - Core Banking Platform
+      data_objects:
+        - loan applications
+        - credit reports
+      evidence_artifacts:
+        - loan approval documentation
+        - credit committee meeting minutes
+      event_triggers:
+        - on loan application submission
+        - at each monthly portfolio review
+      regulatory_frameworks:
+        - OCC Lending Standards
+        - Regulation Z
+
+  - id: "PROC-SETTLEMENT"
+    name: "Settlement and Clearing"
+    domain: "settlement_and_clearing"
+    apqc_section_id: "2.0"
+    owner_bu_ids: ["BU-001", "BU-002"]
+    risks:
+      - risk_id: "RISK-SETTLE-001"
+        severity: 4
+        multiplier: 2.4
+        mitigated_by_types: ["Reconciliation"]
+        rationale: "Settlement processes carry execution and reconciliation risk."
+      - risk_id: "RISK-SETTLE-002"
+        severity: 3
+        multiplier: 1.5
+        mitigated_by_types: ["Exception Reporting"]
+        rationale: "Unresolved exceptions can cascade into settlement failures."
+    registry:
+      roles:
+        - Settlement Analyst
+        - Operations Manager
+      systems:
+        - Payment Processing System
+        - General Ledger System
+      data_objects:
+        - settlement instructions
+        - payment records
+      evidence_artifacts:
+        - daily settlement reconciliation report
+        - exception resolution log
+      event_triggers:
+        - at each daily settlement cycle
+        - on detection of settlement exception
+      regulatory_frameworks:
+        - Federal Reserve Regulation J
+        - ACH Operating Rules

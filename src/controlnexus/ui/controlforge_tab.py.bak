@@ -19,22 +19,28 @@ logger = logging.getLogger(__name__)
 
 
 def render_controlforge() -> None:
-    """Main entry point for the ControlForge tab."""
+    """Main entry point for the ControlForge tab — Domain Explorer."""
     st.markdown(
         '<div class="report-title">ControlForge</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="report-subtitle">Configuration Explorer &amp; Section Runner</div>',
+        '<div class="report-subtitle">Domain Explorer &amp; Configuration Browser</div>',
         unsafe_allow_html=True,
     )
 
-    sub_profiles, sub_config, sub_run = st.tabs(["Section Profiles", "Global Config", "Run Section"])
+    sub_overview, sub_taxonomy, sub_risk, sub_registries, sub_run = st.tabs(
+        ["Overview", "Taxonomy", "Risk Landscape", "Registries", "Run Section"]
+    )
 
-    with sub_profiles:
-        _render_section_profiles_subtab()
-    with sub_config:
-        _render_global_config_subtab()
+    with sub_overview:
+        _render_overview_subtab()
+    with sub_taxonomy:
+        _render_taxonomy_subtab()
+    with sub_risk:
+        _render_risk_landscape_subtab()
+    with sub_registries:
+        _render_registries_subtab()
     with sub_run:
         _render_run_section_subtab()
 
@@ -83,7 +89,173 @@ def _get_cached_placement_methods(path_str: str) -> dict[str, Any]:
     return load_placement_methods(Path(path_str))
 
 
-# -- Sub-tab 1: Section Profiles ---------------------------------------------
+# -- Sub-tab: Overview --------------------------------------------------------
+
+
+def _get_active_domain_config() -> Any | None:
+    """Retrieve the active DomainConfig from session state or profiles."""
+    from controlnexus.core.domain_config import DomainConfig
+
+    active = st.session_state.get("wizard_active_config") or st.session_state.get("active_config")
+    if active:
+        try:
+            return DomainConfig(**active)
+        except Exception:
+            pass
+
+    # Fall back to first profile
+    config_dir = _resolve_config_dir()
+    profiles_path = config_dir / "profiles"
+    if profiles_path.is_dir():
+        yamls = sorted(profiles_path.glob("*.yaml"))
+        if yamls:
+            from controlnexus.core.domain_config import load_domain_config
+            try:
+                return load_domain_config(yamls[0])
+            except Exception:
+                pass
+    return None
+
+
+def _render_overview_subtab() -> None:
+    """Overview sub-tab: config summary + key metrics."""
+    config = _get_active_domain_config()
+    if config is None:
+        st.info("No active config. Select a profile in **ControlForge Modular** or build one in **Control Builder**.")
+        return
+
+    st.markdown(f"### {config.name}")
+    if config.description:
+        st.caption(config.description)
+
+    # Key metrics
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Control Types", len(config.control_types))
+    c2.metric("Business Units", len(config.business_units))
+    c3.metric("Process Areas", len(config.process_areas))
+    c4.metric("Exemplars", sum(len(pa.exemplars) for pa in config.process_areas))
+
+    # Config quality score
+    from controlnexus.ui.components.config_scorer import compute_config_score, render_config_score
+    score = compute_config_score(config.model_dump())
+    render_config_score(score)
+
+    # Section profiles quick view
+    if config.process_areas:
+        st.markdown("### Section Overview")
+        for pa in config.process_areas:
+            with st.expander(f"Section {pa.id}: {pa.name}", expanded=False):
+                rp = pa.risk_profile
+                rc1, rc2, rc3, rc4 = st.columns(4)
+                rc1.metric("Inherent Risk", f"{rp.inherent_risk}/5")
+                rc2.metric("Regulatory Intensity", f"{rp.regulatory_intensity}/5")
+                rc3.metric("Control Density", f"{rp.control_density}/5")
+                rc4.metric("Multiplier", f"{rp.multiplier:.1f}x")
+                n_high = len(pa.affinity.HIGH) if pa.affinity else 0
+                n_exemplars = len(pa.exemplars)
+                st.caption(f"{n_high} HIGH-affinity types, {n_exemplars} exemplars")
+
+
+def _render_taxonomy_subtab() -> None:
+    """Taxonomy sub-tab: control types, business units, placement/methods."""
+    config = _get_active_domain_config()
+    config_dir = _resolve_config_dir()
+
+    # If we have an active config, show its types and BUs
+    if config is not None:
+        st.markdown("### Control Types")
+        if config.control_types:
+            from controlnexus.ui.components.config_cards import render_control_type_cards
+            ct_dicts = [ct.model_dump() for ct in config.control_types]
+            render_control_type_cards(ct_dicts, read_only=True, columns=3)
+        else:
+            st.info("No control types defined.")
+
+        if config.business_units:
+            st.markdown("### Business Units")
+            from controlnexus.ui.components.config_cards import render_business_unit_cards
+            bu_dicts = [bu.model_dump() for bu in config.business_units]
+            render_business_unit_cards(bu_dicts, read_only=True)
+    else:
+        # Fall back to global taxonomy
+        _render_taxonomy_table(config_dir)
+        st.markdown("---")
+        _render_business_units(config_dir)
+
+    st.markdown("---")
+    _render_placement_methods_tree(config_dir)
+    st.markdown("---")
+    _render_standards(config_dir)
+
+
+def _render_risk_landscape_subtab() -> None:
+    """Risk Landscape sub-tab: radar overlays, heatmaps."""
+    config = _get_active_domain_config()
+    if config is None or not config.process_areas:
+        st.info("No active config with process areas. Build one in **Control Builder** first.")
+        return
+
+    st.markdown("### Risk Landscape")
+
+    # Radar overlay
+    from controlnexus.ui.components.charts import render_risk_radar_overlay, render_risk_heatmap
+    profiles = [(f"{pa.id}: {pa.name[:25]}", pa.risk_profile.model_dump()) for pa in config.process_areas[:10]]
+    render_risk_radar_overlay(profiles)
+
+    # Affinity heatmap
+    if config.control_types:
+        st.markdown("### Affinity Heatmap")
+        from controlnexus.ui.components.charts import render_affinity_heatmap
+        pa_dicts = [pa.model_dump() for pa in config.process_areas]
+        ct_names = [ct.name for ct in config.control_types]
+        render_affinity_heatmap(pa_dicts, ct_names)
+
+    # Risk heatmap
+    st.markdown("### Risk Heatmap")
+    render_risk_heatmap(config.process_areas)
+
+
+def _render_registries_subtab() -> None:
+    """Registries sub-tab: browse registry contents per section."""
+    config = _get_active_domain_config()
+
+    if config is not None and config.process_areas:
+        st.markdown("### Domain Registries")
+        for pa in config.process_areas:
+            with st.expander(f"Section {pa.id}: {pa.name}", expanded=False):
+                reg = pa.registry
+                if reg:
+                    from controlnexus.ui.components.config_cards import render_registry_tags
+                    fields = [
+                        ("Roles", reg.roles), ("Systems", reg.systems),
+                        ("Data Objects", reg.data_objects), ("Evidence Artifacts", reg.evidence_artifacts),
+                        ("Event Triggers", reg.event_triggers), ("Regulatory Frameworks", reg.regulatory_frameworks),
+                    ]
+                    for label, items in fields:
+                        if items:
+                            st.markdown(f"**{label}** ({len(items)})")
+                            badges = " ".join(f'<span class="carbon-tag tag-teal">{item}</span>' for item in items)
+                            st.markdown(badges, unsafe_allow_html=True)
+                if pa.exemplars:
+                    st.markdown(f"**Exemplars** ({len(pa.exemplars)})")
+                    for ex in pa.exemplars:
+                        st.caption(f"• {ex.control_type} / {ex.placement}: {ex.full_description[:80]}…")
+    else:
+        # Fall back to section profiles from config/ directory
+        config_dir = _resolve_config_dir()
+        try:
+            profiles_data = _get_cached_profiles(str(config_dir))
+            from controlnexus.core.models import SectionProfile
+            profiles = {sid: SectionProfile(**data) for sid, data in profiles_data.items()}
+            for sid in sorted(profiles.keys(), key=lambda x: int(x)):
+                profile = profiles[sid]
+                with st.expander(f"Section {profile.section_id} — {profile.domain.replace('_', ' ').title()}", expanded=False):
+                    _render_domain_registry(profile)
+        except Exception:
+            st.info("No config or section profiles available.")
+
+
+# -- Sub-tab: Section Profiles (legacy, kept for reference in Run tab) --------
 
 
 def _render_section_profiles_subtab() -> None:

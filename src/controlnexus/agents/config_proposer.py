@@ -136,6 +136,77 @@ Return ONLY a JSON object:
 
 Return ONLY the JSON, no additional text."""
 
+SYSTEM_PROMPT_PROCESS_AUTOFILL = """\
+You are a control framework domain expert. Given a process name, the \
+organization's control types, and optional context, propose the registry, \
+risk instances (with mitigated_by_types), and exemplar controls for that process.
+
+Return ONLY a JSON object with these keys:
+{
+  "risks": [
+    {
+      "risk_id": "RISK-XXX (from provided risk_catalog if available, else generate)",
+      "severity": 1-5,
+      "multiplier": 0.5-5.0,
+      "mitigated_by_types": ["control type names that mitigate this risk"],
+      "rationale": "why this risk applies to this process"
+    }
+  ],
+  "registry": {"roles": [...], "systems": [...], "data_objects": [...], "evidence_artifacts": [...], "event_triggers": [...], "regulatory_frameworks": [...]},
+  "exemplars": [{"control_type": "...", "placement": "...", "method": "...", "full_description": "30-80 word narrative", "word_count": int, "quality_rating": "Effective"}]
+}
+
+IMPORTANT: Only use control type names that appear in the provided control_types list.
+Return ONLY the JSON, no additional text."""
+
+SYSTEM_PROMPT_SUGGEST_RISKS = """\
+You are a risk management expert for control frameworks. Given a process, \
+business unit context, and available control types, propose risk catalog entries \
+and risk instances that should be mitigated.
+
+Return ONLY a JSON object:
+{
+  "risk_catalog_entries": [
+    {
+      "id": "RISK-XXX",
+      "name": "Short risk name",
+      "category": "operational|compliance|financial|technology|strategic",
+      "default_severity": 1-5,
+      "description": "1-2 sentence description of the risk archetype"
+    }
+  ],
+  "risk_instances": [
+    {
+      "risk_id": "RISK-XXX (matches a catalog entry above)",
+      "severity": 1-5,
+      "multiplier": 0.5-5.0,
+      "mitigated_by_types": ["control type names from provided list"],
+      "rationale": "why this risk applies at this severity"
+    }
+  ]
+}
+
+Return ONLY the JSON, no additional text."""
+
+SYSTEM_PROMPT_SUGGEST_PROCESSES = """\
+You are an APQC process framework expert. Given a business unit name, industry, \
+and control types, propose processes that the business unit should own or participate in.
+
+Return ONLY a JSON object:
+{
+  "suggested_processes": [
+    {
+      "id": "string — e.g. PROC-001",
+      "name": "string — process name",
+      "domain": "string — snake_case",
+      "apqc_section_id": "string — APQC section if applicable, else null",
+      "owner_bu_ids": ["string — BU IDs that own this process"]
+    }
+  ]
+}
+
+Return ONLY the JSON, no additional text."""
+
 
 # ── Deterministic fallback builders ───────────────────────────────────────────
 
@@ -309,6 +380,101 @@ def _build_deterministic_enrichment(type_names: list[str]) -> dict[str, Any]:
     }
 
 
+def _build_deterministic_process_autofill(
+    process_name: str,
+    control_type_names: list[str],
+    risk_catalog: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Build deterministic process autofill (new risk-driven model)."""
+    # Pick risk IDs from catalog if provided, else generate
+    risks = []
+    if risk_catalog:
+        for entry in risk_catalog[:2]:
+            risks.append({
+                "risk_id": entry.get("id", "RISK-001"),
+                "severity": entry.get("default_severity", 3),
+                "multiplier": 1.0,
+                "mitigated_by_types": control_type_names[:2] if control_type_names else [],
+                "rationale": f"Default risk for {process_name}.",
+            })
+    else:
+        risks.append({
+            "risk_id": "RISK-001",
+            "severity": 3,
+            "multiplier": 1.0,
+            "mitigated_by_types": control_type_names[:2] if control_type_names else [],
+            "rationale": f"Default risk for {process_name}.",
+        })
+
+    return {
+        "risks": risks,
+        "registry": {
+            "roles": [f"{process_name} Manager", f"{process_name} Analyst"],
+            "systems": [],
+            "data_objects": [],
+            "evidence_artifacts": [],
+            "event_triggers": [],
+            "regulatory_frameworks": [],
+        },
+        "exemplars": [],
+    }
+
+
+def _build_deterministic_risk_suggestions(
+    process_name: str,
+    control_type_names: list[str],
+) -> dict[str, Any]:
+    """Build deterministic risk suggestions."""
+    return {
+        "risk_catalog_entries": [
+            {
+                "id": "RISK-001",
+                "name": f"{process_name} Operational Risk",
+                "category": "operational",
+                "default_severity": 3,
+                "description": f"Risk of operational failures in {process_name.lower()}.",
+            },
+            {
+                "id": "RISK-002",
+                "name": f"{process_name} Compliance Risk",
+                "category": "compliance",
+                "default_severity": 4,
+                "description": f"Risk of regulatory non-compliance in {process_name.lower()}.",
+            },
+        ],
+        "risk_instances": [
+            {
+                "risk_id": "RISK-001",
+                "severity": 3,
+                "multiplier": 1.0,
+                "mitigated_by_types": control_type_names[:2] if control_type_names else [],
+                "rationale": f"Default operational risk for {process_name}.",
+            },
+            {
+                "risk_id": "RISK-002",
+                "severity": 4,
+                "multiplier": 1.5,
+                "mitigated_by_types": control_type_names[:2] if control_type_names else [],
+                "rationale": f"Default compliance risk for {process_name}.",
+            },
+        ],
+    }
+
+
+def _build_deterministic_process_suggestions(
+    bu_name: str,
+    bu_id: str,
+) -> dict[str, Any]:
+    """Build deterministic process suggestions for a BU."""
+    return {
+        "suggested_processes": [
+            {"id": "PROC-001", "name": f"{bu_name} Core Operations", "domain": "core_operations", "apqc_section_id": None, "owner_bu_ids": [bu_id]},
+            {"id": "PROC-002", "name": f"{bu_name} Reporting", "domain": "reporting", "apqc_section_id": None, "owner_bu_ids": [bu_id]},
+            {"id": "PROC-003", "name": f"{bu_name} Compliance", "domain": "compliance", "apqc_section_id": None, "owner_bu_ids": [bu_id]},
+        ],
+    }
+
+
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
 
@@ -318,8 +484,11 @@ class ConfigProposerAgent(BaseAgent):
 
     Modes:
         - ``full``: Analyze ``RegisterSummary`` → complete DomainConfig dict.
-        - ``section_autofill``: Propose registry/affinity/risk for one section.
+        - ``section_autofill``: Propose registry/affinity/risk for one section (legacy).
+        - ``process_autofill``: Propose registry/risks/exemplars for one process (new model).
         - ``enrich``: Propose definitions/codes/evidence for control types.
+        - ``suggest_risks``: Propose risk catalog entries and risk instances.
+        - ``suggest_processes``: Propose processes for a business unit.
     """
 
     async def execute(self, **kwargs: Any) -> dict[str, Any]:
@@ -328,8 +497,20 @@ class ConfigProposerAgent(BaseAgent):
             return await self._execute_full(**kwargs)
         elif mode == "section_autofill":
             return await self._execute_section_autofill(**kwargs)
+        elif mode == "process_autofill":
+            return await self._execute_process_autofill(**kwargs)
         elif mode == "enrich":
             return await self._execute_enrich(**kwargs)
+        elif mode == "suggest_types":
+            return await self._execute_suggest_types(**kwargs)
+        elif mode == "suggest_sections":
+            return await self._execute_suggest_sections(**kwargs)
+        elif mode == "suggest_processes":
+            return await self._execute_suggest_processes(**kwargs)
+        elif mode == "suggest_risks":
+            return await self._execute_suggest_risks(**kwargs)
+        elif mode == "suggest_registry_field":
+            return await self._execute_suggest_registry_field(**kwargs)
         else:
             raise AgentExecutionException(f"Unknown mode: {mode}")
 
@@ -420,6 +601,112 @@ class ConfigProposerAgent(BaseAgent):
             logger.warning("Section autofill LLM failed: %s — using deterministic", exc)
             return _build_deterministic_section(section_name, control_type_names)
 
+    # ── Process autofill mode ─────────────────────────────────────────────
+
+    async def _execute_process_autofill(self, **kwargs: Any) -> dict[str, Any]:
+        """Propose registry, risks, exemplars for a single process (new model)."""
+        process_name = kwargs.get("process_name", "")
+        control_type_names = kwargs.get("control_type_names", [])
+        risk_catalog = kwargs.get("risk_catalog", [])
+        config_context = kwargs.get("config_context", {})
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (process_autofill) started for '%s'", process_name)
+
+        if self.client is None:
+            result = _build_deterministic_process_autofill(process_name, control_type_names, risk_catalog)
+            logger.info("ConfigProposerAgent (process_autofill) completed deterministic (%.3fs)", time.monotonic() - t0)
+            return result
+
+        user_prompt = json.dumps(
+            {
+                "process_name": process_name,
+                "control_types": control_type_names,
+                "risk_catalog": risk_catalog,
+                "config_name": config_context.get("name", ""),
+                "config_description": config_context.get("description", ""),
+            },
+            indent=2,
+        )
+
+        try:
+            raw = await self.call_llm(SYSTEM_PROMPT_PROCESS_AUTOFILL, user_prompt, max_tokens=2048)
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (process_autofill) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("Process autofill LLM failed: %s — using deterministic", exc)
+            return _build_deterministic_process_autofill(process_name, control_type_names, risk_catalog)
+
+    # ── Suggest risks mode ────────────────────────────────────────────────
+
+    async def _execute_suggest_risks(self, **kwargs: Any) -> dict[str, Any]:
+        """Propose risk catalog entries and risk instances for a process+BU context."""
+        process_name = kwargs.get("process_name", "")
+        bu_name = kwargs.get("bu_name", "")
+        control_type_names = kwargs.get("control_type_names", [])
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_risks) started for process='%s' bu='%s'", process_name, bu_name)
+
+        fallback = _build_deterministic_risk_suggestions(process_name, control_type_names)
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_risks) deterministic (%.3fs)", time.monotonic() - t0)
+            return fallback
+
+        user_prompt = json.dumps(
+            {
+                "process_name": process_name,
+                "business_unit": bu_name,
+                "control_types": control_type_names,
+            },
+            indent=2,
+        )
+
+        try:
+            raw = await self.call_llm(SYSTEM_PROMPT_SUGGEST_RISKS, user_prompt, max_tokens=2048)
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_risks) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_risks LLM failed: %s — using fallback", exc)
+            return fallback
+
+    # ── Suggest processes mode ────────────────────────────────────────────
+
+    async def _execute_suggest_processes(self, **kwargs: Any) -> dict[str, Any]:
+        """Propose processes for a business unit."""
+        bu_name = kwargs.get("bu_name", "")
+        bu_id = kwargs.get("bu_id", "BU-001")
+        industry = kwargs.get("industry", "Generic")
+        control_type_names = kwargs.get("control_type_names", [])
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_processes) started for bu='%s'", bu_name)
+
+        fallback = _build_deterministic_process_suggestions(bu_name, bu_id)
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_processes) deterministic (%.3fs)", time.monotonic() - t0)
+            return fallback
+
+        user_prompt = json.dumps(
+            {
+                "business_unit": bu_name,
+                "bu_id": bu_id,
+                "industry": industry,
+                "control_types": control_type_names,
+            },
+            indent=2,
+        )
+
+        try:
+            raw = await self.call_llm(SYSTEM_PROMPT_SUGGEST_PROCESSES, user_prompt, max_tokens=2048)
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_processes) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_processes LLM failed: %s — using fallback", exc)
+            return fallback
+
     # ── Enrich mode ───────────────────────────────────────────────────────
 
     async def _execute_enrich(self, **kwargs: Any) -> dict[str, Any]:
@@ -441,3 +728,118 @@ class ConfigProposerAgent(BaseAgent):
         except Exception as exc:
             logger.warning("Enrich LLM failed: %s — using deterministic", exc)
             return _build_deterministic_enrichment(type_names)
+
+    # ── Suggest types mode ────────────────────────────────────────────────
+
+    async def _execute_suggest_types(self, **kwargs: Any) -> dict[str, Any]:
+        """Suggest control types based on industry, jurisdiction, and description."""
+        industry = kwargs.get("industry", "Generic")
+        jurisdiction = kwargs.get("jurisdiction", "Generic")
+        description = kwargs.get("description", "")
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_types) started for %s/%s", industry, jurisdiction)
+
+        # Deterministic fallback — standard banking types
+        fallback_types = [
+            {"name": "Reconciliation", "definition": "Comparison of data sets to identify differences", "code": "RCN"},
+            {"name": "Authorization", "definition": "Approval of transactions by appropriate authority", "code": "ATH"},
+            {"name": "Segregation of Duties", "definition": "Separation of incompatible functions", "code": "SOD"},
+            {"name": "Access Controls", "definition": "Restriction of system access to authorized users", "code": "ACC"},
+            {"name": "Review & Approval", "definition": "Independent review and sign-off of work products", "code": "RVW"},
+        ]
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_types) deterministic (%.3fs)", time.monotonic() - t0)
+            return {"suggested_types": fallback_types}
+
+        prompt = json.dumps({"industry": industry, "jurisdiction": jurisdiction, "description": description}, indent=2)
+        try:
+            raw = await self.call_llm(
+                "You are a controls taxonomy expert. Given an industry, jurisdiction, and description, "
+                "suggest 5-8 control types as a JSON array with name, definition, and 3-letter code fields. "
+                "Return JSON: {\"suggested_types\": [...]}",
+                prompt, max_tokens=2048,
+            )
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_types) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_types LLM failed: %s — using fallback", exc)
+            return {"suggested_types": fallback_types}
+
+    # ── Suggest sections mode ─────────────────────────────────────────────
+
+    async def _execute_suggest_sections(self, **kwargs: Any) -> dict[str, Any]:
+        """Suggest process area sections based on industry and control types."""
+        industry = kwargs.get("industry", "Generic")
+        control_type_names = kwargs.get("control_type_names", [])
+        description = kwargs.get("description", "")
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_sections) started")
+
+        fallback_sections = [
+            {"id": "1.0", "name": "Financial Reporting", "domain": "financial_reporting"},
+            {"id": "2.0", "name": "Treasury & Cash Management", "domain": "treasury"},
+            {"id": "3.0", "name": "Lending & Credit", "domain": "lending"},
+            {"id": "4.0", "name": "Compliance & Regulatory", "domain": "compliance"},
+            {"id": "5.0", "name": "IT & Operations", "domain": "it_operations"},
+        ]
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_sections) deterministic (%.3fs)", time.monotonic() - t0)
+            return {"suggested_sections": fallback_sections}
+
+        prompt = json.dumps({"industry": industry, "control_types": control_type_names, "description": description}, indent=2)
+        try:
+            raw = await self.call_llm(
+                "You are a process area expert. Given an industry context and control types, "
+                "suggest 5-8 process area sections as a JSON array with id, name, and domain fields. "
+                "Return JSON: {\"suggested_sections\": [...]}",
+                prompt, max_tokens=2048,
+            )
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_sections) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_sections LLM failed: %s — using fallback", exc)
+            return {"suggested_sections": fallback_sections}
+
+    # ── Suggest registry field mode ───────────────────────────────────────
+
+    async def _execute_suggest_registry_field(self, **kwargs: Any) -> dict[str, Any]:
+        """Suggest items for a specific registry field based on context."""
+        field_name = kwargs.get("field_name", "roles")
+        section_name = kwargs.get("section_name", "")
+        existing_items = kwargs.get("existing_items", [])
+        t0 = time.monotonic()
+        logger.info("ConfigProposerAgent (suggest_registry_field) for %s in '%s'", field_name, section_name)
+
+        fallback_items = {
+            "roles": ["Senior Accountant", "Control Owner", "Compliance Officer", "Internal Auditor"],
+            "systems": ["SAP", "Oracle EBS", "Workiva", "ServiceNow"],
+            "data_objects": ["General Ledger", "Trial Balance", "Bank Statement", "Loan Portfolio"],
+            "evidence_artifacts": ["Reconciliation Report", "Approval Email", "System Screenshot"],
+            "event_triggers": ["Month-End Close", "Daily COB", "Regulatory Filing Deadline"],
+            "regulatory_frameworks": ["SOX", "Basel III", "FDICIA", "OCC Guidelines"],
+        }
+
+        default_items = fallback_items.get(field_name, ["Item 1", "Item 2", "Item 3"])
+
+        if self.client is None:
+            logger.info("ConfigProposerAgent (suggest_registry_field) deterministic (%.3fs)", time.monotonic() - t0)
+            return {"suggestions": [i for i in default_items if i not in existing_items]}
+
+        prompt = json.dumps({"field": field_name, "section": section_name, "existing": existing_items}, indent=2)
+        try:
+            raw = await self.call_llm(
+                f"You are a domain registry expert. Suggest 3-5 new items for the '{field_name}' "
+                f"registry field for a section called '{section_name}'. Avoid duplicating existing items. "
+                "Return JSON: {\"suggestions\": [...]}",
+                prompt, max_tokens=1024,
+            )
+            result = self.parse_json(raw)
+            logger.info("ConfigProposerAgent (suggest_registry_field) completed (%.3fs)", time.monotonic() - t0)
+            return result
+        except Exception as exc:
+            logger.warning("suggest_registry_field LLM failed: %s — using fallback", exc)
+            return {"suggestions": [i for i in default_items if i not in existing_items]}

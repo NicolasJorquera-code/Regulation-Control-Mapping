@@ -58,7 +58,10 @@ def _render_select_profile() -> DomainConfig | None:
     col_select, col_upload = st.columns([3, 2])
 
     with col_select:
-        profiles = sorted(_profiles_dir().glob("*.yaml"))
+        profiles = sorted(
+            p for p in _profiles_dir().glob("*.yaml")
+            if p.stem != "healthcare_demo"
+        )
         if not profiles:
             st.warning("No config profiles found in `config/profiles/`.")
             return None
@@ -154,34 +157,32 @@ def render_config_preview(config: DomainConfig) -> None:
 
 
 def render_config_input() -> DomainConfig | None:
-    """Render the Organization Config section with three input sub-tabs.
+    """Render the Organization Config section — profile selector only.
 
+    Build-from-Form and Import-from-Excel have moved to the Control Builder tab.
     Returns the active DomainConfig, or None if no config is ready.
     """
     st.markdown("### Organization Config")
-
-    tab_select, tab_form, tab_excel = st.tabs(
-        ["\U0001f4c1 Select Profile", "\U0001f4dd Build from Form", "\U0001f4e4 Import from Excel"]
+    st.caption(
+        "Select a saved profile below, or use the **Control Builder** tab to "
+        "create a new configuration from scratch."
     )
 
-    config: DomainConfig | None = None
+    # Check if a config was activated from the Control Builder
+    builder_config = st.session_state.get("wizard_active_config")
+    if builder_config:
+        try:
+            config = DomainConfig(**builder_config)
+            st.success(f"Using config: **{config.name}**")
+            render_config_preview(config)
+            if st.button("Change config", key="ci_change_config"):
+                st.session_state.pop("wizard_active_config", None)
+                st.rerun()
+            return config
+        except Exception:
+            pass
 
-    with tab_select:
-        config = _render_select_profile()
-
-    with tab_form:
-        from controlnexus.ui.config_wizard import render_config_wizard
-
-        wizard_config = render_config_wizard()
-        if wizard_config is not None:
-            config = wizard_config
-
-    with tab_excel:
-        from controlnexus.ui.excel_import import render_excel_import
-
-        excel_config = render_excel_import()
-        if excel_config is not None:
-            config = excel_config
+    config = _render_select_profile()
 
     if config is not None:
         st.session_state["wizard_active_config"] = config.model_dump()
