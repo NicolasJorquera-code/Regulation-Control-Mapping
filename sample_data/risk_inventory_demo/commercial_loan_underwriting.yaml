@@ -1,0 +1,411 @@
+version: "1.2.0"
+risk_appetite_framework:
+  statement: "The bank maintains low tolerance for credit-rating drift, model performance degradation, and covenant monitoring lapses. Residual risk above Medium in Credit, Operational, or Model categories requires CRO + CCO joint escalation within 5 business days."
+  effective_date: "2026-01-01"
+  approver: "Board Risk Committee"
+  category_thresholds:
+    operational: "Medium"
+    model: "Low"
+    third_party: "Medium"
+    compliance: "Low"
+  escalation_rules:
+    - "Residual at threshold: monthly monitoring by 1LOD with quarterly 2LOD review."
+    - "Residual above threshold: CCO/CRO joint remediation plan with quarterly progress review."
+    - "Residual two or more bands above threshold for Model or Credit categories: Board Risk Committee escalation within 10 business days."
+scenario:
+  run_id: "DEMO-RI-CLUW-001"
+  tenant_id: "demo-bank"
+  process_id: "PROC-CL-UNDERWRITE"
+  process_name: "Commercial Loan Underwriting & Risk Rating"
+  product: "Commercial and industrial loans ($1M – $50M)"
+  business_unit: "Commercial Lending"
+  description: "Underwriting workflow for commercial and industrial loan applications, including financial spreading, risk rating model assignment, covenant design, credit committee approval, loan documentation, and post-close booking. The process services applications $1M – $50M originated by relationship managers across the commercial banking footprint."
+  systems:
+    - "Loan Origination System"
+    - "Financial Spreading Tool"
+    - "Risk Rating Model"
+    - "Credit Committee Portal"
+    - "Loan Documentation Repository"
+    - "Core Banking Loan System"
+  stakeholders:
+    - "SVP, Credit Underwriting"
+    - "Chief Credit Officer"
+    - "Credit Committee"
+    - "Model Risk Management"
+    - "Loan Operations Manager"
+    - "Internal Audit"
+    - "Loan Documentation Counsel"
+
+controls:
+  - control_id: "CTRL-CL-001"
+    control_name: "Credit committee approval for loans above delegated authority"
+    control_type: "Authorization"
+    owner: "Chief Credit Officer"
+    frequency: "Per credit decision above threshold"
+    description: "Loans exceeding delegated lending authority require formal credit committee approval with documented quorum, deliberation, and conditions."
+    design_rating: "Strong"
+    operating_rating: "Strong"
+    design_rationale: "Committee structure, quorum rules, and approval thresholds are documented and consistently applied; full meeting record retained."
+    operating_rationale: "Sample evidence shows 100% of loans above delegated authority have committee approval with documented conditions."
+    risk_mitigations:
+      RIB-BPR: "Committee approval introduces independent senior judgment for material credit decisions and constrains delegated-authority drift."
+      RIB-IFR: "Multi-party deliberation reduces unilateral approval capability for material loans."
+    coverage_by_risk:
+      RIB-BPR: "strong"
+      RIB-IFR: "strong"
+    evidence_quality:
+      rating: "Strong"
+      last_tested: "2026-02-12"
+      sample_size: 35
+      exceptions_noted: 0
+
+  - control_id: "CTRL-CL-002"
+    control_name: "Independent risk rating validation"
+    control_type: "Reconciliation"
+    owner: "Credit Risk Review"
+    frequency: "Sample-based, monthly"
+    description: "Credit Risk Review (2LOD) independently validates risk rating model output and reviewer-assigned overrides on a monthly sample of newly underwritten loans."
+    design_rating: "Satisfactory"
+    operating_rating: "Improvement Needed"
+    design_rationale: "2LOD validation pattern is sound, but sample size of 8% of monthly originations is below industry benchmark of 15%."
+    operating_rationale: "Latest validation found 12% disagreement rate on borderline ratings, with no documented override rationale on 4 of 8 disagreements."
+    risk_mitigations:
+      RIB-MDL: "Independent rating validation challenges model output and reviewer judgment, identifying systematic bias before portfolio impact accumulates."
+      RIB-BPR: "Sampling-based validation provides quality assurance on the rating step that drives downstream pricing and capital decisions."
+    coverage_by_risk:
+      RIB-MDL: "partial"
+      RIB-BPR: "partial"
+    open_issues:
+      - issue_id: "IS-CL-002"
+        description: "12% rating disagreement rate without documented override rationale on 4 of 8 disagreements; trend not yet escalated to CCO."
+        severity: "Medium"
+        age_days: 35
+        owner: "Credit Risk Review"
+        status: "Open"
+    evidence_quality:
+      rating: "Adequate"
+      last_tested: "2026-02-28"
+      sample_size: 65
+      exceptions_noted: 8
+
+  - control_id: "CTRL-CL-003"
+    control_name: "Risk rating model performance monitoring"
+    control_type: "Surveillance"
+    owner: "Model Risk Management"
+    frequency: "Quarterly"
+    description: "Quarterly monitoring of risk rating model performance against realized loan defaults, downgrades, and migration metrics, with annual recalibration cycle."
+    design_rating: "Satisfactory"
+    operating_rating: "Improvement Needed"
+    design_rationale: "Performance monitoring scope and metrics align with SR 11-7 model risk management guidance."
+    operating_rationale: "Q4 monitoring identified rating-migration drift in the middle-market segment; recalibration scheduled for Q3 but not yet started."
+    risk_mitigations:
+      RIB-MDL: "Performance monitoring is the primary control identifying model drift before portfolio impact."
+    coverage_by_risk:
+      RIB-MDL: "partial"
+    open_issues:
+      - issue_id: "IS-CL-005"
+        description: "Risk rating model recalibration deferred from Q2 to Q3 without documented MRM approval."
+        severity: "High"
+        age_days: 28
+        owner: "Model Risk Management"
+        status: "Open"
+    evidence_quality:
+      rating: "Adequate"
+      last_tested: "2026-01-31"
+      sample_size: 0
+      exceptions_noted: 0
+      notes: "Quarterly performance monitoring report retained; annual independent model validation pending."
+
+  - control_id: "CTRL-CL-004"
+    control_name: "Covenant design checklist and post-close monitoring setup"
+    control_type: "Directive"
+    owner: "Loan Operations Manager"
+    frequency: "Per loan closing"
+    description: "Mandatory covenant design checklist completed at credit committee and translated into post-close monitoring schedule loaded into the loan administration system."
+    design_rating: "Satisfactory"
+    operating_rating: "Satisfactory"
+    design_rationale: "Checklist covers financial, reporting, and operating covenants with mapping to monitoring schedule fields."
+    operating_rationale: "Sample shows checklist completion on 92% of closings; missing checklist on 3 of 35 sampled loans."
+    risk_mitigations:
+      RIB-BPR: "Checklist enforces consistency in covenant design and ensures translation to monitoring system at booking."
+    coverage_by_risk:
+      RIB-BPR: "partial"
+    evidence_quality:
+      rating: "Adequate"
+      last_tested: "2026-02-15"
+      sample_size: 35
+      exceptions_noted: 3
+
+  - control_id: "CTRL-CL-005"
+    control_name: "Loan documentation legal review"
+    control_type: "Authorization"
+    owner: "Loan Documentation Counsel"
+    frequency: "Per loan closing"
+    description: "Legal review of all loan documents prior to funding, with documented sign-off on documentation completeness and lien perfection."
+    design_rating: "Strong"
+    operating_rating: "Satisfactory"
+    design_rationale: "Independent legal review with required sign-off; documentation checklist mapped to documentation repository fields."
+    operating_rationale: "Sample shows 100% legal sign-off; 1 instance of late lien perfection filing identified and remediated."
+    risk_mitigations:
+      RIB-CON: "Legal review and lien perfection are the primary mitigants for documentation and contract risk in commercial lending."
+    coverage_by_risk:
+      RIB-CON: "strong"
+    evidence_quality:
+      rating: "Strong"
+      last_tested: "2026-02-20"
+      sample_size: 35
+      exceptions_noted: 1
+
+risks:
+  - taxonomy_node_id: "RIB-MDL"
+    risk_id: "RI-CLUW-001"
+    risk_description: "The risk rating model may produce ratings that diverge from realized credit performance because of drift in the underlying portfolio composition, macroeconomic conditions, or model calibration assumptions, leading to mispriced risk and capital allocation."
+    risk_event: "The risk rating model under-rates middle-market loans for two consecutive quarters before recalibration, resulting in systematic underpricing and reserve under-provisioning."
+    applicability_rationale: "Model Risk materializes because the bank uses a quantitative rating model that drives loan pricing, regulatory capital, and reserve decisions, subject to SR 11-7 model risk management standards."
+    confidence: 0.88
+    causes:
+      - "model design assumptions"
+      - "calibration drift"
+      - "weak SLA monitoring"
+    consequences:
+      - "loan mispricing"
+      - "capital and reserve misstatement"
+      - "MRM exam findings"
+    impact_scores:
+      financial_impact: 4
+      regulatory_impact: 3
+      reputational_impact: 2
+    overall_impact_score: 4
+    overall_impact_rationale: "Overall impact is Severe because model drift in the rating engine systematically affects pricing and capital decisions across new originations, with material aggregate financial exposure and SR 11-7 supervisory implications."
+    likelihood_score: 3
+    likelihood_rating: "Medium High"
+    likelihood_rationale: "Likelihood is Medium High because Q4 monitoring identified rating-migration drift in the middle-market segment and the planned Q2 recalibration was deferred to Q3 without documented MRM approval."
+    assumptions:
+      - "Q4 performance monitoring sample reflects current portfolio behavior."
+      - "Recalibration deferral does not reflect documented model-stability evidence."
+    exposure_metrics:
+      - metric_name: "rating migration drift (middle-market)"
+        metric_value: "1.4 notches"
+        metric_unit: "average downgrade vs. expected"
+        description: "Average notch difference between expected and realized rating migration in the middle-market segment over the prior four quarters."
+        source: "Quarterly model performance monitoring"
+        supports: ["likelihood", "impact"]
+      - metric_name: "rating disagreement rate"
+        metric_value: "12%"
+        metric_unit: "of validated sample"
+        description: "Share of independently validated ratings that disagreed with the model + reviewer rating."
+        source: "Credit Risk Review monthly validation"
+        supports: ["likelihood"]
+      - metric_name: "monthly origination volume"
+        metric_value: "$245M"
+        metric_unit: "average monthly fundings"
+        description: "Average monthly commercial loan funding volume."
+        source: "Loan Origination System"
+        supports: ["impact"]
+    mapped_controls: ["CTRL-CL-002", "CTRL-CL-003"]
+    recommended_action: "Restart Q3 model recalibration with documented MRM approval, expand independent validation sample to 15% of originations, and implement an interim conservative override on middle-market borderline ratings."
+    coverage_gaps:
+      - "Recalibration deferral does not yet have documented MRM approval or compensating control."
+      - "Independent validation sample size (8%) is below industry benchmark (15%)."
+    action_plan:
+      - action: "Document MRM approval for recalibration timing or restart Q2 cycle with compensating override on middle-market borderline ratings."
+        owner: "Model Risk Management"
+        due_date: "2026-05-15"
+        status: "In Progress"
+        priority: "Critical"
+      - action: "Expand independent validation sample from 8% to 15% of monthly originations."
+        owner: "Credit Risk Review"
+        due_date: "2026-Q3"
+        status: "Planned"
+        priority: "High"
+      - action: "Add documented override rationale requirement when 2LOD validation disagrees with assigned rating."
+        owner: "Credit Risk Review"
+        due_date: "2026-Q2"
+        status: "Planned"
+        priority: "High"
+    review:
+      reviewer: "Model Risk Management"
+      review_status: "Challenged"
+      approval_status: "Pending"
+      challenge_comments: "Residual rating elevated to High pending recalibration restart and validation sample expansion. CRO + CCO joint escalation triggered per Model appetite threshold (Low)."
+      challenged_fields: ["likelihood_score", "control_operating_effectiveness", "management_response"]
+      ai_original_value: "Residual rating: Medium-22; Management response: Monitor"
+      reviewer_adjusted_value: "Residual rating: High-32; Management response: Mitigate"
+      reviewer_rationale: "Override raised residual to High based on (1) deferred recalibration without MRM approval, (2) sustained rating drift signal in middle-market, and (3) under-sized independent validation sample. Aligned with appetite framework requiring CRO + CCO escalation when Model residual is two or more bands above Low threshold."
+    evidence_references:
+      - evidence_id: "CLUW-EVID-001"
+        evidence_type: "Model performance monitoring"
+        description: "Q4 risk rating model performance monitoring report and migration analysis."
+        source: "Model Risk Management quarterly package"
+
+  - taxonomy_node_id: "RIB-BPR"
+    risk_id: "RI-CLUW-002"
+    risk_description: "Covenant design or post-close monitoring setup may be incomplete or inconsistent, causing missed covenant triggers and delayed identification of borrower deterioration."
+    risk_event: "A loan closes without the documented covenant checklist being translated into the monitoring schedule, and a financial covenant breach is not identified until the borrower's next quarterly submission."
+    applicability_rationale: "Business Process Risk materializes because the multi-step underwriting-to-booking process depends on consistent execution across credit, documentation, and loan operations roles."
+    confidence: 0.83
+    causes:
+      - "manual workflow"
+      - "unclear ownership"
+      - "missing required fields"
+    consequences:
+      - "missed covenant triggers"
+      - "delayed borrower deterioration identification"
+      - "rework on loan booking"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 2
+      reputational_impact: 2
+    overall_impact_score: 3
+    overall_impact_rationale: "Overall impact is Significant because missed covenant triggers can delay identification of borrower deterioration, resulting in higher charge-off severity."
+    likelihood_score: 2
+    likelihood_rating: "Medium Low"
+    likelihood_rationale: "Likelihood is Medium Low because checklist completion is at 92% with only 3 of 35 sampled loans missing the checklist, and loan operations identifies setup gaps within the first monitoring cycle."
+    assumptions:
+      - "Sampling reflects current loan booking practice."
+    exposure_metrics:
+      - metric_name: "covenant checklist completion"
+        metric_value: "92%"
+        metric_unit: "% of closed loans"
+        description: "Share of closed loans with completed covenant design checklist."
+        source: "Loan Operations sample audit"
+        supports: ["likelihood"]
+      - metric_name: "missed covenant triggers (trailing 12 months)"
+        metric_value: "2"
+        metric_unit: "missed triggers"
+        description: "Covenant triggers identified after the covenant test date over the trailing 12 months."
+        source: "Credit administration trigger log"
+        supports: ["likelihood", "impact"]
+    mapped_controls: ["CTRL-CL-004", "CTRL-CL-001"]
+    recommended_action: "Implement system enforcement that prevents loan booking without completed covenant checklist and integrate checklist directly with monitoring schedule fields."
+    coverage_gaps:
+      - "Covenant checklist completion is procedurally required but not system-enforced at booking."
+    action_plan:
+      - action: "System-enforce covenant checklist completion as a precondition to loan booking in core banking."
+        owner: "Loan Operations Manager"
+        due_date: "2026-Q3"
+        status: "Planned"
+        priority: "High"
+    review:
+      reviewer: "SVP, Credit Underwriting"
+      review_status: "Approved"
+      approval_status: "Approved"
+      challenge_comments: "Approved at current rating with action plan tracking system enforcement."
+      challenged_fields: ["likelihood_score"]
+
+  - taxonomy_node_id: "RIB-CON"
+    risk_id: "RI-CLUW-003"
+    risk_description: "Loan documentation may be incomplete, inconsistent with credit approval terms, or have lien perfection deficiencies that impair the bank's collateral position or enforceability of remedies."
+    risk_event: "A lien perfection filing is missed or filed late on a secured loan, impairing the bank's secured position relative to other creditors in a default scenario."
+    applicability_rationale: "Contract Risk materializes because commercial loans are documented under detailed credit agreements, security agreements, and perfection requirements that must align with approved terms."
+    confidence: 0.80
+    causes:
+      - "manual workflow"
+      - "interface breaks"
+    consequences:
+      - "impaired collateral position"
+      - "loss severity increase on default"
+      - "audit and legal findings"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 2
+      reputational_impact: 2
+    overall_impact_score: 3
+    overall_impact_rationale: "Overall impact is Significant because documentation defects directly affect loss-given-default and the bank's enforcement position."
+    likelihood_score: 1
+    likelihood_rating: "Low"
+    likelihood_rationale: "Likelihood is Low because legal review is independent and operating well, with only 1 late lien perfection identified and remediated in the prior period."
+    assumptions:
+      - "Legal review covers all secured loan closings."
+    exposure_metrics:
+      - metric_name: "late lien perfections"
+        metric_value: "1"
+        metric_unit: "in trailing 12 months"
+        description: "Lien perfection filings completed after the documented filing window."
+        source: "Loan documentation repository audit"
+        supports: ["likelihood"]
+      - metric_name: "documentation defect rate"
+        metric_value: "2.9%"
+        metric_unit: "% of sampled loans"
+        description: "Share of sampled loan files with one or more documentation defects identified in post-close review."
+        source: "Quarterly documentation audit"
+        supports: ["likelihood"]
+    mapped_controls: ["CTRL-CL-005"]
+    recommended_action: "Maintain current legal-review control and add automated lien perfection deadline alerting in the documentation repository."
+    coverage_gaps:
+      - "Single mapped control on documentation; consider adding a 1LOD documentation completeness review prior to legal sign-off."
+    action_plan:
+      - action: "Add automated lien perfection deadline alerting in loan documentation repository."
+        owner: "Technology Owner"
+        due_date: "2026-Q4"
+        status: "Planned"
+        priority: "Medium"
+    review:
+      reviewer: "Loan Documentation Counsel"
+      review_status: "Approved"
+      approval_status: "Approved"
+      challenge_comments: "Approved; single-control coverage acceptable given strong operating evidence."
+
+  - taxonomy_node_id: "RIB-IFR"
+    risk_id: "RI-CLUW-004"
+    risk_description: "Underwriters or relationship managers may bypass risk-rating model output, exception protocols, or delegated-authority limits to advance or approve loans outside policy."
+    risk_event: "A relationship manager assigns a more favorable risk rating than the model suggests without documented override rationale, advancing the loan to committee with materially understated risk."
+    applicability_rationale: "Internal Fraud Risk materializes because underwriters and relationship managers have judgment-based override authority over risk ratings and limited automated override controls."
+    confidence: 0.78
+    causes:
+      - "excessive privileges"
+      - "weak segregation"
+      - "override abuse"
+    consequences:
+      - "credit losses on under-rated loans"
+      - "audit and regulatory findings"
+      - "reputational impact"
+    impact_scores:
+      financial_impact: 3
+      regulatory_impact: 2
+      reputational_impact: 2
+    overall_impact_score: 3
+    overall_impact_rationale: "Overall impact is Significant because override abuse on credit decisions creates direct credit-loss exposure and concentrated reputational impact."
+    likelihood_score: 2
+    likelihood_rating: "Medium Low"
+    likelihood_rationale: "Likelihood is Medium Low because committee approval and 2LOD validation provide meaningful detection, but 4 of 8 rating disagreements lacked documented override rationale."
+    assumptions:
+      - "Override behavior is observable through 2LOD validation sample."
+    exposure_metrics:
+      - metric_name: "rating overrides without documented rationale"
+        metric_value: "4"
+        metric_unit: "of 8 disagreements in latest validation"
+        description: "Risk rating overrides where no documented rationale was retained."
+        source: "Credit Risk Review monthly validation"
+        supports: ["likelihood"]
+    mapped_controls: ["CTRL-CL-001", "CTRL-CL-002"]
+    recommended_action: "Require documented override rationale field in the rating workflow before submission to committee, with automated population of override rationale completeness in the 2LOD validation sample."
+    coverage_gaps:
+      - "Override rationale is procedurally required but not system-enforced."
+    action_plan:
+      - action: "Add system-enforced override rationale field in the risk rating workflow."
+        owner: "Technology Owner"
+        due_date: "2026-Q3"
+        status: "Planned"
+        priority: "High"
+    review:
+      reviewer: "Internal Audit"
+      review_status: "Pending Review"
+      approval_status: "Pending"
+      challenge_comments: "Recommend monthly trending of override rationale completeness; 4 of 8 missing rationale is a meaningful population that warrants control redesign."
+      challenged_fields: ["control_design_effectiveness", "management_response"]
+
+executive_summary:
+  headline: "Commercial Loan Underwriting shows one high residual model risk (rating model recalibration deferred) and emerging override-discipline weakness; documentation and committee controls are operating well."
+  key_messages:
+    - "Risk rating model recalibration deferred without MRM approval — CRO + CCO joint escalation triggered per Model appetite threshold (Low)."
+    - "Independent validation found 12% rating disagreement with 4 of 8 disagreements lacking override rationale — control redesign warranted."
+    - "Committee approval, legal review, and lien perfection controls are operating effectively; covenant checklist completion at 92% with system-enforcement remediation in plan."
+  top_residual_risks:
+    - "Model Risk (Rating Model Drift): High"
+    - "Business Process Risk (Covenant Checklist Completion): Medium"
+    - "Internal Fraud Risk (Override Discipline): Medium"
+  recommended_actions:
+    - "Restart Q3 model recalibration with documented MRM approval and add interim conservative override on middle-market borderline ratings."
+    - "Expand independent rating validation sample from 8% to 15% of originations and require documented override rationale."
+    - "System-enforce covenant checklist completion as a precondition to loan booking."

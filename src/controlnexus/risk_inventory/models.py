@@ -17,8 +17,6 @@ class ImpactDimension(str, Enum):
     FINANCIAL = "financial_impact"
     REGULATORY = "regulatory_impact"
     REPUTATIONAL = "reputational_impact"
-    CUSTOMER = "customer_impact"
-    LIQUIDITY = "liquidity_impact"
 
 
 class ImpactScore(IntEnum):
@@ -262,6 +260,27 @@ class ControlOperatingEffectivenessAssessment(BaseModel):
     evidence_gaps: list[str] = Field(default_factory=list)
 
 
+class OpenIssue(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    issue_id: str
+    description: str
+    severity: str = "Medium"
+    age_days: int = 0
+    owner: str = ""
+    status: str = "Open"
+
+
+class EvidenceQuality(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    rating: str = "Adequate"
+    last_tested: str = ""
+    sample_size: int = 0
+    exceptions_noted: int = 0
+    notes: str = ""
+
+
 class ControlMapping(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -274,6 +293,8 @@ class ControlMapping(BaseModel):
     coverage_assessment: str = "partial"
     design_effectiveness: ControlDesignEffectivenessAssessment | None = None
     operating_effectiveness: ControlOperatingEffectivenessAssessment | None = None
+    open_issues: list[OpenIssue] = Field(default_factory=list)
+    evidence_quality: EvidenceQuality | None = None
 
 
 class ControlEnvironmentAssessment(BaseModel):
@@ -322,6 +343,25 @@ class ReviewChallengeRecord(BaseModel):
     approval_timestamp: str = ""
 
 
+class RiskAppetite(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    threshold: str = "Medium"
+    statement: str = ""
+    status: str = "within"  # within | at_threshold | outside
+    category: str = ""
+
+
+class ActionItem(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    action: str
+    owner: str = ""
+    due_date: str = ""
+    status: str = "Planned"
+    priority: str = "Medium"
+
+
 class RiskInventoryRecord(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -342,6 +382,9 @@ class RiskInventoryRecord(BaseModel):
     review_challenges: list[ReviewChallengeRecord] = Field(default_factory=list)
     evidence_references: list[EvidenceReference] = Field(default_factory=list)
     validation_findings: list[ValidationFinding] = Field(default_factory=list)
+    risk_appetite: RiskAppetite | None = None
+    action_plan: list[ActionItem] = Field(default_factory=list)
+    coverage_gaps: list[str] = Field(default_factory=list)
     demo_record: bool = False
 
 
@@ -376,3 +419,124 @@ class RiskInventoryRun(BaseModel):
     @property
     def materialized_records(self) -> list[RiskInventoryRecord]:
         return [record for record in self.records if record.applicability.materializes]
+
+
+# ---------------------------------------------------------------------------
+# Workspace / Knowledge Base models (front-end demo mode)
+# ---------------------------------------------------------------------------
+
+
+class BusinessUnit(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    bu_id: str
+    bu_name: str
+    description: str = ""
+    head: str = ""
+    employee_count: int = 0
+    risk_profile_summary: str = ""
+    procedure_ids: list[str] = Field(default_factory=list)
+
+
+class Procedure(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    procedure_id: str
+    procedure_name: str
+    bu_id: str
+    process_id: str = ""  # links to RiskInventoryRun.input_context.process_id
+    description: str = ""
+    owner: str = ""
+    last_reviewed: str = ""
+    cadence: str = ""
+    criticality: str = "Standard"
+    related_systems: list[str] = Field(default_factory=list)
+
+
+class RootCauseTaxonomyEntry(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    name: str
+    category: str  # People / Process / Technology / External
+    description: str = ""
+    examples: list[str] = Field(default_factory=list)
+
+
+class ControlTaxonomyEntry(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    name: str
+    family: str  # Preventive / Detective / Corrective / Directive
+    description: str = ""
+    typical_evidence: list[str] = Field(default_factory=list)
+
+
+class RiskTaxonomyLevel1(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    name: str
+    definition: str = ""
+    level_2_codes: list[str] = Field(default_factory=list)
+
+
+class KRIThreshold(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    green: str
+    amber: str
+    red: str
+
+
+class KRIDefinition(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    kri_id: str
+    kri_name: str
+    risk_taxonomy_id: str  # links to RIB-XXX
+    metric_definition: str
+    formula: str = ""
+    unit: str = ""
+    measurement_frequency: str = "Monthly"
+    data_source: str = ""
+    owner: str = ""
+    thresholds: KRIThreshold
+    rationale: str = ""
+    escalation_path: str = ""
+    use_cases: list[str] = Field(default_factory=list)
+    placement_guidance: str = ""
+
+
+class RiskInventoryWorkspace(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    workspace_id: str
+    bank_id: str = ""
+    bank_name: str = ""
+    business_units: list[BusinessUnit] = Field(default_factory=list)
+    procedures: list[Procedure] = Field(default_factory=list)
+    risk_taxonomy_l1: list[RiskTaxonomyLevel1] = Field(default_factory=list)
+    risk_taxonomy_l2: list[RiskTaxonomyNode] = Field(default_factory=list)
+    control_taxonomy: list[ControlTaxonomyEntry] = Field(default_factory=list)
+    root_cause_taxonomy: list[RootCauseTaxonomyEntry] = Field(default_factory=list)
+    bank_controls: list[dict[str, Any]] = Field(default_factory=list)
+    kri_library: list[KRIDefinition] = Field(default_factory=list)
+    runs: list[RiskInventoryRun] = Field(default_factory=list)
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def procedures_for_bu(self, bu_id: str) -> list[Procedure]:
+        return [p for p in self.procedures if p.bu_id == bu_id]
+
+    def run_for_procedure(self, procedure_id: str) -> RiskInventoryRun | None:
+        proc = next((p for p in self.procedures if p.procedure_id == procedure_id), None)
+        if not proc:
+            return None
+        return next(
+            (r for r in self.runs if r.input_context.process_id == proc.process_id),
+            None,
+        )
+
+    def kris_for_taxonomy(self, taxonomy_id: str) -> list[KRIDefinition]:
+        return [k for k in self.kri_library if k.risk_taxonomy_id == taxonomy_id]

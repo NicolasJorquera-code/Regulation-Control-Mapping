@@ -1,0 +1,479 @@
+version: "1.0.0"
+workspace_id: "WS-DEMO-BANK"
+bank:
+  bank_id: "DEMO-BANK-001"
+  bank_name: "Demo Bank"
+  description: |
+    Illustrative mid-size U.S. bank operating across three lines of business:
+    Wholesale Payment Operations, Retail Banking, and Commercial Lending.
+    Used for demonstration only — not based on any specific institution.
+
+# ---------------------------------------------------------------------------
+# Two-tier Enterprise Risk Taxonomy (L1 -> L2)
+# Demonstrates the bank's adopted enterprise taxonomy. L2 detail lives in
+# config/risk_inventory/risk_taxonomy_crosswalk.yaml; this section codifies
+# the L1 enterprise view that the front-end surfaces throughout.
+# ---------------------------------------------------------------------------
+risk_taxonomy_l1:
+  - code: "OPS"
+    name: "Operational"
+    definition: "Risk of loss from inadequate or failed internal processes, people, systems, or external events affecting day-to-day execution."
+    level_2_codes: ["RIB-BPR", "RIB-IFR", "RIB-EFR", "RIB-ORS", "RIB-TPR", "RIB-DM", "RIB-IT", "RIB-PCM", "RIB-PHYS", "RIB-PHYAS", "RIB-CON", "RIB-LIT", "RIB-IP", "RIB-MDL", "RIB-RR"]
+  - code: "CYB"
+    name: "Cyber & Privacy"
+    definition: "Risk of loss from unauthorized access, data exposure, or privacy obligations across customer and employee data."
+    level_2_codes: ["RIB-CYB", "RIB-PRI"]
+  - code: "REG"
+    name: "Regulatory Compliance"
+    definition: "Risk of failing to comply with applicable laws, regulations, supervisory expectations, or internal policies."
+    level_2_codes: ["RIB-COM"]
+  - code: "TAL"
+    name: "Talent"
+    definition: "Risk arising from human capital strategy, employment practices, succession, and workforce capability."
+    level_2_codes: ["RIB-HCM", "RIB-EMP"]
+
+# ---------------------------------------------------------------------------
+# Root Cause Taxonomy (newly formalized — referenced from each risk record)
+# Aligned to People / Process / Technology / External executive view.
+# ---------------------------------------------------------------------------
+root_cause_taxonomy:
+  - code: "RC-PPL-01"
+    name: "Skills & Capacity"
+    category: "People"
+    description: "Insufficient trained staff, surge-capacity gaps, single points of dependence on individual operators."
+    examples: ["Surge volume exceeds trained operator capacity", "Key-person dependency on a single approver"]
+  - code: "RC-PPL-02"
+    name: "Awareness & Training"
+    category: "People"
+    description: "Procedural non-compliance driven by knowledge gaps, outdated training, or unclear accountability."
+    examples: ["New-hire onboarding without procedure attestation", "Annual training not refreshed after policy change"]
+  - code: "RC-PRC-01"
+    name: "Procedure Design"
+    category: "Process"
+    description: "Procedure does not adequately address scenario, has unclear ownership, or lacks defined service levels."
+    examples: ["No documented escalation path for aged exceptions", "Ambiguous segregation between maker and checker"]
+  - code: "RC-PRC-02"
+    name: "Procedure Execution"
+    category: "Process"
+    description: "Procedure exists but is inconsistently followed, undocumented deviations, or lapsed control activities."
+    examples: ["Skipped end-of-day supervisor sign-off", "Override used outside documented criteria"]
+  - code: "RC-PRC-03"
+    name: "Reconciliation & Data Quality"
+    category: "Process"
+    description: "Reconciliation breaks, missing required fields, or upstream data defects propagated downstream."
+    examples: ["Workflow status not reconciled to ledger", "Required cause-code field left blank"]
+  - code: "RC-TEC-01"
+    name: "System Availability"
+    category: "Technology"
+    description: "System outage, degraded performance, or interface break interrupting normal processing."
+    examples: ["Workflow platform unavailable during peak hours", "Core banking interface latency"]
+  - code: "RC-TEC-02"
+    name: "Access & Entitlements"
+    category: "Technology"
+    description: "Excessive privilege, stale entitlements, or weak segregation enforcement in production systems."
+    examples: ["Privileged user retains access after role change", "Emergency access not recertified post-event"]
+  - code: "RC-TEC-03"
+    name: "Change Management"
+    category: "Technology"
+    description: "Untested change, missing rollback, or production deployment outside approved change window."
+    examples: ["Configuration change not reviewed by application owner"]
+  - code: "RC-EXT-01"
+    name: "Third-Party Performance"
+    category: "External"
+    description: "Vendor SLA miss, vendor outage, or vendor incident notification delay affecting bank operations."
+    examples: ["Message-repair vendor breach of SLA", "Vendor incident notification > 24 hours"]
+  - code: "RC-EXT-02"
+    name: "Adversarial Activity"
+    category: "External"
+    description: "Fraud attempt, social engineering, or attempted unauthorized access by external actors."
+    examples: ["Business email compromise targeting wire instructions", "Synthetic-identity application"]
+  - code: "RC-EXT-03"
+    name: "Regulatory & Legal Change"
+    category: "External"
+    description: "New regulation, supervisory guidance change, or litigation creating compliance or reporting demand."
+    examples: ["CFPB guidance update on overdraft disclosures", "State licensing change for commercial lending"]
+
+# ---------------------------------------------------------------------------
+# Control Taxonomy (executive-friendly families)
+# ---------------------------------------------------------------------------
+control_taxonomy:
+  - code: "CT-PRV"
+    name: "Preventive Controls"
+    family: "Preventive"
+    description: "Controls designed to prevent the risk event from occurring (segregation of duties, system enforcement, dual approval)."
+    typical_evidence: ["Approval logs", "System enforcement rules", "Segregation matrices"]
+  - code: "CT-DET"
+    name: "Detective Controls"
+    family: "Detective"
+    description: "Controls designed to identify a risk event after occurrence so it can be investigated and resolved."
+    typical_evidence: ["Exception reports", "Reconciliation outputs", "Surveillance alerts"]
+  - code: "CT-COR"
+    name: "Corrective Controls"
+    family: "Corrective"
+    description: "Controls that remediate, recover, or correct a risk event after detection."
+    typical_evidence: ["Issue management records", "Remediation evidence", "Post-incident reviews"]
+  - code: "CT-DIR"
+    name: "Directive Controls"
+    family: "Directive"
+    description: "Policies, procedures, training, and governance setting expectations and accountability."
+    typical_evidence: ["Policy attestations", "Training completion records", "Committee minutes"]
+
+# ---------------------------------------------------------------------------
+# Business Units
+# ---------------------------------------------------------------------------
+business_units:
+  - bu_id: "BU-PAYOPS"
+    bu_name: "Payment Operations"
+    description: "Wholesale and treasury payment exception handling, message repair, reconciliation, and incident triage across wire, RTP, and same-day ACH channels."
+    head: "Director, Payment Operations"
+    employee_count: 48
+    risk_profile_summary: "Operational and Cyber dominate; daily exception volumes drive Business Process and Data Management exposure."
+    procedure_ids: ["PROC-PAY-EXCEPTION", "PROC-PAY-RECON"]
+  - bu_id: "BU-RETAIL"
+    bu_name: "Retail Banking & Onboarding"
+    description: "Branch and digital customer onboarding (CIP/KYC), deposit account opening, and ongoing customer due diligence."
+    head: "Head of Retail Banking"
+    employee_count: 312
+    risk_profile_summary: "Compliance, Privacy, and External Fraud dominate; BSA/AML and Reg E expectations drive control density."
+    procedure_ids: ["PROC-CUST-ONBOARD"]
+  - bu_id: "BU-COMMLEND"
+    bu_name: "Commercial Lending"
+    description: "Commercial and industrial loan origination, underwriting, credit administration, and post-close monitoring."
+    head: "Chief Credit Officer"
+    employee_count: 87
+    risk_profile_summary: "Credit, Operational, and Model risk dominate; covenant monitoring and risk rating accuracy drive control focus."
+    procedure_ids: ["PROC-CL-UNDERWRITE"]
+
+# ---------------------------------------------------------------------------
+# Procedures (Storyline B — procedure-specific drill-down)
+# ---------------------------------------------------------------------------
+procedures:
+  - procedure_id: "PROC-PAY-EXCEPTION"
+    procedure_name: "Payment Exception Handling"
+    bu_id: "BU-PAYOPS"
+    process_id: "PROC-PAY-EXCEPTION"
+    description: "Daily process for identifying, investigating, approving, resolving, reconciling, escalating, and reporting high-value payment exceptions across wire and same-day payment channels."
+    owner: "Payment Operations Manager"
+    last_reviewed: "2026-02-28"
+    cadence: "Daily operational, monthly procedure review"
+    criticality: "Critical"
+    related_systems: ["Payment Exception Workflow", "Wire Transfer Platform", "Core Banking Ledger", "Identity and Access Management"]
+  - procedure_id: "PROC-PAY-RECON"
+    procedure_name: "End-of-Day Wire Reconciliation"
+    bu_id: "BU-PAYOPS"
+    process_id: "PROC-PAY-RECON"
+    description: "Daily reconciliation of wire activity between the wire platform, core banking ledger, and Federal Reserve account statements."
+    owner: "Treasury Operations"
+    last_reviewed: "2026-01-31"
+    cadence: "Daily"
+    criticality: "Critical"
+    related_systems: ["Wire Transfer Platform", "Core Banking Ledger", "Fed Account Statement Portal"]
+  - procedure_id: "PROC-CUST-ONBOARD"
+    procedure_name: "Retail Customer Onboarding (CIP / KYC)"
+    bu_id: "BU-RETAIL"
+    process_id: "PROC-CUST-ONBOARD"
+    description: "End-to-end retail customer onboarding including identity verification, OFAC screening, customer due diligence, account opening, and initial funding controls."
+    owner: "Retail Compliance Officer"
+    last_reviewed: "2026-03-15"
+    cadence: "Continuous; monthly QA sampling"
+    criticality: "Critical"
+    related_systems: ["Digital Onboarding Platform", "Identity Verification Service", "OFAC Screening Engine", "Core Banking Deposit System"]
+  - procedure_id: "PROC-CL-UNDERWRITE"
+    procedure_name: "Commercial Loan Underwriting & Risk Rating"
+    bu_id: "BU-COMMLEND"
+    process_id: "PROC-CL-UNDERWRITE"
+    description: "Underwriting workflow for commercial and industrial loans, including financial spreading, risk rating assignment, covenant design, and credit committee approval."
+    owner: "SVP, Credit Underwriting"
+    last_reviewed: "2026-02-10"
+    cadence: "Per credit decision; quarterly portfolio review"
+    criticality: "High"
+    related_systems: ["Loan Origination System", "Financial Spreading Tool", "Risk Rating Model", "Credit Committee Portal"]
+
+# ---------------------------------------------------------------------------
+# Per-procedure run fixtures (loaded into the workspace at runtime)
+# ---------------------------------------------------------------------------
+run_fixtures:
+  - fixture: "payment_exception_handling.yaml"
+  - fixture: "customer_onboarding.yaml"
+  - fixture: "commercial_loan_underwriting.yaml"
+
+# ---------------------------------------------------------------------------
+# KRI Library (CRO-authored — replaces Appetite & Decisioning section)
+# ---------------------------------------------------------------------------
+# Each KRI is mapped to a Level-2 risk taxonomy node and includes thresholds,
+# measurement frequency, owner, and executive guidance for placement and use.
+kri_library:
+  # --- Operational: Business Process Risk -----------------------------------
+  - kri_id: "KRI-BPR-01"
+    kri_name: "Aged Payment Exception Volume"
+    risk_taxonomy_id: "RIB-BPR"
+    metric_definition: "Count of open payment exceptions exceeding their service-level resolution target at end of business day."
+    formula: "COUNT(open_exceptions WHERE age_minutes > sla_target_minutes)"
+    unit: "exceptions"
+    measurement_frequency: "Daily, with weekly trend"
+    data_source: "Payment Exception Workflow"
+    owner: "Payment Operations Manager"
+    thresholds:
+      green: "< 5 aged exceptions per day"
+      amber: "5–15 aged exceptions per day or any aged exception > 24 hours"
+      red: "> 15 aged exceptions per day or any high-value aged exception > 48 hours"
+    rationale: "Aged exceptions are the leading indicator of payment-process control failure. Trend matters more than any single day; CRO should look for sustained amber over five consecutive business days as a precursor to operational loss events."
+    escalation_path: "Daily 1LOD operations review; weekly to 2LOD Operational Risk; monthly to ERMC if amber sustained > 5 days; immediate to CRO if red."
+    use_cases:
+      - "Daily operations huddle and supervisor sign-off log."
+      - "Monthly Operational Risk Committee (ORC) reporting trend chart."
+      - "Quarterly Risk Appetite Statement reaffirmation by ERMC."
+    placement_guidance: "Pair with SLA Breach Rate KRI in the executive scorecard; report alongside customer-facing outcome metrics so the committee sees both the leading indicator (volume) and lagging indicator (customer impact)."
+  - kri_id: "KRI-BPR-02"
+    kri_name: "Payment SLA Breach Rate"
+    risk_taxonomy_id: "RIB-BPR"
+    metric_definition: "Share of payment exceptions resolved outside the documented service-level window during the measurement period."
+    formula: "breached_exceptions / total_exceptions"
+    unit: "% of exceptions"
+    measurement_frequency: "Weekly with monthly trend"
+    data_source: "Payment Exception Workflow + SLA dashboard"
+    owner: "Payment Operations Manager"
+    thresholds:
+      green: "≤ 3.0%"
+      amber: "3.01% – 6.0%"
+      red: "> 6.0%"
+    rationale: "A trailing rate that captures whether process capacity and procedure design hold up under realized volume. Breach rate above 5% historically correlates with peak-volume capacity gaps and emerging customer complaint trends."
+    escalation_path: "Weekly to BU head; monthly to 2LOD Operational Risk; quarterly to ERMC; immediate CRO escalation if red sustained > 2 weeks."
+    use_cases:
+      - "Monthly ORC dashboard."
+      - "Quarterly capacity-planning review with Finance."
+      - "Annual Risk and Control Self-Assessment (RCSA) input."
+    placement_guidance: "Use as a primary KRI in the BU-level appetite statement. Trend it against staffing levels in the same chart so the committee can correlate breach rate with capacity decisions."
+
+  # --- Operational: Internal Fraud Risk -------------------------------------
+  - kri_id: "KRI-IFR-01"
+    kri_name: "Same-User Maker-Checker Exception Count"
+    risk_taxonomy_id: "RIB-IFR"
+    metric_definition: "Count of transactions where the same user prepared and approved an entry, including configured emergency-bypass uses."
+    formula: "COUNT(transactions WHERE preparer_user_id = approver_user_id)"
+    unit: "instances per month"
+    measurement_frequency: "Monthly"
+    data_source: "Workflow audit log + IAM"
+    owner: "Internal Audit (independent producer)"
+    thresholds:
+      green: "0 (excluding pre-approved emergency overrides with documented justification)"
+      amber: "1–3 per month"
+      red: "≥ 4 per month or any unjustified instance"
+    rationale: "Segregation breaches are red-flag fraud-risk indicators. Even one unjustified instance warrants an investigation; the threshold is intentionally tight because severity outweighs frequency."
+    escalation_path: "Any red instance triggers same-day notification to BU head, CRO, and Internal Audit. Pattern (≥ 2 amber months) triggers control-design review by 2LOD."
+    use_cases:
+      - "Monthly Operational Risk and Internal Audit reporting."
+      - "Quarterly Audit Committee report."
+      - "Annual fraud-risk assessment."
+    placement_guidance: "Position in the executive fraud scorecard alongside External Fraud KRIs. Do not aggregate with operational error metrics — segregation breach must remain a discrete signal."
+
+  # --- Cyber: IT Security ---------------------------------------------------
+  - kri_id: "KRI-CYB-01"
+    kri_name: "Aged Privileged Access Exceptions"
+    risk_taxonomy_id: "RIB-CYB"
+    metric_definition: "Count of privileged access review findings open beyond the documented 30-day closure target."
+    formula: "COUNT(privileged_access_exceptions WHERE age_days > 30 AND status != Closed)"
+    unit: "open items"
+    measurement_frequency: "Monthly with weekly snapshot"
+    data_source: "Identity and Access Management certification system"
+    owner: "CISO Office"
+    thresholds:
+      green: "0 aged items"
+      amber: "1–4 aged items"
+      red: "≥ 5 aged items or any item > 60 days"
+    rationale: "Aged privileged exceptions are a primary precursor to insider misuse and audit findings. The 30-day target reflects industry baseline; CRO should expect the population to trend to zero, not stabilize at amber."
+    escalation_path: "Monthly CISO/CRO joint review; any red triggers ERC notification within 5 business days; sustained red for 2 months triggers Board Risk Committee escalation."
+    use_cases:
+      - "CISO monthly cyber dashboard."
+      - "ERC quarterly cyber posture review."
+      - "Annual SOX and FFIEC IT exam evidence."
+    placement_guidance: "Display alongside MFA coverage and emergency-access usage so the committee sees both control population and exception trend in one view."
+  - kri_id: "KRI-CYB-02"
+    kri_name: "Emergency Access Activations Without Post-Event Recertification"
+    risk_taxonomy_id: "RIB-CYB"
+    metric_definition: "Number of break-glass / emergency-access activations not recertified within 5 business days after the activation event."
+    formula: "COUNT(break_glass_events WHERE recert_date IS NULL AND activation_date < today - 5 business days)"
+    unit: "activations"
+    measurement_frequency: "Weekly"
+    data_source: "Privileged Access Management (PAM) system"
+    owner: "CISO Office"
+    thresholds:
+      green: "0"
+      amber: "1–2"
+      red: "≥ 3 or any activation outside an approved change window"
+    rationale: "Emergency access is the single highest-leverage credential in production environments. Failure to recertify within 5 business days erodes the audit trail and is a leading indicator of weakening access governance."
+    escalation_path: "Weekly CISO review; any red triggers 1LOD/2LOD joint root-cause within 10 business days."
+    use_cases:
+      - "Weekly cyber operations review."
+      - "Monthly ERC dashboard (red items only)."
+    placement_guidance: "Pair with KRI-CYB-01; both should appear on the same cyber-access governance scorecard tile."
+
+  # --- Operational: Data Management -----------------------------------------
+  - kri_id: "KRI-DM-01"
+    kri_name: "Reconciliation Break Aging"
+    risk_taxonomy_id: "RIB-DM"
+    metric_definition: "Count of reconciliation breaks open beyond 5 business days, weighted by dollar exposure."
+    formula: "SUM(open_breaks WHERE age_days > 5) and SUM(usd_exposure for those breaks)"
+    unit: "breaks and $ exposure"
+    measurement_frequency: "Daily"
+    data_source: "Reconciliation platform"
+    owner: "Operations Data Steward"
+    thresholds:
+      green: "0 breaks > 5 days; < $250K aggregate exposure"
+      amber: "1–5 breaks > 5 days; $250K–$2M aggregate exposure"
+      red: "> 5 breaks or > $2M aggregate exposure"
+    rationale: "Aging reconciliation breaks are the most reliable predictor of restatement risk and operational-loss surprises. Both count and dollar weighting must be tracked because a single high-value break can dwarf many small ones."
+    escalation_path: "Daily ops review; any break > 10 days OR any single break > $1M triggers same-day CFO and CRO notification."
+    use_cases:
+      - "Daily Treasury Operations standup."
+      - "Monthly CFO/CRO joint reporting on financial-data integrity."
+      - "Quarterly Disclosure Committee certification support."
+    placement_guidance: "Report as the headline operational data-quality KRI in any externally-facing risk reporting (10-K risk factors, regulatory exam responses)."
+  - kri_id: "KRI-DM-02"
+    kri_name: "Required-Field Completeness on Closed Exceptions"
+    risk_taxonomy_id: "RIB-DM"
+    metric_definition: "Share of closed exceptions in QA sample missing one or more required root-cause, approver, or disposition fields."
+    formula: "incomplete_records / sampled_records"
+    unit: "% of sampled exceptions"
+    measurement_frequency: "Monthly QA sample (≥ 40 records)"
+    data_source: "QA sampling tool"
+    owner: "Operations Data Steward"
+    thresholds:
+      green: "≤ 2.0%"
+      amber: "2.01% – 5.0%"
+      red: "> 5.0%"
+    rationale: "Field completeness is a quiet KRI — it does not generate visible incidents but degrades root-cause analysis quality and audit readiness. Allowing it to drift above 5% has historically preceded inability to demonstrate control operation in regulatory exams."
+    escalation_path: "Monthly to BU head; quarterly to ORC; any red month triggers a remediation plan within 30 days."
+    use_cases:
+      - "Quarterly RCSA refresh."
+      - "Audit readiness self-assessment."
+    placement_guidance: "Report alongside KRI-DM-01 to give the committee both the volume signal (breaks) and the quality signal (completeness)."
+
+  # --- Operational: Operational Resiliency ----------------------------------
+  - kri_id: "KRI-ORS-01"
+    kri_name: "Manual Processing Capacity Coverage Ratio"
+    risk_taxonomy_id: "RIB-ORS"
+    metric_definition: "Ratio of demonstrated manual processing capacity (per latest exercise) to peak-day production volume."
+    formula: "manual_capacity_per_day / peak_production_volume_per_day"
+    unit: "ratio (target ≥ 1.0)"
+    measurement_frequency: "Quarterly (after each continuity exercise) and following any peak-volume event"
+    data_source: "Continuity exercise after-action reports"
+    owner: "Business Continuity Lead"
+    thresholds:
+      green: "≥ 1.10 (≥ 110% of peak)"
+      amber: "0.90 – 1.09"
+      red: "< 0.90"
+    rationale: "This KRI converts a continuity-test artifact into an executive metric. A ratio below 1.0 means that during a system outage at peak volume, the bank cannot resolve all customer-impacting items within tolerance — a Board-reportable concern."
+    escalation_path: "Quarterly to ORC; any red triggers 30-day remediation plan and CRO/COO joint review; sustained red for 2 quarters triggers Board Risk Committee escalation."
+    use_cases:
+      - "Annual Operational Resilience Self-Assessment."
+      - "FFIEC/OCC operational resilience exam evidence."
+    placement_guidance: "Report alongside RTO/RPO performance to give the committee a full resilience picture (recovery time + recovery capacity)."
+
+  # --- Operational: Third Party Risk ----------------------------------------
+  - kri_id: "KRI-TPR-01"
+    kri_name: "Critical Vendor SLA Breach Count (Trailing 90 Days)"
+    risk_taxonomy_id: "RIB-TPR"
+    metric_definition: "Count of documented SLA breaches by vendors classified as critical for the process, on a 90-day rolling basis."
+    formula: "COUNT(vendor_sla_breaches WHERE vendor_tier = critical AND breach_date >= today - 90)"
+    unit: "breaches"
+    measurement_frequency: "Monthly"
+    data_source: "Vendor SLA Portal"
+    owner: "Vendor Manager"
+    thresholds:
+      green: "≤ 2 breaches per 90 days per critical vendor"
+      amber: "3–5 breaches"
+      red: "> 5 breaches OR any breach > 24 hours without root-cause analysis"
+    rationale: "Vendor concentration risk requires rolling, not point-in-time, measurement because individual months can be noisy. The 90-day window matches typical OCC examination scope for critical-vendor performance review."
+    escalation_path: "Monthly vendor manager review; quarterly to Third-Party Risk Committee; any red triggers vendor remediation plan within 30 days; sustained red triggers diversification assessment."
+    use_cases:
+      - "Quarterly Third-Party Risk Committee dashboard."
+      - "Annual critical-vendor risk reassessment."
+      - "Regulatory exam evidence under OCC Bulletin 2023-17."
+    placement_guidance: "Report alongside vendor concentration percentage; one without the other gives an incomplete picture of third-party exposure."
+
+  # --- Operational: Regulatory Reporting ------------------------------------
+  - kri_id: "KRI-RR-01"
+    kri_name: "Late Compliance Triage on Customer-Impacting Events"
+    risk_taxonomy_id: "RIB-RR"
+    metric_definition: "Count of customer-impacting events not escalated to Compliance within the documented 4-hour triage window."
+    formula: "COUNT(customer_impacting_events WHERE escalation_minutes > 240)"
+    unit: "events"
+    measurement_frequency: "Weekly with monthly trend"
+    data_source: "Incident Management Portal"
+    owner: "Compliance Officer"
+    thresholds:
+      green: "0"
+      amber: "1–2 per quarter"
+      red: "≥ 3 per quarter OR any event > 24 hours"
+    rationale: "Regulatory reporting timeliness is a binary obligation — late is late. Even a small population of late triages compounds reputational and supervisory risk. The CRO should treat any red period as an Audit Committee item."
+    escalation_path: "Weekly to Compliance Officer; monthly to ERC; any red triggers immediate CCO/CRO joint review and remediation plan within 15 business days."
+    use_cases:
+      - "Monthly ERC dashboard."
+      - "Quarterly Audit Committee compliance report."
+      - "Regulatory exam evidence on incident-response governance."
+    placement_guidance: "Report on the same scorecard as customer complaint trends so the committee sees regulatory-reporting timeliness in context with customer harm signals."
+
+  # --- Regulatory Compliance: Compliance Risk -------------------------------
+  - kri_id: "KRI-COM-01"
+    kri_name: "BSA/AML CIP Verification Failure Rate"
+    risk_taxonomy_id: "RIB-COM"
+    metric_definition: "Share of new-account openings where Customer Identification Program verification could not be completed within the 5-business-day window."
+    formula: "cip_failed_or_late / new_accounts_opened"
+    unit: "% of new accounts"
+    measurement_frequency: "Weekly with monthly trend"
+    data_source: "Onboarding platform + CIP audit log"
+    owner: "BSA Officer"
+    thresholds:
+      green: "≤ 1.5%"
+      amber: "1.51% – 3.0%"
+      red: "> 3.0% OR any individual month with > 50 unresolved CIP records"
+    rationale: "CIP verification is a foundational BSA obligation. Drift above 2% is the canonical leading indicator of supervisory criticism in BSA exams. The amber band exists to drive corrective action well before exam scope."
+    escalation_path: "Weekly to BSA Officer; monthly to ERC; any red triggers BSA-mandated corrective action plan and notification to Audit Committee."
+    use_cases:
+      - "Monthly BSA/AML committee dashboard."
+      - "Annual BSA risk assessment."
+      - "Federal Reserve / OCC BSA exam evidence."
+    placement_guidance: "Headline KRI for any retail-banking risk scorecard; pair with OFAC false-positive review aging."
+
+  # --- Cyber: Privacy -------------------------------------------------------
+  - kri_id: "KRI-PRI-01"
+    kri_name: "Aged Customer Data Access Requests (DSAR / GLBA)"
+    risk_taxonomy_id: "RIB-PRI"
+    metric_definition: "Count of customer data access, correction, or deletion requests open beyond the regulatory response window (typically 30 or 45 days)."
+    formula: "COUNT(privacy_requests WHERE age_days > regulatory_window AND status != Closed)"
+    unit: "open requests"
+    measurement_frequency: "Weekly"
+    data_source: "Privacy request management system"
+    owner: "Chief Privacy Officer"
+    thresholds:
+      green: "0"
+      amber: "1–3"
+      red: "≥ 4 OR any request > regulatory_window + 15 days"
+    rationale: "Privacy obligations have hard regulatory clocks. Aging beyond the regulatory window is a per-instance violation. The CRO should expect zero in green steady-state and treat amber as a process-design problem, not a one-off."
+    escalation_path: "Weekly to Privacy Office; monthly to ERC; any red triggers immediate CCO/CRO notification."
+    use_cases:
+      - "Monthly Privacy Office dashboard."
+      - "Quarterly ERC / Audit Committee privacy report."
+    placement_guidance: "Report alongside privacy-incident count to give the committee the full inbound (requests) and outbound (incidents) view."
+
+  # --- Operational: External Fraud (added for retail BU) --------------------
+  - kri_id: "KRI-EFR-01"
+    kri_name: "Synthetic Identity Detection Hit Rate at Onboarding"
+    risk_taxonomy_id: "RIB-EFR"
+    metric_definition: "Share of new-account applications flagged by the synthetic-identity model that, on review, were confirmed as fraudulent or high-risk."
+    formula: "confirmed_synthetic_or_high_risk / model_flagged_applications"
+    unit: "% confirmation rate (model precision)"
+    measurement_frequency: "Monthly"
+    data_source: "Identity verification service + fraud investigations"
+    owner: "Fraud Operations Manager"
+    thresholds:
+      green: "Confirmation rate ≥ 35% (model is well-calibrated)"
+      amber: "20–34% (model drift suspected)"
+      red: "< 20% OR > 65% (over-blocking or under-blocking)"
+    rationale: "This KRI monitors the fraud model itself, not just fraud volume. Both ends of the band matter: low confirmation rate means false positives are driving customer friction; very high confirmation rate suggests the model is letting easy fraud through unflagged cases."
+    escalation_path: "Monthly to Fraud Ops Manager; quarterly to Model Risk Management Committee; any red triggers model recalibration review within 30 days."
+    use_cases:
+      - "Quarterly Model Risk Management review."
+      - "Annual fraud loss-allowance setting with Finance."
+    placement_guidance: "Always pair with confirmed fraud loss dollars; KRIs measuring model performance are misleading without the realized-loss companion metric."

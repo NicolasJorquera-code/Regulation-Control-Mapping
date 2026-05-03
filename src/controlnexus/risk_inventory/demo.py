@@ -12,10 +12,15 @@ from controlnexus.risk_inventory.calculators import (
 )
 from controlnexus.risk_inventory.config import MatrixConfigLoader, read_yaml, resolve_project_root
 from controlnexus.risk_inventory.models import (
+    ActionItem,
+    ApprovalStatus,
+    BusinessUnit,
     ControlDesignEffectivenessAssessment,
     ControlEffectivenessRating,
     ControlMapping,
     ControlOperatingEffectivenessAssessment,
+    ControlTaxonomyEntry,
+    EvidenceQuality,
     EvidenceReference,
     ExecutiveSummary,
     ExposureMetric,
@@ -23,16 +28,24 @@ from controlnexus.risk_inventory.models import (
     ImpactDimension,
     ImpactDimensionAssessment,
     ImpactScore,
+    KRIDefinition,
+    KRIThreshold,
     LikelihoodAssessment,
     LikelihoodScore,
     MaterializationType,
+    OpenIssue,
+    Procedure,
     ProcessContext,
     ReviewChallengeRecord,
     ReviewStatus,
+    RiskAppetite,
     RiskApplicabilityAssessment,
     RiskInventoryRecord,
     RiskInventoryRun,
+    RiskInventoryWorkspace,
     RiskStatement,
+    RiskTaxonomyLevel1,
+    RootCauseTaxonomyEntry,
 )
 from controlnexus.risk_inventory.taxonomy import load_risk_inventory_taxonomy
 from controlnexus.risk_inventory.validator import RiskInventoryValidator
@@ -155,6 +168,38 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
             )
         ]
         review = spec.get("review", {})
+        appetite_payload = spec.get("risk_appetite")
+        risk_appetite = (
+            RiskAppetite(
+                threshold=appetite_payload.get("threshold", "Medium"),
+                statement=appetite_payload.get("statement", ""),
+                status=appetite_payload.get("status", "within"),
+                category=appetite_payload.get("category", ""),
+            )
+            if isinstance(appetite_payload, dict)
+            else None
+        )
+        action_plan = [
+            ActionItem(
+                action=item.get("action", ""),
+                owner=item.get("owner", ""),
+                due_date=item.get("due_date", ""),
+                status=item.get("status", "Planned"),
+                priority=item.get("priority", "Medium"),
+            )
+            for item in spec.get("action_plan", [])
+        ]
+        coverage_gaps = list(spec.get("coverage_gaps", []))
+        review_status_value = review.get("review_status", ReviewStatus.PENDING_REVIEW.value)
+        approval_status_value = review.get("approval_status", ApprovalStatus.DRAFT.value)
+        try:
+            review_status_enum = ReviewStatus(review_status_value)
+        except ValueError:
+            review_status_enum = ReviewStatus.PENDING_REVIEW
+        try:
+            approval_status_enum = ApprovalStatus(approval_status_value)
+        except ValueError:
+            approval_status_enum = ApprovalStatus.DRAFT
         record = RiskInventoryRecord(
             risk_id=spec["risk_id"],
             process_id=context.process_id,
@@ -196,16 +241,23 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
             residual_risk=residual,
             review_challenges=[
                 ReviewChallengeRecord(
-                    review_status=ReviewStatus(review.get("review_status", ReviewStatus.PENDING_REVIEW.value)),
+                    review_status=review_status_enum,
                     reviewer=review.get("reviewer", "Business process owner"),
                     challenge_comments=review.get("challenge_comments", spec.get("review_comment", "")),
                     challenged_fields=review.get(
                         "challenged_fields",
                         ["applicability", "impact_scores", "control_mapping"],
                     ),
+                    ai_original_value=review.get("ai_original_value", ""),
+                    reviewer_adjusted_value=review.get("reviewer_adjusted_value", ""),
+                    reviewer_rationale=review.get("reviewer_rationale", ""),
+                    approval_status=approval_status_enum,
                 )
             ],
             evidence_references=evidence_references,
+            risk_appetite=risk_appetite,
+            action_plan=action_plan,
+            coverage_gaps=coverage_gaps,
             demo_record=True,
         )
         records.append(record)
@@ -249,7 +301,10 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
         input_context=context,
         records=records,
         executive_summary=summary,
-        config_snapshot=loader.config_snapshot(),
+        config_snapshot={
+            **loader.config_snapshot(),
+            "risk_appetite_framework": payload.get("risk_appetite_framework", {}),
+        },
         run_manifest={
             "fixture": str(fixture_path),
             "deterministic": True,
@@ -324,6 +379,32 @@ def _build_control_mapping(control: dict[str, Any], node: Any) -> ControlMapping
         ),
         evidence_gaps=evidence_gaps if operating_rating == ControlEffectivenessRating.IMPROVEMENT_NEEDED else [],
     )
+    open_issues = [
+        OpenIssue(
+            issue_id=issue.get("issue_id", ""),
+            description=issue.get("description", ""),
+            severity=issue.get("severity", "Medium"),
+            age_days=int(issue.get("age_days", 0)),
+            owner=issue.get("owner", ""),
+            status=issue.get("status", "Open"),
+        )
+        for issue in control.get("open_issues", [])
+    ]
+    eq = control.get("evidence_quality")
+    evidence_quality = (
+        EvidenceQuality(
+            rating=eq.get("rating", "Adequate"),
+            last_tested=eq.get("last_tested", ""),
+            sample_size=int(eq.get("sample_size", 0)),
+            exceptions_noted=int(eq.get("exceptions_noted", 0)),
+            notes=eq.get("notes", ""),
+        )
+        if isinstance(eq, dict)
+        else None
+    )
+    mapped_root_causes = control.get("mapped_root_causes_per_risk", {}).get(
+        node.id, node.typical_root_causes[:2]
+    )
     return ControlMapping(
         control_id=control["control_id"],
         control_name=control["control_name"],
@@ -336,13 +417,15 @@ def _build_control_mapping(control: dict[str, Any], node: Any) -> ControlMapping
                 f"{', '.join(node.typical_root_causes[:2]) or 'key process drivers'}."
             ),
         ),
-        mapped_root_causes=node.typical_root_causes[:2],
+        mapped_root_causes=mapped_root_causes,
         coverage_assessment=coverage_by_risk.get(
             node.id,
             "strong" if design.rating == ControlEffectivenessRating.STRONG else "partial",
         ),
         design_effectiveness=design,
         operating_effectiveness=operating,
+        open_issues=open_issues,
+        evidence_quality=evidence_quality,
     )
 
 
@@ -384,3 +467,80 @@ def _demo_metric_value(metric: str, idx: int) -> str:
     if "dollar" in lowered or "volume" in lowered:
         return f"${idx * 4.5:.1f}M"
     return "Available in demo workflow"
+
+
+# ---------------------------------------------------------------------------
+# Workspace loader (multi-BU, multi-procedure demo)
+# ---------------------------------------------------------------------------
+
+
+def default_workspace_fixture_path() -> Path:
+    return resolve_project_root() / "sample_data" / "risk_inventory_demo" / "workspace.yaml"
+
+
+def load_demo_workspace(path: Path | str | None = None) -> RiskInventoryWorkspace:
+    """Load the multi-BU demo workspace with knowledge-base and per-procedure runs."""
+    fixture_path = Path(path) if path else default_workspace_fixture_path()
+    payload = read_yaml(fixture_path)
+
+    bank = payload.get("bank", {})
+    bus = [BusinessUnit.model_validate(item) for item in payload.get("business_units", [])]
+    procedures = [Procedure.model_validate(item) for item in payload.get("procedures", [])]
+    risk_l1 = [RiskTaxonomyLevel1.model_validate(item) for item in payload.get("risk_taxonomy_l1", [])]
+    control_tax = [ControlTaxonomyEntry.model_validate(item) for item in payload.get("control_taxonomy", [])]
+    root_cause_tax = [RootCauseTaxonomyEntry.model_validate(item) for item in payload.get("root_cause_taxonomy", [])]
+
+    kris: list[KRIDefinition] = []
+    for item in payload.get("kri_library", []):
+        thresholds = item.get("thresholds", {})
+        kris.append(
+            KRIDefinition(
+                kri_id=item["kri_id"],
+                kri_name=item["kri_name"],
+                risk_taxonomy_id=item["risk_taxonomy_id"],
+                metric_definition=item.get("metric_definition", ""),
+                formula=item.get("formula", ""),
+                unit=item.get("unit", ""),
+                measurement_frequency=item.get("measurement_frequency", "Monthly"),
+                data_source=item.get("data_source", ""),
+                owner=item.get("owner", ""),
+                thresholds=KRIThreshold(
+                    green=thresholds.get("green", ""),
+                    amber=thresholds.get("amber", ""),
+                    red=thresholds.get("red", ""),
+                ),
+                rationale=item.get("rationale", ""),
+                escalation_path=item.get("escalation_path", ""),
+                use_cases=list(item.get("use_cases", [])),
+                placement_guidance=item.get("placement_guidance", ""),
+            )
+        )
+
+    runs: list[RiskInventoryRun] = []
+    aggregated_controls: dict[str, dict[str, Any]] = {}
+    for entry in payload.get("run_fixtures", []):
+        run_path = fixture_path.parent / entry["fixture"]
+        run = load_demo_risk_inventory(run_path)
+        runs.append(run)
+        # also collect controls for the bank-wide knowledge-base view
+        run_payload = read_yaml(run_path)
+        for control in run_payload.get("controls", []):
+            aggregated_controls.setdefault(control["control_id"], control)
+
+    # taxonomy L2 nodes (loaded once)
+    risk_l2 = load_risk_inventory_taxonomy()
+
+    return RiskInventoryWorkspace(
+        workspace_id=payload.get("workspace_id", "WS-DEMO"),
+        bank_id=bank.get("bank_id", "DEMO-BANK"),
+        bank_name=bank.get("bank_name", "Demo Bank"),
+        business_units=bus,
+        procedures=procedures,
+        risk_taxonomy_l1=risk_l1,
+        risk_taxonomy_l2=risk_l2,
+        control_taxonomy=control_tax,
+        root_cause_taxonomy=root_cause_tax,
+        bank_controls=list(aggregated_controls.values()),
+        kri_library=kris,
+        runs=runs,
+    )
