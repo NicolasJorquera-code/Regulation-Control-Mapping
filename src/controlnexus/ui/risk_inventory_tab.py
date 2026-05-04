@@ -3,16 +3,16 @@
 Front-end-only experience that supports two storylines:
 
 1. **Workspace Dashboard (multi-BU):** in demo mode, the user can browse all
-   business units, see the bank's knowledge base (BUs, procedures, taxonomies,
+   business units, see the bank's knowledge base (BUs, processes, taxonomies,
    controls, KRIs), and compare risk profiles across BUs.
-2. **Procedure-specific drill-down:** the user picks a procedure (or BU) and
-   sees the full risk inventory generated for that procedure, with the same
-   Risk Inventory / Control Mapping / Residual / KRI / Review / Executive
+2. **Process-specific drill-down:** the user picks a process (or BU) and
+   sees the full risk inventory generated for that process, with the same
+   Risk Inventory / Control Mapping / Residual Risk / Review / Executive
    tabs as the user-driven workflow.
 
-In non-demo mode, the user uploads procedure documents and runs the
+In non-demo mode, the user uploads process documents and runs the
 deterministic graph as before — the Input / Upload tab now also exposes the
-multi-table format for business units, controls, taxonomies, and procedures
+multi-table format for business units, controls, taxonomies, and processes
 the user already has on file.
 """
 
@@ -24,7 +24,7 @@ import tempfile
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import streamlit as st
 import yaml  # type: ignore[import-untyped]
@@ -32,7 +32,6 @@ import yaml  # type: ignore[import-untyped]
 from controlnexus.analysis.ingest import ingest_excel
 from controlnexus.risk_inventory.demo import (
     default_demo_fixture_path,
-    load_demo_risk_inventory,
     load_demo_workspace,
 )
 from controlnexus.risk_inventory.document_ingest import DocumentAnalysis, analyze_process_document
@@ -63,7 +62,7 @@ def render_risk_inventory_tab() -> None:
                 <h1>Convert process evidence into a risk inventory</h1>
                 <p>
                     Browse the bank's knowledge base, drill into business unit risk profiles,
-                    or ingest a procedure document to generate a fresh inventory aligned to
+                    or ingest a process document to generate a fresh inventory aligned to
                     the bank's two-tier enterprise risk taxonomy.
                 </p>
             </section>
@@ -76,7 +75,7 @@ def render_risk_inventory_tab() -> None:
             "Demo Mode",
             value=bool(st.session_state.get("demo_mode", False)),
             key="demo_mode",
-            help="Load the demo bank workspace with three business units, four procedures, and a CRO-authored KRI library.",
+            help="Load the demo bank workspace with three business units, four processes, and a CRO-authored KRI library.",
         )
         st.caption("No LLM credentials required.")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -99,7 +98,7 @@ def _render_demo_workspace() -> None:
 
     st.markdown(
         f'<div class="ri-notice"><b>Demo Mode</b> · {html.escape(workspace.bank_name)} workspace loaded '
-        f"({len(workspace.business_units)} business units · {len(workspace.procedures)} procedures · "
+        f"({len(workspace.business_units)} business units · {len(workspace.procedures)} processes · "
         f"{len(workspace.kri_library)} KRIs).</div>",
         unsafe_allow_html=True,
     )
@@ -115,10 +114,10 @@ def _render_demo_workspace() -> None:
         else:
             selected_bu = next(bu for bu in workspace.business_units if bu.bu_name == bu_choice)
             procedure_pool = workspace.procedures_for_bu(selected_bu.bu_id)
-        procedure_options = ["Workspace Dashboard (no procedure focus)"] + [
+        procedure_options = ["Workspace Dashboard (no process focus)"] + [
             p.procedure_name for p in procedure_pool
         ]
-        procedure_choice = st.selectbox("Procedure Focus", procedure_options, key="ri_demo_proc_choice")
+        procedure_choice = st.selectbox("Process Focus", procedure_options, key="ri_demo_proc_choice")
     with scope_cols[2]:
         st.write("")
 
@@ -127,16 +126,18 @@ def _render_demo_workspace() -> None:
         selected_bu_id = next(bu.bu_id for bu in workspace.business_units if bu.bu_name == bu_choice)
 
     selected_run: RiskInventoryRun | None = None
-    if procedure_choice != "Workspace Dashboard (no procedure focus)":
+    if procedure_choice != "Workspace Dashboard (no process focus)":
         selected_proc = next(p for p in procedure_pool if p.procedure_name == procedure_choice)
         selected_run = workspace.run_for_procedure(selected_proc.procedure_id)
+
+    _render_scope_lens(workspace, selected_bu_id, selected_run)
 
     tabs = st.tabs(
         [
             "Knowledge Base",
             "Risk Inventory",
             "Control Mapping",
-            "Residual & KRIs",
+            "Residual Risk",
             "Review & Challenge",
             "Executive Report",
         ]
@@ -153,17 +154,17 @@ def _render_demo_workspace() -> None:
         if selected_run:
             _render_control_mapping(selected_run)
         else:
-            _render_empty_panel("Select a procedure focus above to view control mappings for a specific run.")
+            _render_workspace_control_mapping(workspace, selected_bu_id)
     with tabs[3]:
         if selected_run:
-            _render_residual_and_kris(selected_run, workspace)
+            _render_residual_risk(selected_run, workspace)
         else:
-            _render_empty_panel("Select a procedure focus above to view residual ratings and recommended KRIs.")
+            _render_empty_panel("Select a process focus above to view residual ratings for a specific run.")
     with tabs[4]:
         if selected_run:
             _render_review(selected_run)
         else:
-            _render_empty_panel("Select a procedure focus above to view reviewer and challenge detail.")
+            _render_empty_panel("Select a process focus above to view reviewer and challenge detail.")
     with tabs[5]:
         if selected_run:
             _render_executive(selected_run)
@@ -186,7 +187,7 @@ def _render_user_workflow() -> None:
             "Input / Upload",
             "Risk Inventory",
             "Control Mapping",
-            "Residual & KRIs",
+            "Residual Risk",
             "Review & Challenge",
             "Executive Report",
         ]
@@ -205,8 +206,8 @@ def _render_user_workflow() -> None:
             "Control mappings will appear after inventory creation."
         )
     with tabs[4]:
-        _render_residual_and_kris(run, None) if run else _render_empty_panel(
-            "Residual ratings and KRI recommendations will appear after inventory creation."
+        _render_residual_risk(run, None) if run else _render_empty_panel(
+            "Residual ratings will appear after inventory creation."
         )
     with tabs[5]:
         _render_review(run) if run else _render_empty_panel(
@@ -249,13 +250,11 @@ def _render_overview_user(run: RiskInventoryRun | None) -> None:
     with right:
         st.markdown('<div class="ri-section-title">Residual Risk Distribution</div>', unsafe_allow_html=True)
         distribution = Counter(record.residual_risk.residual_rating.value for record in run.records)
-        st.dataframe(
+        _render_table(
             [
-                {"Rating": rating, "Count": distribution.get(rating, 0)}
+                {"Residual Risk Rating": rating, "Record Count": distribution.get(rating, 0)}
                 for rating in ["Low", "Medium", "High", "Critical"]
             ],
-            hide_index=True,
-            width="stretch",
         )
         _download_export(run, "overview")
 
@@ -275,22 +274,22 @@ def _render_workspace_aggregated_inventory(
         for rec in run.records:
             rows.append(
                 {
-                    "Risk ID": rec.risk_id,
-                    "BU": next(
+                    "Risk Record ID": rec.risk_id,
+                    "Business Unit": next(
                         (bu.bu_name for bu in workspace.business_units if bu.bu_id == proc.bu_id),
                         proc.bu_id,
                     ),
-                    "Procedure": proc.procedure_name,
-                    "L1": rec.taxonomy_node.level_1_category,
-                    "L2 Category": rec.taxonomy_node.level_2_category,
-                    "Inherent": rec.inherent_risk.inherent_rating.value,
-                    "Residual": rec.residual_risk.residual_rating.value,
-                    "Controls": len(rec.control_mappings),
-                    "Response": rec.residual_risk.management_response.response_type.value.title(),
+                    "Process": proc.procedure_name,
+                    "Enterprise Risk Category": rec.taxonomy_node.level_1_category,
+                    "Risk Subcategory": rec.taxonomy_node.level_2_category,
+                    "Inherent Risk Rating": rec.inherent_risk.inherent_rating.value,
+                    "Residual Risk Rating": rec.residual_risk.residual_rating.value,
+                    "Mapped Controls": len(rec.control_mappings),
+                    "Management Response": rec.residual_risk.management_response.response_type.value.title(),
                 }
             )
     if rows:
-        st.dataframe(rows, hide_index=True, width="stretch")
+        _render_table(rows)
     else:
         st.info("No runs available for the selected scope.")
 
@@ -319,6 +318,52 @@ def _render_workspace_executive(
                     st.markdown(f"- {html.escape(action)}")
 
 
+def _render_scope_lens(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None,
+    selected_run: RiskInventoryRun | None,
+) -> None:
+    """Render the current demo workspace lens below the scope controls."""
+    selected_bu = next(
+        (bu for bu in workspace.business_units if bu.bu_id == selected_bu_id),
+        None,
+    )
+    bu_label = selected_bu.bu_name if selected_bu else "All Business Units"
+    if selected_run:
+        process_label = selected_run.input_context.process_name
+        risk_count = len(selected_run.records)
+        control_count = sum(len(record.control_mappings) for record in selected_run.records)
+    else:
+        rows = _workspace_control_mapping_rows(workspace, selected_bu_id)
+        process_label = "Workspace Dashboard"
+        risk_count = len(rows)
+        control_count = sum(int(row["Mapped Controls"]) for row in rows)
+
+    st.markdown(
+        f"""
+        <div class="ri-scope-lens">
+            <div>
+                <span>Current Lens</span>
+                <b>{html.escape(bu_label)}</b>
+            </div>
+            <div>
+                <span>Focus</span>
+                <b>{html.escape(process_label)}</b>
+            </div>
+            <div>
+                <span>Risk Records</span>
+                <b>{risk_count}</b>
+            </div>
+            <div>
+                <span>Mapped Controls</span>
+                <b>{control_count}</b>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Knowledge Base tab
 # ---------------------------------------------------------------------------
@@ -327,98 +372,88 @@ def _render_workspace_executive(
 def _render_knowledge_base(workspace: RiskInventoryWorkspace) -> None:
     st.markdown('<div class="ri-section-title">Bank Knowledge Base</div>', unsafe_allow_html=True)
     st.caption(
-        "Read-only view of the data the bank has already supplied: business units, procedures, "
-        "risk taxonomy (two-tier), control taxonomy, root-cause taxonomy, controls register, and KRI library."
+        "Read-only view of the data the bank has already supplied: business units, processes, "
+        "risk taxonomy (two-tier), control taxonomy, controls register, and KRI library."
     )
 
     sub_tabs = st.tabs(
         [
             "Business Units",
-            "Procedures",
+            "Processes",
             "Risk Taxonomy (2-Tier)",
             "Control Taxonomy",
-            "Root Cause Taxonomy",
             "Controls Register",
             "KRI Library",
         ]
     )
 
     with sub_tabs[0]:
-        st.dataframe(
+        _render_table(
             [
                 {
-                    "BU ID": bu.bu_id,
+                    "Business Unit ID": bu.bu_id,
                     "Business Unit": bu.bu_name,
                     "Head": bu.head,
                     "Employees": bu.employee_count,
-                    "# Procedures": len(workspace.procedures_for_bu(bu.bu_id)),
+                    "Process Count": len(workspace.procedures_for_bu(bu.bu_id)),
                     "Description": bu.description,
                     "Risk Profile": bu.risk_profile_summary,
                 }
                 for bu in workspace.business_units
             ],
-            hide_index=True,
-            width="stretch",
         )
 
     with sub_tabs[1]:
         bu_lookup = {bu.bu_id: bu.bu_name for bu in workspace.business_units}
-        st.dataframe(
+        _render_table(
             [
                 {
-                    "Procedure ID": p.procedure_id,
-                    "Procedure": p.procedure_name,
+                    "Process ID": p.procedure_id,
+                    "Process": p.procedure_name,
                     "Business Unit": bu_lookup.get(p.bu_id, p.bu_id),
                     "Owner": p.owner,
                     "Criticality": p.criticality,
-                    "Cadence": p.cadence,
+                    "Review Cadence": p.cadence,
                     "Last Reviewed": p.last_reviewed,
                     "Systems": ", ".join(p.related_systems),
                 }
                 for p in workspace.procedures
             ],
-            hide_index=True,
-            width="stretch",
         )
 
     with sub_tabs[2]:
         st.markdown("**Level 1 — Enterprise Risk Categories**")
-        st.dataframe(
+        _render_table(
             [
                 {
-                    "L1 Code": l1.code,
-                    "L1 Name": l1.name,
+                    "Level 1 Code": l1.code,
+                    "Enterprise Risk Category": l1.name,
                     "Definition": l1.definition,
-                    "# L2 Sub-Categories": len(l1.level_2_codes),
+                    "Risk Subcategory Count": len(l1.level_2_codes),
                 }
                 for l1 in workspace.risk_taxonomy_l1
             ],
-            hide_index=True,
-            width="stretch",
         )
         st.markdown("**Level 2 — Risk Sub-Categories**")
         l2_to_l1: dict[str, str] = {}
         for l1 in workspace.risk_taxonomy_l1:
             for code in l1.level_2_codes:
                 l2_to_l1[code] = f"{l1.code} · {l1.name}"
-        st.dataframe(
+        _render_table(
             [
                 {
-                    "L2 Code": node.id,
-                    "L1": l2_to_l1.get(node.id, node.level_1_category),
-                    "L2 Sub-Category": node.level_2_category,
+                    "Level 2 Code": node.id,
+                    "Enterprise Risk Category": l2_to_l1.get(node.id, node.level_1_category),
+                    "Risk Subcategory": node.level_2_category,
                     "Definition": node.definition,
-                    "Typical Root Causes": ", ".join(node.typical_root_causes),
                     "Regulatory Relevance": ", ".join(node.regulatory_relevance),
                 }
                 for node in workspace.risk_taxonomy_l2
             ],
-            hide_index=True,
-            width="stretch",
         )
 
     with sub_tabs[3]:
-        st.dataframe(
+        _render_table(
             [
                 {
                     "Code": c.code,
@@ -429,53 +464,33 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace) -> None:
                 }
                 for c in workspace.control_taxonomy
             ],
-            hide_index=True,
-            width="stretch",
         )
 
     with sub_tabs[4]:
-        st.dataframe(
-            [
-                {
-                    "Code": rc.code,
-                    "Category": rc.category,
-                    "Root Cause": rc.name,
-                    "Description": rc.description,
-                    "Examples": "; ".join(rc.examples),
-                }
-                for rc in workspace.root_cause_taxonomy
-            ],
-            hide_index=True,
-            width="stretch",
-        )
-
-    with sub_tabs[5]:
-        st.dataframe(
+        _render_table(
             [
                 {
                     "Control ID": c.get("control_id", ""),
                     "Control": c.get("control_name", ""),
-                    "Type": c.get("control_type", ""),
+                    "Control Type": c.get("control_type", ""),
                     "Owner": c.get("owner", ""),
                     "Frequency": c.get("frequency", ""),
-                    "Design": c.get("design_rating", ""),
-                    "Operating": c.get("operating_rating", ""),
-                    "Description": c.get("description", ""),
+                    "Design Effectiveness": c.get("design_rating", ""),
+                    "Operating Effectiveness": c.get("operating_rating", ""),
+                    "Control Description": c.get("description", ""),
                 }
                 for c in workspace.bank_controls
             ],
-            hide_index=True,
-            width="stretch",
         )
 
-    with sub_tabs[6]:
+    with sub_tabs[5]:
         l2_lookup = {node.id: node.level_2_category for node in workspace.risk_taxonomy_l2}
-        st.dataframe(
+        _render_table(
             [
                 {
                     "KRI ID": k.kri_id,
                     "KRI": k.kri_name,
-                    "Risk (L2)": l2_lookup.get(k.risk_taxonomy_id, k.risk_taxonomy_id),
+                    "Risk Subcategory": l2_lookup.get(k.risk_taxonomy_id, k.risk_taxonomy_id),
                     "Owner": k.owner,
                     "Frequency": k.measurement_frequency,
                     "Green": k.thresholds.green,
@@ -484,8 +499,6 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace) -> None:
                 }
                 for k in workspace.kri_library
             ],
-            hide_index=True,
-            width="stretch",
         )
 
 
@@ -500,14 +513,25 @@ def _render_risk_inventory_combined(
     record = _risk_selector(run, "ri_inventory_select")
     _render_risk_header(record)
 
-    cols = st.columns([1, 1.6])
-    with cols[0]:
-        st.markdown('<div class="ri-section-title">Root Cause</div>', unsafe_allow_html=True)
-        _render_root_cause_panel(record, workspace)
-    with cols[1]:
-        st.markdown('<div class="ri-section-title">Risk Statement</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ri-exec-strip">', unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.markdown(_rating_html(record.inherent_risk.inherent_rating.value, "Inherent Risk"), unsafe_allow_html=True)
+    c2.markdown(
+        _rating_html(record.control_environment.control_environment_rating.value, "Control Environment"),
+        unsafe_allow_html=True,
+    )
+    c3.markdown(_rating_html(record.residual_risk.residual_rating.value, "Residual Risk"), unsafe_allow_html=True)
+    c4.markdown(
+        _rating_html(record.residual_risk.management_response.response_type.value.title(), "Management Response"),
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    statement_col, evidence_col = st.columns([1.55, 1])
+    with statement_col:
+        st.markdown('<div class="ri-section-title">Executive Risk Statement</div>', unsafe_allow_html=True)
         st.markdown(
-            f'<div class="ri-statement">{html.escape(record.risk_statement.risk_description)}</div>',
+            f'<div class="ri-statement">{html.escape(_risk_statement_display(record))}</div>',
             unsafe_allow_html=True,
         )
         if record.risk_statement.risk_event:
@@ -515,104 +539,62 @@ def _render_risk_inventory_combined(
                 f"<small><b>Risk event:</b> {html.escape(record.risk_statement.risk_event)}</small>",
                 unsafe_allow_html=True,
             )
-        _render_chip_group("Consequences", record.risk_statement.consequences)
         _render_chip_group("Affected stakeholders", record.risk_statement.affected_stakeholders)
+        _render_root_cause_deferred_note(record, workspace)
+    with evidence_col:
+        st.markdown('<div class="ri-section-title">Why It Matters</div>', unsafe_allow_html=True)
+        _render_fact_block(
+            {
+                "Impact": str(int(record.impact_assessment.overall_impact_score)),
+                "Likelihood": str(int(record.likelihood_assessment.likelihood_score)),
+                "Mapped Controls": str(len(record.control_mappings)),
+            }
+        )
+        st.markdown("**Likelihood rationale**")
+        st.write(record.likelihood_assessment.rationale)
 
-    st.markdown('<div class="ri-section-title">Inherent Risk Assessment</div>', unsafe_allow_html=True)
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Overall Impact", int(record.impact_assessment.overall_impact_score))
-    m2.metric("Likelihood", int(record.likelihood_assessment.likelihood_score))
-    m3.markdown(_rating_html(record.inherent_risk.inherent_rating.value, "Inherent Rating"), unsafe_allow_html=True)
-
-    st.markdown("**Impact Dimensions**")
-    st.dataframe(
+    st.markdown('<div class="ri-section-title">Impact Dimensions</div>', unsafe_allow_html=True)
+    _render_table(
         [
             {
-                "Dimension": item.dimension.value.replace("_", " ").title(),
-                "Score": int(item.score),
-                "Rationale": item.rationale,
+                "Impact Dimension": item.dimension.value.replace("_", " ").title(),
+                "Impact Score": int(item.score),
+                "Assessment Rationale": item.rationale,
             }
             for item in record.impact_assessment.dimensions
         ],
-        hide_index=True,
-        width="stretch",
     )
 
-    st.markdown("**Likelihood Rationale**")
-    st.write(record.likelihood_assessment.rationale)
-
-    with st.expander("Exposure metrics", expanded=True):
-        st.dataframe(
-            [
-                {
-                    "Metric": metric.metric_name,
-                    "Value": metric.metric_value,
-                    "Unit": metric.metric_unit,
-                    "Source": metric.source,
-                }
-                for metric in record.exposure_metrics
-            ],
-            hide_index=True,
-            width="stretch",
-        )
-    with st.expander("All risk records (this run)", expanded=False):
-        st.dataframe(_risk_rows(run), hide_index=True, width="stretch")
+    _render_kri_recommendations(record, workspace, include_program_design=False)
 
 
-def _render_root_cause_panel(
-    record: RiskInventoryRecord, workspace: RiskInventoryWorkspace | None
-) -> None:
+def _risk_statement_display(record: RiskInventoryRecord) -> str:
+    """Return statement text with root-cause language embedded in prose."""
+    statement = record.risk_statement.risk_description.strip()
     causes = record.risk_statement.causes or record.taxonomy_node.typical_root_causes
     if not causes:
-        st.write("No root causes recorded.")
-        return
+        return statement
+    joined = "; ".join(causes[:3])
+    if joined.lower() in statement.lower():
+        return statement
+    return f"{statement} Root-cause lens: {joined}."
 
-    rc_lookup: dict[str, Any] = {}
-    if workspace:
-        for rc in workspace.root_cause_taxonomy:
-            rc_lookup[rc.name.lower()] = rc
-            for ex in rc.examples:
-                rc_lookup[ex.lower()] = rc
 
-    for cause in causes:
-        cause_lower = cause.lower()
-        rc = None
-        for key, candidate in rc_lookup.items():
-            if key in cause_lower or cause_lower in key:
-                rc = candidate
-                break
-        category = rc.category if rc else "Uncategorized"
-        code = rc.code if rc else ""
-        description = rc.description if rc else ""
-        tone = {
-            "People": "blue",
-            "Process": "teal",
-            "Technology": "medium",
-            "External": "high",
-        }.get(category, "neutral")
-        code_chip = f'<span class="ri-chip">{html.escape(code)}</span>' if code else ""
-        desc_html = (
-            f'<div class="ri-rootcause-desc">{html.escape(description)}</div>' if description else ""
-        )
-        st.markdown(
-            f"""
-            <div class="ri-rootcause ri-{tone}">
-                <div class="ri-rootcause-cause">{html.escape(cause)}</div>
-                <div class="ri-rootcause-meta">
-                    <span class="ri-chip">{html.escape(category)}</span>
-                    {code_chip}
-                </div>
-                {desc_html}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    if workspace:
-        st.caption(
-            "Root causes are mapped against the bank's Root Cause Taxonomy "
-            "(People · Process · Technology · External) where a match exists."
-        )
+def _render_root_cause_deferred_note(
+    record: RiskInventoryRecord, workspace: RiskInventoryWorkspace | None
+) -> None:
+    taxonomy_count = len(workspace.root_cause_taxonomy) if workspace else 0
+    suffix = f" ({taxonomy_count} configured taxonomy entries in the demo workspace)" if taxonomy_count else ""
+    st.markdown(
+        f"""
+        <div class="ri-deferred-note">
+            Root-cause taxonomy remains relevant for challenge, control coverage, and remediation analysis{html.escape(suffix)}.
+            The detailed root-cause taxonomy UI is intentionally deferred; for now the root-cause wording is embedded
+            directly in the risk statement above.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -620,70 +602,143 @@ def _render_root_cause_panel(
 # ---------------------------------------------------------------------------
 
 
+def _render_workspace_control_mapping(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None,
+) -> None:
+    rows = _workspace_control_mapping_rows(workspace, selected_bu_id)
+    if not rows:
+        st.info("No control mappings are available for the selected scope.")
+        return
+
+    selected_bu = next(
+        (bu for bu in workspace.business_units if bu.bu_id == selected_bu_id),
+        None,
+    )
+    scope_label = selected_bu.bu_name if selected_bu else "All Business Units"
+    high_plus = sum(row["Residual Risk Rating"] in {"High", "Critical"} for row in rows)
+    l1_categories = {str(row["Enterprise Risk Category"]) for row in rows}
+    business_units = {str(row["Business Unit"]) for row in rows}
+    mapped_controls = sum(int(row["Mapped Controls"]) for row in rows)
+
+    st.markdown('<div class="ri-section-title">Control Mapping Risk Spread</div>', unsafe_allow_html=True)
+    st.caption(
+        f"{scope_label} · Business Unit by enterprise risk category, with L2 subcategory detail below."
+    )
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.markdown(_metric_card("Risk Records", str(len(rows)), "blue"), unsafe_allow_html=True)
+    m2.markdown(_metric_card("Business Units", str(len(business_units)), "teal"), unsafe_allow_html=True)
+    m3.markdown(_metric_card("Risk Categories", str(len(l1_categories)), "green"), unsafe_allow_html=True)
+    m4.markdown(_metric_card("High+ Residual", str(high_plus), "red" if high_plus else "green"), unsafe_allow_html=True)
+    m5.markdown(_metric_card("Mapped Controls", str(mapped_controls), "yellow"), unsafe_allow_html=True)
+
+    st.markdown('<div class="ri-section-title">BU × L1 Risk Category Matrix</div>', unsafe_allow_html=True)
+    st.caption("Each cell shows risk records, high/critical residual records, and mapped controls.")
+    _render_table(_workspace_control_mapping_matrix_rows(rows))
+
+    detail_left, detail_right = st.columns([1.1, 1])
+    with detail_left:
+        st.markdown('<div class="ri-section-title">Risk Type Detail</div>', unsafe_allow_html=True)
+        _render_table(_workspace_control_mapping_category_rows(rows))
+    with detail_right:
+        st.markdown('<div class="ri-section-title">Coverage Status</div>', unsafe_allow_html=True)
+        _render_table(_workspace_control_mapping_coverage_rows(rows))
+
+    st.markdown('<div class="ri-section-title">Risk-To-Control Detail</div>', unsafe_allow_html=True)
+    _render_table(rows)
+
+
 def _render_control_mapping(run: RiskInventoryRun) -> None:
+    _render_control_mapping_run_summary(run)
     record = _risk_selector(run, "ri_mapping_select")
     _render_risk_header(record)
+
+    st.markdown('<div class="ri-section-title">Selected Risk Control Coverage</div>', unsafe_allow_html=True)
     if not record.control_mappings:
         st.warning("No controls are mapped to this risk. This is a coverage gap.")
-        return
-    for mapping in record.control_mappings:
-        design_rating = (
-            mapping.design_effectiveness.rating.value if mapping.design_effectiveness else "Not Rated"
-        )
-        operating_rating = (
-            mapping.operating_effectiveness.rating.value
-            if mapping.operating_effectiveness
-            else "Not Rated"
-        )
-        st.markdown(
-            f"""
-            <div class="ri-control-card">
-                <div>
-                    <b>{html.escape(mapping.control_name)}</b>
-                    <span class="ri-muted"> · {html.escape(mapping.control_type)}</span>
-                </div>
-                <p>{html.escape(mapping.mitigation_rationale)}</p>
-                <div>
-                    {_badge("Coverage", mapping.coverage_assessment.title(), "neutral")}
-                    {_badge("Design", design_rating, "blue")}
-                    {_badge("Operating", operating_rating, "teal")}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with st.expander("All mapped controls (this run)", expanded=False):
-        rows = []
-        for rec in run.records:
-            for m in rec.control_mappings:
-                rows.append(
-                    {
-                        "Risk ID": rec.risk_id,
-                        "L2 Category": rec.taxonomy_node.level_2_category,
-                        "Control": m.control_name,
-                        "Type": m.control_type,
-                        "Coverage": m.coverage_assessment,
-                    }
-                )
-        st.dataframe(rows, hide_index=True, width="stretch")
+    else:
+        for mapping in record.control_mappings:
+            design_rating = (
+                mapping.design_effectiveness.rating.value if mapping.design_effectiveness else "Not Rated"
+            )
+            operating_rating = (
+                mapping.operating_effectiveness.rating.value
+                if mapping.operating_effectiveness
+                else "Not Rated"
+            )
+            st.markdown(
+                f"""
+                <div class="ri-control-card">
+                    <div class="ri-control-head">
+                        <div>
+                            <span class="ri-control-id">{html.escape(mapping.control_id)}</span>
+                            <b>{html.escape(mapping.control_name)}</b>
+                        </div>
+                        <span class="ri-control-type">{html.escape(mapping.control_type or "Unspecified")}</span>
+                    </div>
+                        <p>{html.escape(mapping.mitigation_rationale)}</p>
+                        <div>
+                        {_badge("Coverage Assessment", mapping.coverage_assessment.title(), _coverage_class(mapping.coverage_assessment))}
+                        {_badge("Design Effectiveness", design_rating, _rating_class(design_rating))}
+                        {_badge("Operating Effectiveness", operating_rating, _rating_class(operating_rating))}
+                        </div>
+                    </div>
+                    """,
+                unsafe_allow_html=True,
+            )
+
+    st.markdown('<div class="ri-section-title">All Mapped Controls In This Process</div>', unsafe_allow_html=True)
+    _render_table(_run_control_mapping_rows(run))
+
+
+def _render_control_mapping_run_summary(run: RiskInventoryRun) -> None:
+    rows = _run_control_mapping_rows(run)
+    control_types = {str(row["Control Type"]) for row in rows if row["Control Type"]}
+    high_plus = sum(record.residual_risk.residual_rating.value in {"High", "Critical"} for record in run.records)
+    full_or_strong = sum(
+        str(row["Coverage Assessment"]).lower() in {"full", "strong"}
+        for row in rows
+    )
+
+    st.markdown('<div class="ri-section-title">Process Control Mapping Summary</div>', unsafe_allow_html=True)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.markdown(_metric_card("Risk Records", str(len(run.records)), "blue"), unsafe_allow_html=True)
+    m2.markdown(_metric_card("Mapped Controls", str(len(rows)), "teal"), unsafe_allow_html=True)
+    m3.markdown(_metric_card("Control Types", str(len(control_types)), "green"), unsafe_allow_html=True)
+    m4.markdown(_metric_card("High+ Residual", str(high_plus), "red" if high_plus else "green"), unsafe_allow_html=True)
+    if rows:
+        st.caption(f"{full_or_strong} mapped controls are marked full or strong coverage.")
 
 
 # ---------------------------------------------------------------------------
-# Residual & KRIs tab
+# Residual Risk tab
 # ---------------------------------------------------------------------------
 
 
-def _render_residual_and_kris(
+def _render_residual_risk(
     run: RiskInventoryRun, workspace: RiskInventoryWorkspace | None
 ) -> None:
     record = _risk_selector(run, "ri_residual_select")
     _render_risk_header(record)
 
+    st.markdown('<div class="ri-section-title">Residual Risk Decision View</div>', unsafe_allow_html=True)
+    r1, r2, r3, r4 = st.columns(4)
+    r1.markdown(_rating_html(record.inherent_risk.inherent_rating.value, "Inherent Risk"), unsafe_allow_html=True)
+    r2.markdown(
+        _rating_html(record.control_environment.control_environment_rating.value, "Control Environment"),
+        unsafe_allow_html=True,
+    )
+    r3.markdown(_rating_html(record.residual_risk.residual_rating.value, "Residual Risk"), unsafe_allow_html=True)
+    r4.markdown(
+        _rating_html(record.residual_risk.management_response.response_type.value.title(), "Management Response"),
+        unsafe_allow_html=True,
+    )
+    st.write(record.residual_risk.rationale)
+    st.markdown(f"**Recommended action:** {record.residual_risk.management_response.recommended_action}")
+    st.divider()
     _render_control_coverage(record)
     st.divider()
     _render_effectiveness_detail(record)
-    st.divider()
-    _render_kri_recommendations(record, workspace)
     st.divider()
     _render_residual_review_summary(record)
 
@@ -695,71 +750,50 @@ def _render_control_coverage(record: RiskInventoryRecord) -> None:
         st.warning("No controls are mapped to this risk. This is a coverage gap requiring management response.")
         return
 
-    typical_causes = list(record.taxonomy_node.typical_root_causes)
-    cause_coverage: Counter[str] = Counter()
-    for mapping in mappings:
-        for cause in mapping.mapped_root_causes:
-            cause_coverage[cause] += 1
     type_coverage = Counter(m.control_type or "Unspecified" for m in mappings)
+    strong_or_satisfactory = sum(
+        1
+        for mapping in mappings
+        if mapping.design_effectiveness
+        and mapping.operating_effectiveness
+        and mapping.design_effectiveness.rating.value in {"Strong", "Satisfactory"}
+        and mapping.operating_effectiveness.rating.value in {"Strong", "Satisfactory"}
+    )
 
     summary_cols = st.columns(3)
     summary_cols[0].metric("Mapped Controls", len(mappings))
-    summary_cols[1].metric(
-        "Root Causes Covered",
-        f"{len(cause_coverage)} / {len(typical_causes) or len(cause_coverage)}",
-    )
+    summary_cols[1].metric("Strong/Satisfactory", strong_or_satisfactory)
     summary_cols[2].metric("Control Types", len(type_coverage))
 
-    left, mid, right = st.columns([1.1, 1, 1.2])
+    left, right = st.columns([1.25, 1])
     with left:
         st.markdown("**Mapped controls**")
-        st.dataframe(
+        _render_table(
             [
                 {
                     "Control": m.control_name,
-                    "Type": m.control_type,
-                    "Coverage": m.coverage_assessment.title(),
+                    "Control Type": m.control_type,
+                    "Coverage Assessment": m.coverage_assessment.title(),
                 }
                 for m in mappings
             ],
-            hide_index=True,
-            width="stretch",
         )
-    with mid:
-        st.markdown("**Coverage by root cause**")
-        rows = []
-        seen = set()
-        for cause in typical_causes:
-            count = cause_coverage.get(cause, 0)
-            rows.append(
-                {"Root cause": cause, "# Controls": count, "Status": "Covered" if count else "Gap"}
-            )
-            seen.add(cause)
-        for cause, count in cause_coverage.items():
-            if cause not in seen:
-                rows.append({"Root cause": cause, "# Controls": count, "Status": "Covered"})
-        st.dataframe(rows, hide_index=True, width="stretch")
     with right:
         st.markdown("**Coverage by control type**")
-        st.dataframe(
+        _render_table(
             [
-                {"Control type": ctype, "# Controls": count}
+                {"Control Type": ctype, "Mapped Control Count": count}
                 for ctype, count in type_coverage.most_common()
             ],
-            hide_index=True,
-            width="stretch",
         )
 
     st.markdown("**Coverage gaps**")
-    gaps: list[str] = list(record.coverage_gaps)
-    for cause in typical_causes:
-        if not cause_coverage.get(cause):
-            gaps.append(f"Root cause not covered by any mapped control: {cause}")
+    gaps: list[str] = [gap for gap in record.coverage_gaps if "root cause" not in gap.lower()]
     if gaps:
         for gap in gaps:
             st.markdown(f"- {html.escape(gap)}")
     else:
-        st.success("No coverage gaps identified for typical root causes.")
+        st.success("No material control coverage gaps identified for this risk.")
 
 
 def _render_effectiveness_detail(record: RiskInventoryRecord) -> None:
@@ -789,25 +823,23 @@ def _render_effectiveness_detail(record: RiskInventoryRecord) -> None:
     d.metric("High/Critical Issues", high_sev_open)
 
     st.markdown("**Effectiveness by control**")
-    st.dataframe(
+    _render_table(
         [
             {
                 "Control": m.control_name,
-                "Design": m.design_effectiveness.rating.value if m.design_effectiveness else "Not Rated",
-                "Operating": m.operating_effectiveness.rating.value if m.operating_effectiveness else "Not Rated",
+                "Design Effectiveness": m.design_effectiveness.rating.value if m.design_effectiveness else "Not Rated",
+                "Operating Effectiveness": m.operating_effectiveness.rating.value if m.operating_effectiveness else "Not Rated",
                 "Open Issues": len(m.open_issues),
                 "Evidence Quality": m.evidence_quality.rating if m.evidence_quality else "Not Assessed",
                 "Last Tested": m.evidence_quality.last_tested if m.evidence_quality else "",
             }
             for m in mappings
         ],
-        hide_index=True,
-        width="stretch",
     )
 
     if open_issue_total:
         st.markdown("**Open issues**")
-        st.dataframe(
+        _render_table(
             [
                 {
                     "Issue ID": issue.issue_id,
@@ -821,8 +853,6 @@ def _render_effectiveness_detail(record: RiskInventoryRecord) -> None:
                 for m in mappings
                 for issue in m.open_issues
             ],
-            hide_index=True,
-            width="stretch",
         )
 
 
@@ -832,7 +862,10 @@ def _render_effectiveness_detail(record: RiskInventoryRecord) -> None:
 
 
 def _render_kri_recommendations(
-    record: RiskInventoryRecord, workspace: RiskInventoryWorkspace | None
+    record: RiskInventoryRecord,
+    workspace: RiskInventoryWorkspace | None,
+    *,
+    include_program_design: bool = True,
 ) -> None:
     st.markdown(
         '<div class="ri-section-title">Recommended Key Risk Indicators (KRIs)</div>',
@@ -895,12 +928,8 @@ def _render_kri_recommendations(
             """,
             unsafe_allow_html=True,
         )
-        if kri.use_cases:
-            with st.expander(f"Reporting cadence and use cases — {kri.kri_name}", expanded=False):
-                for use_case in kri.use_cases:
-                    st.markdown(f"- {html.escape(use_case)}")
-
-    _render_kri_program_design(record)
+    if include_program_design:
+        _render_kri_program_design(record)
 
 
 def _render_kri_program_design(record: RiskInventoryRecord) -> None:
@@ -910,18 +939,18 @@ def _render_kri_program_design(record: RiskInventoryRecord) -> None:
     plan_lines: list[str] = []
     if residual in {"High", "Critical"}:
         plan_lines.append(
-            f"**Reporting cadence.** Because residual is {residual}, all KRIs above should be reported "
-            "weekly to the BU head and monthly to the Operational Risk Committee until residual is "
+            f"**Executive monitoring.** Because residual is {residual}, all KRIs above should be reviewed "
+            "weekly by the business unit head and monthly by the Operational Risk Committee until residual is "
             "sustained at Medium or below for two consecutive quarters."
         )
     elif residual == "Medium":
         plan_lines.append(
-            "**Reporting cadence.** Residual is Medium — report KRIs monthly to the BU head and "
+            "**Executive monitoring.** Residual is Medium — review KRIs monthly with the business unit head and "
             "quarterly to the Operational Risk Committee. Promote any sustained amber to monthly committee review."
         )
     else:
         plan_lines.append(
-            "**Reporting cadence.** Residual is Low — KRIs should still be measured at the documented "
+            "**Executive monitoring.** Residual is Low — KRIs should still be measured at the documented "
             "frequency above, but executive reporting can be quarterly with a trend chart in the annual ERMC pack."
         )
     plan_lines.append(
@@ -949,15 +978,14 @@ def _render_kri_program_design(record: RiskInventoryRecord) -> None:
 
 
 def _render_kri_design_guidance(record: RiskInventoryRecord) -> None:
-    causes = ", ".join(record.taxonomy_node.typical_root_causes) or "see taxonomy"
     metrics = ", ".join(m.metric_name for m in record.exposure_metrics) or "see exposure section"
     st.markdown(
         f"""
         <div class="ri-kri-card">
             <div class="ri-kri-narrative">
                 <b>How to design a KRI for {html.escape(record.taxonomy_node.level_2_category)}.</b>
-                Start from the typical root causes ({html.escape(causes)}) and the
-                process exposure metrics already collected ({html.escape(metrics)}).
+                Start from the risk category, the risk statement, and the process evidence already collected
+                ({html.escape(metrics)}).
                 A defensible KRI is: (1) measurable from a system-of-record, (2) owned by a named role,
                 (3) reported on a documented cadence, (4) has green/amber/red thresholds that drive
                 decisions, and (5) is paired with a lagging outcome metric. Avoid creating KRIs that
@@ -1017,7 +1045,7 @@ def _render_review(run: RiskInventoryRun) -> None:
     st.markdown('<div class="ri-section-title">Validation Findings</div>', unsafe_allow_html=True)
     findings = [finding for finding in run.validation_findings if finding.record_id == record.risk_id]
     if findings:
-        st.dataframe([finding.model_dump() for finding in findings], hide_index=True, width="stretch")
+        _render_table([finding.model_dump() for finding in findings])
     else:
         st.success("No validation findings for this record.")
 
@@ -1040,7 +1068,7 @@ def _render_executive(run: RiskInventoryRun) -> None:
         for action in run.executive_summary.recommended_actions:
             st.markdown(f"- {action}")
     st.markdown('<div class="ri-section-title">Executive Risk Table</div>', unsafe_allow_html=True)
-    st.dataframe(_risk_rows(run), hide_index=True, width="stretch")
+    _render_table(_risk_rows(run))
     _download_export(run, "executive")
 
 
@@ -1056,15 +1084,15 @@ def _render_input_and_maybe_run() -> RiskInventoryRun | None:
     )
     st.caption(
         "Review the data already on file (business units, controls, risk taxonomy, control taxonomy, "
-        "procedures, and KRIs). Use the upload area further down to add or replace any of it."
+        "processes, and KRIs). Use the upload area further down to add or replace any of it."
     )
     _render_user_existing_knowledge_tables()
 
     st.markdown(
-        '<div class="ri-section-title">Add or Replace Data — Procedure Document</div>',
+        '<div class="ri-section-title">Add or Replace Data — Process Document</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Upload a PDF, TXT, or Markdown procedure. The builder extracts process context and analysis cues.")
+    st.caption("Upload a PDF, TXT, or Markdown process document. The builder extracts process context and analysis cues.")
 
     analysis = _document_upload()
     structured_context = _structured_context_upload()
@@ -1155,7 +1183,7 @@ def _render_user_existing_knowledge_tables() -> None:
     sub_tabs = st.tabs(
         [
             "Business Units",
-            "Procedures",
+            "Processes",
             "Risk Taxonomy",
             "Control Taxonomy",
             "Controls Register",
@@ -1163,24 +1191,30 @@ def _render_user_existing_knowledge_tables() -> None:
         ]
     )
     placeholder_columns = {
-        "Business Units": ["BU ID", "Business Unit", "Head", "Employees", "Description"],
-        "Procedures": ["Procedure ID", "Procedure", "BU", "Owner", "Cadence", "Last Reviewed"],
-        "Risk Taxonomy": ["L1 Code", "L1", "L2 Code", "L2 Sub-Category", "Definition"],
+        "Business Units": ["Business Unit ID", "Business Unit", "Head", "Employees", "Description"],
+        "Processes": ["Process ID", "Process", "Business Unit", "Owner", "Review Cadence", "Last Reviewed"],
+        "Risk Taxonomy": [
+            "Level 1 Code",
+            "Enterprise Risk Category",
+            "Level 2 Code",
+            "Risk Subcategory",
+            "Definition",
+        ],
         "Control Taxonomy": ["Code", "Family", "Control Family", "Description"],
         "Controls Register": [
             "Control ID",
-            "Control",
-            "Type",
+            "Control Name",
+            "Control Type",
             "Owner",
             "Frequency",
-            "Design",
-            "Operating",
+            "Design Effectiveness",
+            "Operating Effectiveness",
         ],
-        "KRI Library": ["KRI ID", "KRI", "Risk (L2)", "Owner", "Frequency", "Green", "Amber", "Red"],
+        "KRI Library": ["KRI ID", "KRI", "Risk Subcategory", "Owner", "Frequency", "Green", "Amber", "Red"],
     }
     table_keys = {
         "Business Units": "ri_user_bus",
-        "Procedures": "ri_user_procs",
+        "Processes": "ri_user_procs",
         "Risk Taxonomy": "ri_user_risk_taxonomy",
         "Control Taxonomy": "ri_user_control_taxonomy",
         "Controls Register": "ri_user_controls",
@@ -1190,13 +1224,9 @@ def _render_user_existing_knowledge_tables() -> None:
         with tab:
             data = st.session_state.get(table_keys[label], [])
             if data:
-                st.dataframe(data, hide_index=True, width="stretch")
+                _render_table(list(data))
             else:
-                st.dataframe(
-                    [{col: "" for col in placeholder_columns[label]}],
-                    hide_index=True,
-                    width="stretch",
-                )
+                _render_table([{col: "" for col in placeholder_columns[label]}])
                 st.caption(
                     f"No {label.lower()} on file. Use the uploads below to populate this table, "
                     "or load Demo Mode to see a fully populated example."
@@ -1212,7 +1242,7 @@ def _document_upload() -> DocumentAnalysis | None:
     upload_col, sample_col = st.columns([2, 1])
     with upload_col:
         uploaded = st.file_uploader(
-            "Upload process policy/procedure",
+            "Upload process document",
             type=["pdf", "txt", "md", "markdown"],
             key="ri_process_document_upload",
             help="PDF, TXT, or Markdown files are parsed locally and used to prefill process context.",
@@ -1220,7 +1250,7 @@ def _document_upload() -> DocumentAnalysis | None:
     with sample_col:
         st.write("")
         st.write("")
-        use_sample = st.button("Load sample procedure", width="stretch", key="ri_load_sample_doc")
+        use_sample = st.button("Load sample process document", width="stretch", key="ri_load_sample_doc")
 
     if use_sample:
         sample_path = default_demo_fixture_path().with_name("payment_exception_policy.md")
@@ -1347,7 +1377,7 @@ def _render_empty_state() -> None:
         <div class="ri-empty">
             <h3>Start with evidence, not a blank form</h3>
             <p>
-                Go to Input / Upload and add a policy or procedure PDF. The app will extract process context,
+                Go to Input / Upload and add a process document PDF. The app will extract process context,
                 likely risk categories, control cues, obligations, and exposure signals before it runs the graph.
             </p>
             <p>Or enable <b>Demo Mode</b> in the top-right corner to explore a complete multi-business-unit workspace.</p>
@@ -1385,19 +1415,17 @@ def _render_document_analysis(analysis: DocumentAnalysis) -> None:
 def _render_control_preview(controls: list[dict[str, Any]]) -> None:
     st.caption(f"{len(controls)} controls will be available for mapping.")
     if controls:
-        st.dataframe(
+        _render_table(
             [
                 {
                     "Control ID": control.get("control_id", ""),
-                    "Name": control.get("control_name", control.get("name", "")),
-                    "Type": control.get("control_type", ""),
-                    "Design": control.get("design_rating", "Satisfactory"),
-                    "Operating": control.get("operating_rating", "Satisfactory"),
+                    "Control Name": control.get("control_name", control.get("name", "")),
+                    "Control Type": control.get("control_type", ""),
+                    "Design Effectiveness": control.get("design_rating", "Satisfactory"),
+                    "Operating Effectiveness": control.get("operating_rating", "Satisfactory"),
                 }
                 for control in controls
             ],
-            hide_index=True,
-            width="stretch",
         )
 
 
@@ -1417,7 +1445,7 @@ def _risk_selector(run: RiskInventoryRun, key: str) -> RiskInventoryRecord:
         f"{record.risk_id}  ·  {record.taxonomy_node.level_2_category}  ({record.taxonomy_node.level_1_category})"
         for record in run.records
     ]
-    selected = st.selectbox("Select risk record", options, key=key)
+    selected = st.selectbox("Select Risk Record", options, key=key)
     index = options.index(selected)
     return run.records[index]
 
@@ -1426,18 +1454,22 @@ def _render_risk_header(record: RiskInventoryRecord) -> None:
     st.markdown(
         f"""
         <div class="ri-risk-card">
-            <div class="ri-risk-title">
-                {html.escape(record.risk_id)} · {html.escape(record.taxonomy_node.level_2_category)}
+            <div class="ri-risk-header">
+                <div>
+                    <div class="ri-risk-kicker">Risk Record</div>
+                    <div class="ri-risk-title">{html.escape(record.risk_id)}</div>
+                </div>
+                <div class="ri-risk-category">{html.escape(record.taxonomy_node.level_2_category)}</div>
             </div>
             <div class="ri-risk-tax">
-                <span class="ri-chip ri-blue">L1: {html.escape(record.taxonomy_node.level_1_category)}</span>
-                <span class="ri-chip">L2: {html.escape(record.taxonomy_node.level_2_category)}</span>
+                <span class="ri-chip ri-blue">Enterprise Risk Category: {html.escape(record.taxonomy_node.level_1_category)}</span>
+                <span class="ri-chip">Risk Subcategory: {html.escape(record.taxonomy_node.level_2_category)}</span>
+                <span class="ri-chip">Process: {html.escape(record.process_name)}</span>
             </div>
-            <div class="ri-risk-desc">{html.escape(record.risk_statement.risk_description)}</div>
             <div>
-                {_badge("Inherent", record.inherent_risk.inherent_rating.value, _rating_class(record.inherent_risk.inherent_rating.value))}
-                {_badge("Residual", record.residual_risk.residual_rating.value, _rating_class(record.residual_risk.residual_rating.value))}
-                {_badge("Response", record.residual_risk.management_response.response_type.value.title(), "neutral")}
+                {_badge("Inherent Risk", record.inherent_risk.inherent_rating.value, _rating_class(record.inherent_risk.inherent_rating.value))}
+                {_badge("Residual Risk", record.residual_risk.residual_rating.value, _rating_class(record.residual_risk.residual_rating.value))}
+                {_badge("Management Response", record.residual_risk.management_response.response_type.value.title(), "neutral")}
             </div>
         </div>
         """,
@@ -1451,6 +1483,302 @@ def _render_chip_group(label: str, values: list[str]) -> None:
     st.markdown(f"**{label}**")
     chips = " ".join(f'<span class="ri-chip">{html.escape(value)}</span>' for value in values[:12])
     st.markdown(chips, unsafe_allow_html=True)
+
+
+def _render_table(rows: list[dict[str, Any]]) -> None:
+    """Render a readable, monitor-friendly table with wrapped text and tuned columns."""
+    normalized_rows = [
+        {str(column): _normalize_table_value(value) for column, value in row.items()}
+        for row in rows
+    ]
+    if not normalized_rows:
+        st.info("No table records available.")
+        return
+
+    row_height = _table_row_height(normalized_rows)
+    st.dataframe(
+        normalized_rows,
+        hide_index=True,
+        width="stretch",
+        height=_table_height(normalized_rows, row_height),
+        row_height=row_height,
+        column_config=_table_column_config(normalized_rows),
+    )
+
+
+def _normalize_table_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (list, tuple, set)):
+        return "; ".join(str(item) for item in value)
+    if isinstance(value, dict):
+        return json.dumps(value, default=str)
+    return str(value)
+
+
+def _table_column_config(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    first_row = rows[0]
+    config: dict[str, Any] = {}
+    for index, column in enumerate(first_row):
+        values = [row.get(column, "") for row in rows]
+        width = _table_column_width(column, values)
+        alignment = _table_column_alignment(column, values)
+        if _is_numeric_column(values):
+            config[column] = st.column_config.NumberColumn(column, width=width, alignment=alignment)
+        else:
+            config[column] = st.column_config.TextColumn(
+                column,
+                width=width,
+                alignment=alignment,
+                pinned=index == 0 and _is_identifier_column(column),
+            )
+    return config
+
+
+def _table_column_width(column: str, values: list[Any]) -> int:
+    name = column.lower()
+    if any(term in name for term in ("description", "rationale", "summary", "message", "action", "definition")):
+        return 420
+    if any(term in name for term in ("risk profile", "regulatory relevance", "systems", "comments", "findings")):
+        return 360
+    if any(term in name for term in ("process", "control", "subcategory", "category", "stakeholder")):
+        return 240
+    if any(term in name for term in ("rating", "response", "status", "frequency", "cadence", "reviewed", "severity")):
+        return 160
+    if _is_identifier_column(column) or any(term in name for term in ("score", "count", "age", "green", "amber", "red")):
+        return 130
+
+    longest = max((len(str(value)) for value in values), default=0)
+    if longest <= 10:
+        return 120
+    if longest <= 22:
+        return 160
+    if longest <= 42:
+        return 220
+    return 300
+
+
+def _table_column_alignment(column: str, values: list[Any]) -> Literal["left", "center", "right"]:
+    name = column.lower()
+    if _is_numeric_column(values):
+        return "center"
+    if _is_identifier_column(column):
+        return "center"
+    center_terms = (
+        "rating",
+        "response",
+        "status",
+        "score",
+        "count",
+        "frequency",
+        "cadence",
+        "reviewed",
+        "severity",
+        "owner",
+        "green",
+        "amber",
+        "red",
+    )
+    if any(term in name for term in center_terms):
+        return "center"
+    return "left"
+
+
+def _is_identifier_column(column: str) -> bool:
+    name = column.lower()
+    return " id" in f" {name}" or name.endswith("code") or name == "code"
+
+
+def _is_numeric_column(values: list[Any]) -> bool:
+    non_empty = [value for value in values if value not in ("", None)]
+    return bool(non_empty) and all(
+        isinstance(value, (int, float)) and not isinstance(value, bool) for value in non_empty
+    )
+
+
+def _table_row_height(rows: list[dict[str, Any]]) -> int:
+    longest = max((len(str(value)) for row in rows for value in row.values()), default=0)
+    if longest > 220:
+        return 108
+    if longest > 110:
+        return 84
+    if longest > 64:
+        return 68
+    return 48
+
+
+def _table_height(rows: list[dict[str, Any]], row_height: int) -> int:
+    header_height = 44
+    body_height = max(1, len(rows)) * row_height
+    return min(max(header_height + body_height, 132), 560)
+
+
+def _render_fact_block(values: dict[str, str]) -> None:
+    facts = "".join(
+        f"<div><span>{html.escape(label)}</span><b>{html.escape(value)}</b></div>"
+        for label, value in values.items()
+    )
+    st.markdown(f'<div class="ri-fact-grid">{facts}</div>', unsafe_allow_html=True)
+
+
+def _workspace_control_mapping_rows(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Flatten workspace runs into rows for the Control Mapping roll-up."""
+    bu_lookup = {bu.bu_id: bu.bu_name for bu in workspace.business_units}
+    procedures = workspace.procedures_for_bu(selected_bu_id) if selected_bu_id else workspace.procedures
+    rows: list[dict[str, Any]] = []
+
+    for proc in procedures:
+        run = workspace.run_for_procedure(proc.procedure_id)
+        if not run:
+            continue
+        for record in run.records:
+            rows.append(
+                {
+                    "Business Unit ID": proc.bu_id,
+                    "Business Unit": bu_lookup.get(proc.bu_id, proc.bu_id),
+                    "Process ID": proc.procedure_id,
+                    "Process": proc.procedure_name,
+                    "Risk Record ID": record.risk_id,
+                    "Enterprise Risk Category": record.taxonomy_node.level_1_category,
+                    "Risk Subcategory": record.taxonomy_node.level_2_category,
+                    "Residual Risk Rating": record.residual_risk.residual_rating.value,
+                    "Mapped Controls": len(record.control_mappings),
+                    "Coverage Status": _record_coverage_status(record),
+                }
+            )
+    return rows
+
+
+def _workspace_control_mapping_matrix_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build a wide BU x L1 matrix for workspace risk spread."""
+    business_units = sorted({str(row["Business Unit"]) for row in rows})
+    categories = sorted({str(row["Enterprise Risk Category"]) for row in rows})
+    matrix_rows: list[dict[str, Any]] = []
+
+    for bu_name in business_units:
+        bu_rows = [row for row in rows if row["Business Unit"] == bu_name]
+        matrix_row: dict[str, Any] = {
+            "Business Unit": bu_name,
+            "Risk Records": len(bu_rows),
+            "High+ Residual": _high_plus_count(bu_rows),
+            "Mapped Controls": sum(int(row["Mapped Controls"]) for row in bu_rows),
+        }
+        for category in categories:
+            category_rows = [row for row in bu_rows if row["Enterprise Risk Category"] == category]
+            matrix_row[category] = _risk_spread_cell(category_rows)
+        matrix_rows.append(matrix_row)
+
+    return matrix_rows
+
+
+def _workspace_control_mapping_category_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build long-form BU x L1 rows with L2 subcategory detail."""
+    grouped_keys = sorted(
+        {
+            (str(row["Business Unit"]), str(row["Enterprise Risk Category"]))
+            for row in rows
+        }
+    )
+    category_rows: list[dict[str, Any]] = []
+
+    for bu_name, category in grouped_keys:
+        grouped = [
+            row
+            for row in rows
+            if row["Business Unit"] == bu_name and row["Enterprise Risk Category"] == category
+        ]
+        l2_counts = Counter(str(row["Risk Subcategory"]) for row in grouped)
+        category_rows.append(
+            {
+                "Business Unit": bu_name,
+                "Enterprise Risk Category": category,
+                "Risk Records": len(grouped),
+                "High+ Residual": _high_plus_count(grouped),
+                "Mapped Controls": sum(int(row["Mapped Controls"]) for row in grouped),
+                "Risk Subcategories": ", ".join(
+                    f"{subcategory} ({count})" for subcategory, count in l2_counts.most_common()
+                ),
+            }
+        )
+
+    return category_rows
+
+
+def _workspace_control_mapping_coverage_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    coverage_counts = Counter(str(row["Coverage Status"]) for row in rows)
+    return [
+        {
+            "Coverage Status": status,
+            "Risk Records": count,
+            "Mapped Controls": sum(
+                int(row["Mapped Controls"]) for row in rows if row["Coverage Status"] == status
+            ),
+        }
+        for status, count in coverage_counts.most_common()
+    ]
+
+
+def _run_control_mapping_rows(run: RiskInventoryRun) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for record in run.records:
+        for mapping in record.control_mappings:
+            rows.append(
+                {
+                    "Risk Record ID": record.risk_id,
+                    "Enterprise Risk Category": record.taxonomy_node.level_1_category,
+                    "Risk Subcategory": record.taxonomy_node.level_2_category,
+                    "Residual Risk Rating": record.residual_risk.residual_rating.value,
+                    "Control ID": mapping.control_id,
+                    "Control": mapping.control_name,
+                    "Control Type": mapping.control_type,
+                    "Coverage Assessment": mapping.coverage_assessment.title(),
+                    "Design Effectiveness": (
+                        mapping.design_effectiveness.rating.value
+                        if mapping.design_effectiveness
+                        else "Not Rated"
+                    ),
+                    "Operating Effectiveness": (
+                        mapping.operating_effectiveness.rating.value
+                        if mapping.operating_effectiveness
+                        else "Not Rated"
+                    ),
+                    "Open Issues": len(mapping.open_issues),
+                }
+            )
+    return rows
+
+
+def _record_coverage_status(record: RiskInventoryRecord) -> str:
+    if not record.control_mappings:
+        return "Coverage Gap"
+    material_gaps = [gap for gap in record.coverage_gaps if "root cause" not in gap.lower()]
+    if material_gaps:
+        return "Gaps Noted"
+    coverage_values = {mapping.coverage_assessment.lower() for mapping in record.control_mappings}
+    if coverage_values <= {"strong", "full"}:
+        return "Strong Coverage"
+    if "strong" in coverage_values or "full" in coverage_values:
+        return "Mixed Coverage"
+    return "Partial Coverage"
+
+
+def _risk_spread_cell(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return "0 risks | 0 high+ | 0 controls"
+    risk_count = len(rows)
+    high_plus = _high_plus_count(rows)
+    control_count = sum(int(row["Mapped Controls"]) for row in rows)
+    risk_label = "risk" if risk_count == 1 else "risks"
+    return f"{risk_count} {risk_label} | {high_plus} high+ | {control_count} controls"
+
+
+def _high_plus_count(rows: list[dict[str, Any]]) -> int:
+    return sum(row["Residual Risk Rating"] in {"High", "Critical"} for row in rows)
 
 
 def _download_export(run: RiskInventoryRun, location: str) -> None:
@@ -1467,15 +1795,15 @@ def _download_export(run: RiskInventoryRun, location: str) -> None:
 def _risk_rows(run: RiskInventoryRun) -> list[dict[str, Any]]:
     return [
         {
-            "Risk ID": record.risk_id,
-            "L1 Category": record.taxonomy_node.level_1_category,
-            "L2 Category": record.taxonomy_node.level_2_category,
-            "Risk Description": record.risk_statement.risk_description,
-            "Inherent": record.inherent_risk.inherent_rating.value,
-            "Control Environment": record.control_environment.control_environment_rating.value,
-            "Residual": record.residual_risk.residual_rating.value,
-            "Management Response": record.residual_risk.management_response.response_type.value,
-            "Linked Controls": len(record.control_mappings),
+            "Risk Record ID": record.risk_id,
+            "Process": record.process_name,
+            "Enterprise Risk Category": record.taxonomy_node.level_1_category,
+            "Risk Subcategory": record.taxonomy_node.level_2_category,
+            "Inherent Risk Rating": record.inherent_risk.inherent_rating.value,
+            "Control Environment Rating": record.control_environment.control_environment_rating.value,
+            "Residual Risk Rating": record.residual_risk.residual_rating.value,
+            "Recommended Management Response": record.residual_risk.management_response.response_type.value.title(),
+            "Mapped Controls": len(record.control_mappings),
         }
         for record in run.records
     ]
@@ -1498,6 +1826,17 @@ def _rating_html(label: str, title: str = "Rating") -> str:
 
 def _badge(label: str, value: str, tone: str) -> str:
     return f'<span class="ri-badge ri-{tone}">{html.escape(label)}: {html.escape(value)}</span>'
+
+
+def _coverage_class(value: str) -> str:
+    lowered = value.lower()
+    if "strong" in lowered or "full" in lowered:
+        return "low"
+    if "partial" in lowered:
+        return "medium"
+    if "gap" in lowered or "none" in lowered:
+        return "high"
+    return "neutral"
 
 
 def _rating_class(value: str) -> str:
@@ -1523,6 +1862,19 @@ def _inject_risk_inventory_css() -> None:
         .ri-eyebrow, .ri-section-title { color: #0f62fe; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; margin: 1rem 0 0.35rem 0; }
         .ri-toggle-panel { background: #ffffff; border: 1px solid #c6c6c6; padding: 0.85rem; min-height: 112px; }
         .ri-notice { background: #e5f6ff; border-left: 4px solid #0072c3; padding: 0.7rem 0.9rem; margin-bottom: 0.8rem; }
+        .ri-scope-lens {
+            display: grid; grid-template-columns: 1.5fr 1.5fr 0.75fr 0.75fr; gap: 0.5rem;
+            background: #ffffff; border: 1px solid #c6c6c6; border-left: 4px solid #0f62fe;
+            padding: 0.7rem 0.85rem; margin: 0.2rem 0 0.8rem 0;
+        }
+        .ri-scope-lens div { min-width: 0; }
+        .ri-scope-lens span {
+            display: block; color: #525252; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+        }
+        .ri-scope-lens b {
+            display: block; color: #161616; font-size: 0.94rem; margin-top: 0.15rem;
+            overflow-wrap: anywhere;
+        }
         .ri-empty, .ri-empty-small { background: #f4f4f4; border: 1px solid #c6c6c6; padding: 1.1rem; margin-top: 0.75rem; }
         .ri-flow { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.7rem 0 1rem 0; }
         .ri-flow span { background: #edf5ff; border: 1px solid #78a9ff; color: #001d6c; padding: 0.45rem 0.65rem; font-size: 0.82rem; }
@@ -1533,14 +1885,29 @@ def _inject_risk_inventory_css() -> None:
         .ri-tone-teal { border-top-color: #009d9a; }
         .ri-tone-red { border-top-color: #da1e28; }
         .ri-tone-yellow { border-top-color: #f1c21b; }
-        .ri-risk-card, .ri-control-card, .ri-detail-panel, .ri-compact-risk, .ri-bu-card, .ri-kri-card, .ri-rootcause {
+        .ri-risk-card, .ri-control-card, .ri-detail-panel, .ri-compact-risk, .ri-bu-card, .ri-kri-card {
             background: #ffffff; border: 1px solid #c6c6c6; padding: 0.9rem; margin: 0.55rem 0;
         }
         .ri-risk-card { border-left: 4px solid #0f62fe; }
+        .ri-risk-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 0.35rem; }
+        .ri-risk-kicker { color: #525252; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; }
         .ri-risk-title { font-weight: 700; margin-bottom: 0.25rem; font-size: 1.05rem; }
+        .ri-risk-category { color: #161616; font-weight: 700; text-align: right; max-width: 48%; }
         .ri-risk-tax { margin-bottom: 0.4rem; }
-        .ri-risk-desc { color: #393939; margin-bottom: 0.65rem; }
-        .ri-statement { font-size: 1.0rem; color: #161616; padding: 0.75rem; background: #f4f4f4; border-left: 4px solid #0f62fe; margin-bottom: 0.5rem; }
+        .ri-control-card { border-left: 4px solid #009d9a; }
+        .ri-control-card p { color: #393939; margin: 0.5rem 0 0.65rem 0; line-height: 1.45; }
+        .ri-control-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+        .ri-control-id {
+            display: inline-block; background: #e0e0e0; color: #161616; padding: 0.12rem 0.35rem;
+            margin-right: 0.35rem; font-size: 0.74rem; font-weight: 700;
+        }
+        .ri-control-type {
+            color: #525252; font-size: 0.78rem; font-weight: 700; text-align: right; max-width: 36%;
+            overflow-wrap: anywhere;
+        }
+        .ri-exec-strip { margin-bottom: 0.75rem; }
+        .ri-statement { font-size: 1.02rem; color: #161616; padding: 0.9rem; background: #f4f4f4; border-left: 4px solid #0f62fe; margin-bottom: 0.5rem; line-height: 1.48; }
+        .ri-deferred-note { background: #fff1c7; border-left: 4px solid #f1c21b; color: #3d3100; padding: 0.7rem 0.85rem; margin: 0.75rem 0; font-size: 0.9rem; }
         .ri-badge, .ri-chip { display: inline-block; padding: 0.22rem 0.48rem; margin: 0.12rem 0.18rem 0.12rem 0; font-size: 0.76rem; font-weight: 700; border-radius: 2px; }
         .ri-chip { background: #f4f4f4; border: 1px solid #c6c6c6; color: #393939; font-weight: 600; }
         .ri-low { background: #defbe6; color: #044317; }
@@ -1556,6 +1923,12 @@ def _inject_risk_inventory_css() -> None:
         .ri-fact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 0.75rem; }
         .ri-fact-grid div { background: #f4f4f4; border: 1px solid #e0e0e0; padding: 0.65rem; }
         div[data-testid="stDataFrame"] { border: 1px solid #c6c6c6; }
+        div[data-testid="stDataFrame"] [role="columnheader"],
+        div[data-testid="stDataFrame"] [role="gridcell"] {
+            white-space: normal !important;
+            line-height: 1.28 !important;
+            align-items: center !important;
+        }
 
         .ri-bu-card { border-left: 4px solid #0f62fe; padding: 1rem; }
         .ri-bu-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
@@ -1563,16 +1936,6 @@ def _inject_risk_inventory_css() -> None:
         .ri-bu-meta { display: grid; grid-template-columns: auto auto; gap: 0.15rem 0.85rem; font-size: 0.85rem; min-width: 240px; text-align: right; }
         .ri-bu-meta span { color: #525252; }
         .ri-bu-summary { margin-top: 0.5rem; color: #393939; }
-
-        .ri-rootcause { padding: 0.6rem 0.75rem; }
-        .ri-rootcause-cause { font-weight: 700; }
-        .ri-rootcause-meta { margin: 0.25rem 0; }
-        .ri-rootcause-desc { font-size: 0.85rem; color: #525252; }
-        .ri-rootcause.ri-blue { border-left: 4px solid #0f62fe; }
-        .ri-rootcause.ri-teal { border-left: 4px solid #009d9a; }
-        .ri-rootcause.ri-medium { border-left: 4px solid #f1c21b; }
-        .ri-rootcause.ri-high { border-left: 4px solid #ff832b; }
-        .ri-rootcause.ri-neutral { border-left: 4px solid #8d8d8d; }
 
         .ri-kri-intro { background: #f4f4f4; border-left: 4px solid #0f62fe; padding: 0.75rem 1rem; margin-bottom: 0.75rem; color: #393939; }
         .ri-kri-card { border-left: 4px solid #0f62fe; padding: 1rem; }
@@ -1588,6 +1951,15 @@ def _inject_risk_inventory_css() -> None:
         .ri-kri-threshold span { display: block; font-size: 0.74rem; text-transform: uppercase; font-weight: 700; }
         .ri-kri-threshold b { display: block; font-size: 0.92rem; margin-top: 0.2rem; }
         .ri-kri-narrative { margin: 0.4rem 0; color: #393939; }
+        @media (max-width: 900px) {
+            .ri-scope-lens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .ri-risk-header, .ri-control-head, .ri-kri-header, .ri-bu-header {
+                display: block;
+            }
+            .ri-risk-category, .ri-control-type, .ri-kri-meta, .ri-bu-meta {
+                max-width: none; text-align: left; margin-top: 0.35rem;
+            }
+        }
         </style>
         """,
         unsafe_allow_html=True,

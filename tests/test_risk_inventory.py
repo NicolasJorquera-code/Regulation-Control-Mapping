@@ -14,7 +14,7 @@ from controlnexus.risk_inventory.calculators import (
     ResidualRiskCalculator,
 )
 from controlnexus.risk_inventory.config import MatrixConfigLoader
-from controlnexus.risk_inventory.demo import load_demo_risk_inventory
+from controlnexus.risk_inventory.demo import load_demo_risk_inventory, load_demo_workspace
 from controlnexus.risk_inventory.document_ingest import analyze_process_document
 from controlnexus.risk_inventory.export import export_risk_inventory_to_excel, risk_inventory_excel_bytes
 from controlnexus.risk_inventory.graph import build_risk_inventory_graph
@@ -235,6 +235,37 @@ class TestRiskInventoryDemoAndGraph:
         assert report["run_id"] == "TEST-RI-001"
         assert len(report["records"]) == 3
         assert report["records"][0]["inherent_risk"]["inherent_label"]
+
+
+class TestRiskInventoryControlMappingUiHelpers:
+    def test_workspace_control_mapping_rows_filter_by_business_unit(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        all_rows = risk_inventory_tab._workspace_control_mapping_rows(workspace)
+        payment_ops = next(bu for bu in workspace.business_units if bu.bu_name == "Payment Operations")
+        payment_rows = risk_inventory_tab._workspace_control_mapping_rows(workspace, payment_ops.bu_id)
+
+        assert len(all_rows) == sum(len(run.records) for run in workspace.runs)
+        assert payment_rows
+        assert len(payment_rows) < len(all_rows)
+        assert {row["Business Unit"] for row in payment_rows} == {"Payment Operations"}
+        assert all(row["Enterprise Risk Category"] for row in payment_rows)
+        assert all(isinstance(row["Mapped Controls"], int) for row in payment_rows)
+
+    def test_workspace_control_mapping_matrix_summarizes_bu_and_risk_category(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        rows = risk_inventory_tab._workspace_control_mapping_rows(workspace)
+        matrix = risk_inventory_tab._workspace_control_mapping_matrix_rows(rows)
+        category_rows = risk_inventory_tab._workspace_control_mapping_category_rows(rows)
+
+        assert len(matrix) == len({row["Business Unit"] for row in rows})
+        assert all(row["Risk Records"] > 0 for row in matrix)
+        assert all("Mapped Controls" in row for row in matrix)
+        assert any(row["Enterprise Risk Category"] == "Operational" for row in category_rows)
+        assert sum(row["Risk Records"] for row in category_rows) == len(rows)
 
 
 class TestRiskInventoryExcelExport:

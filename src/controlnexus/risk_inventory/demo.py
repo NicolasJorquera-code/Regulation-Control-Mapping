@@ -220,7 +220,10 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
                 evidence_refs=evidence_references,
             ),
             risk_statement=RiskStatement(
-                risk_description=spec.get("risk_description") or _risk_description(node, context),
+                risk_description=_with_root_cause_verbiage(
+                    spec.get("risk_description") or _risk_description(node, context),
+                    spec.get("causes") or node.typical_root_causes[:3],
+                ),
                 risk_event=spec.get("risk_event")
                 or (node.example_risk_statements[0] if node.example_risk_statements else _risk_description(node, context)),
                 causes=spec.get("causes") or node.typical_root_causes[:3],
@@ -323,6 +326,17 @@ def _risk_description(node: Any, context: ProcessContext) -> str:
         f"{node.level_2_category} in {context.process_name} may result in {node.definition[0].lower()}"
         f"{node.definition[1:] if len(node.definition) > 1 else ''}"
     )
+
+
+def _with_root_cause_verbiage(description: str, causes: list[str]) -> str:
+    """Keep root-cause context in the statement while the detailed UI is deferred."""
+    clean_description = description.strip()
+    if not causes:
+        return clean_description
+    cause_text = "; ".join(causes[:3])
+    if cause_text.lower() in clean_description.lower():
+        return clean_description
+    return f"{clean_description} Root-cause lens: {cause_text}."
 
 
 def _build_exposure_metrics(spec: dict[str, Any], node: Any, idx: int) -> list[ExposureMetric]:
