@@ -1,0 +1,458 @@
+version: 1.2.0
+issues:
+- issue_id: ISS-PAYEXC-001
+  title: Payment Exception Handling Business Process Execution Issue 01
+  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Medium
+  status: In Remediation
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-001
+  risk_id: RISK-PAYEXC-001
+  age_days: 10
+  source: Generic issue register
+- issue_id: ISS-PAYEXC-002
+  title: Payment Exception Handling Data Quality And Reconciliation Issue 02
+  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: High
+  status: Open
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-002
+  risk_id: RISK-PAYEXC-002
+  age_days: 13
+  source: Generic issue register
+- issue_id: ISS-PAYEXC-003
+  title: Payment Exception Handling Cybersecurity And Privileged Access Issue 03
+  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Medium
+  status: In Remediation
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-003
+  risk_id: RISK-PAYEXC-003
+  age_days: 16
+  source: Generic issue register
+- issue_id: ISS-PAYEXC-004
+  title: Payment Exception Handling Operational Resiliency Issue 04
+  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Low
+  status: Closed
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-004
+  risk_id: RISK-PAYEXC-004
+  age_days: 19
+  source: Generic issue register
+- issue_id: ISS-PAYREC-001
+  title: End-of-Day Wire Reconciliation Data Quality And Reconciliation Issue 01
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: High
+  status: Open
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-001
+  risk_id: RISK-PAYREC-001
+  age_days: 22
+  source: Generic issue register
+- issue_id: ISS-PAYREC-002
+  title: End-of-Day Wire Reconciliation Business Process Execution Issue 02
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Medium
+  status: Closed
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-002
+  risk_id: RISK-PAYREC-002
+  age_days: 25
+  source: Generic issue register
+- issue_id: ISS-PAYREC-003
+  title: End-of-Day Wire Reconciliation Internal Fraud And Override Issue 03
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Low
+  status: In Remediation
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-003
+  risk_id: RISK-PAYREC-003
+  age_days: 28
+  source: Generic issue register
+- issue_id: ISS-PAYREC-004
+  title: End-of-Day Wire Reconciliation Regulatory Reporting And Escalation Issue 04
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Medium
+  status: Closed
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-004
+  risk_id: RISK-PAYREC-004
+  age_days: 31
+  source: Generic issue register
+- issue_id: ISS-CUSTONB-001
+  title: Retail Customer Onboarding (CIP / KYC) Regulatory Compliance Issue 01
+  description: Generic open finding for Retail Customer Onboarding (CIP / KYC) requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: High
+  status: Open
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-001
+  risk_id: RISK-CUSTONB-001
+  age_days: 34
+  source: Generic issue register
+- issue_id: ISS-CUSTONB-002
+  title: Retail Customer Onboarding (CIP / KYC) External Fraud Issue 02
+  description: Generic open finding for Retail Customer Onboarding (CIP / KYC) requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-002
+  risk_id: RISK-CUSTONB-002
+  age_days: 37
+  source: Generic issue register
+- issue_id: ISS-CUSTONB-003
+  title: Retail Customer Onboarding (CIP / KYC) Privacy And Confidential Data Issue 03
+  description: Generic open finding for Retail Customer Onboarding (CIP / KYC) requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: In Remediation
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-003
+  risk_id: RISK-CUSTONB-003
+  age_days: 40
+  source: Generic issue register
+- issue_id: ISS-CUSTONB-004
+  title: Retail Customer Onboarding (CIP / KYC) Cybersecurity And Privileged Access Issue 04
+  description: Generic open finding for Retail Customer Onboarding (CIP / KYC) requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: High
+  status: Open
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-004
+  risk_id: RISK-CUSTONB-004
+  age_days: 43
+  source: Generic issue register
+- issue_id: ISS-DISP-001
+  title: Retail Deposit Dispute Intake and Resolution Regulatory Compliance Issue 01
+  description: Generic open finding for Retail Deposit Dispute Intake and Resolution requiring owner remediation, evidence
+    refresh, or threshold automation.
+  severity: Medium
+  status: In Remediation
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-001
+  risk_id: RISK-DISP-001
+  age_days: 46
+  source: Generic issue register
+- issue_id: ISS-DISP-002
+  title: Retail Deposit Dispute Intake and Resolution Business Process Execution Issue 02
+  description: Generic open finding for Retail Deposit Dispute Intake and Resolution requiring owner remediation, evidence
+    refresh, or threshold automation.
+  severity: Low
+  status: Closed
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-002
+  risk_id: RISK-DISP-002
+  age_days: 49
+  source: Generic issue register
+- issue_id: ISS-DISP-003
+  title: Retail Deposit Dispute Intake and Resolution Litigation And Dispute Issue 03
+  description: Generic open finding for Retail Deposit Dispute Intake and Resolution requiring owner remediation, evidence
+    refresh, or threshold automation.
+  severity: High
+  status: Open
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-003
+  risk_id: RISK-DISP-003
+  age_days: 52
+  source: Generic issue register
+- issue_id: ISS-DISP-004
+  title: Retail Deposit Dispute Intake and Resolution Regulatory Reporting And Escalation Issue 04
+  description: Generic open finding for Retail Deposit Dispute Intake and Resolution requiring owner remediation, evidence
+    refresh, or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-004
+  risk_id: RISK-DISP-004
+  age_days: 55
+  source: Generic issue register
+- issue_id: ISS-CLUW-001
+  title: Commercial Loan Underwriting & Risk Rating Model Performance Issue 01
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Low
+  status: In Remediation
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-001
+  risk_id: RISK-CLUW-001
+  age_days: 58
+  source: Generic issue register
+- issue_id: ISS-CLUW-002
+  title: Commercial Loan Underwriting & Risk Rating Business Process Execution Issue 02
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-002
+  risk_id: RISK-CLUW-002
+  age_days: 61
+  source: Generic issue register
+- issue_id: ISS-CLUW-003
+  title: Commercial Loan Underwriting & Risk Rating Contract And Documentation Issue 03
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: High
+  status: Open
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-003
+  risk_id: RISK-CLUW-003
+  age_days: 64
+  source: Generic issue register
+- issue_id: ISS-CLUW-004
+  title: Commercial Loan Underwriting & Risk Rating Data Quality And Reconciliation Issue 04
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-004
+  risk_id: RISK-CLUW-004
+  age_days: 67
+  source: Generic issue register
+- issue_id: ISS-COVMON-001
+  title: Commercial Covenant Monitoring Business Process Execution Issue 01
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Medium
+  status: In Remediation
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-001
+  risk_id: RISK-COVMON-001
+  age_days: 70
+  source: Generic issue register
+- issue_id: ISS-COVMON-002
+  title: Commercial Covenant Monitoring Data Quality And Reconciliation Issue 02
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: High
+  status: Open
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-002
+  risk_id: RISK-COVMON-002
+  age_days: 73
+  source: Generic issue register
+- issue_id: ISS-COVMON-003
+  title: Commercial Covenant Monitoring Regulatory Compliance Issue 03
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Medium
+  status: In Remediation
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-003
+  risk_id: RISK-COVMON-003
+  age_days: 76
+  source: Generic issue register
+- issue_id: ISS-COVMON-004
+  title: Commercial Covenant Monitoring Regulatory Reporting And Escalation Issue 04
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
+    automation.
+  severity: Low
+  status: Closed
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-004
+  risk_id: RISK-COVMON-004
+  age_days: 79
+  source: Generic issue register
+- issue_id: ISS-LIQ-001
+  title: Liquidity Stress Monitoring and Escalation Operational Resiliency Issue 01
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: High
+  status: Open
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-001
+  risk_id: RISK-LIQ-001
+  age_days: 82
+  source: Generic issue register
+- issue_id: ISS-LIQ-002
+  title: Liquidity Stress Monitoring and Escalation Data Quality And Reconciliation Issue 02
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-002
+  risk_id: RISK-LIQ-002
+  age_days: 85
+  source: Generic issue register
+- issue_id: ISS-LIQ-003
+  title: Liquidity Stress Monitoring and Escalation Regulatory Reporting And Escalation Issue 03
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Low
+  status: In Remediation
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-003
+  risk_id: RISK-LIQ-003
+  age_days: 88
+  source: Generic issue register
+- issue_id: ISS-LIQ-004
+  title: Liquidity Stress Monitoring and Escalation Business Process Execution Issue 04
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-004
+  risk_id: RISK-LIQ-004
+  age_days: 91
+  source: Generic issue register
+- issue_id: ISS-SECSET-001
+  title: Securities Trade Settlement and Collateral Operations Business Process Execution Issue 01
+  description: Generic open finding for Securities Trade Settlement and Collateral Operations requiring owner remediation,
+    evidence refresh, or threshold automation.
+  severity: High
+  status: Open
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-001
+  risk_id: RISK-SECSET-001
+  age_days: 94
+  source: Generic issue register
+- issue_id: ISS-SECSET-002
+  title: Securities Trade Settlement and Collateral Operations Data Quality And Reconciliation Issue 02
+  description: Generic open finding for Securities Trade Settlement and Collateral Operations requiring owner remediation,
+    evidence refresh, or threshold automation.
+  severity: Medium
+  status: Closed
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-002
+  risk_id: RISK-SECSET-002
+  age_days: 97
+  source: Generic issue register
+- issue_id: ISS-SECSET-003
+  title: Securities Trade Settlement and Collateral Operations Third-Party Performance Issue 03
+  description: Generic open finding for Securities Trade Settlement and Collateral Operations requiring owner remediation,
+    evidence refresh, or threshold automation.
+  severity: Medium
+  status: In Remediation
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-003
+  risk_id: RISK-SECSET-003
+  age_days: 100
+  source: Generic issue register
+- issue_id: ISS-SECSET-004
+  title: Securities Trade Settlement and Collateral Operations Technology Operations Issue 04
+  description: Generic open finding for Securities Trade Settlement and Collateral Operations requiring owner remediation,
+    evidence refresh, or threshold automation.
+  severity: High
+  status: Open
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-004
+  risk_id: RISK-SECSET-004
+  age_days: 103
+  source: Generic issue register
+- issue_id: ISS-ACCESS-001
+  title: Privileged Access Recertification Cybersecurity And Privileged Access Issue 01
+  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh, or
+    threshold automation.
+  severity: Medium
+  status: In Remediation
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-001
+  risk_id: RISK-ACCESS-001
+  age_days: 106
+  source: Generic issue register
+- issue_id: ISS-ACCESS-002
+  title: Privileged Access Recertification Technology Operations Issue 02
+  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh, or
+    threshold automation.
+  severity: Low
+  status: Closed
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-002
+  risk_id: RISK-ACCESS-002
+  age_days: 109
+  source: Generic issue register
+- issue_id: ISS-ACCESS-003
+  title: Privileged Access Recertification Project And Change Management Issue 03
+  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh, or
+    threshold automation.
+  severity: High
+  status: Open
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-003
+  risk_id: RISK-ACCESS-003
+  age_days: 112
+  source: Generic issue register
+- issue_id: ISS-VULN-001
+  title: Critical Vulnerability Remediation Cybersecurity And Privileged Access Issue 01
+  description: Generic open finding for Critical Vulnerability Remediation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: In Remediation
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-001
+  risk_id: RISK-VULN-001
+  age_days: 115
+  source: Generic issue register
+- issue_id: ISS-VULN-002
+  title: Critical Vulnerability Remediation Cybersecurity And Privileged Access Issue 02
+  description: Generic open finding for Critical Vulnerability Remediation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Critical
+  status: Open
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-002
+  risk_id: RISK-VULN-002
+  age_days: 118
+  source: Generic issue register
+- issue_id: ISS-VULN-003
+  title: Critical Vulnerability Remediation Technology Operations Issue 03
+  description: Generic open finding for Critical Vulnerability Remediation requiring owner remediation, evidence refresh,
+    or threshold automation.
+  severity: Medium
+  status: In Remediation
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-003
+  risk_id: RISK-VULN-003
+  age_days: 121
+  source: Generic issue register

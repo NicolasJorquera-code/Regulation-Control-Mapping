@@ -1,926 +1,1106 @@
 version: 1.2.0
 risk_appetite_framework:
-  statement: The bank maintains low tolerance for operational losses, customer-impacting payment delays, and unauthorized access to high-value payment systems. Residual risk above Medium requires an executive-approved
-    remediation plan; residual risk above High requires CRO escalation within 5 business days.
-  effective_date: '2026-01-01'
-  approver: Board Risk Committee
+  statement: Payment Operations maintains documented tolerance thresholds for Payment Exception Handling; residual High or
+    Critical requires owner action and independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
   category_thresholds:
     operational: Medium
-    compliance: Low
     cyber: Low
-    financial: Medium
-    third_party: Medium
-    resiliency: Medium
+    regulatory: Low
+    talent: Medium
   escalation_rules:
-  - 'Residual at threshold: monthly monitoring by 1LOD with quarterly 2LOD review.'
-  - 'Residual above threshold: executive-approved remediation plan with quarterly progress review.'
-  - 'Residual two or more bands above threshold: CRO escalation within 5 business days.'
+  - Residual above tolerance requires named action plan.
+  - Critical residual requires executive notification within one business day.
 scenario:
-  run_id: DEMO-RI-PAYEX-001
-  tenant_id: demo-bank
+  run_id: DEMO-RI-PAYEXC-001
+  tenant_id: generic-demo
   process_id: PROC-PAY-EXCEPTION
   process_name: Payment Exception Handling
-  product: High-value payment processing
+  product: Investigation and resolution of failed
   business_unit: Payment Operations
-  description: Daily operations process for identifying, investigating, approving, resolving, reconciling, escalating, and reporting high-value payment exceptions across wire and same-day payment channels.
-    The process handles customer-impacting exceptions, aged breaks, vendor-supported message repair, privileged workflow access, and potential incident notification triggers.
+  description: Investigation and resolution of failed, returned, held, duplicate, or amended payment instructions across wire
+    and ACH channels.
   systems:
-  - Payment Exception Workflow
-  - Wire Transfer Platform
-  - Core Banking Ledger
-  - Identity and Access Management
-  - Incident Management Portal
-  - Vendor SLA Portal
+  - Payment Workflow Platform
+  - Wire Transfer Gateway
+  - ACH Operations Platform
+  - Sanctions Screening Platform
+  - General Ledger Reconciliation Platform
   stakeholders:
   - Payment Operations Manager
-  - Exception Analyst
-  - Treasury Operations
-  - Compliance Officer
-  - Information Security
-  - Technology Owner
-  - Vendor Manager
-  - Operational Risk Reviewer
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
 controls:
-- control_id: CTRL-PAY-001
-  control_name: Daily exception queue review
+- control_id: CTL-PAYEXC-001
+  control_name: Payment Exception Handling Business Process Execution Control
   control_type: Exception Reporting
   owner: Payment Operations Manager
   frequency: Daily
-  description: Exception analysts review open payment exceptions at the start and end of each business day, document investigation status, assign ownership, and escalate customer-impacting or aged items.
-  design_rating: Satisfactory
-  operating_rating: Satisfactory
-  design_rationale: The control has defined queue ownership, documented aging thresholds, and escalation paths for customer-impacting and high-value items.
-  operating_rationale: Three months of queue review evidence shows daily analyst review, supervisor sampling, and documented escalation for aged exceptions.
-  design_criteria_results:
-    mapped_to_root_cause: true
-    formalized: true
-    sufficient_frequency: true
-    preventive_or_detective_fit: true
-  operating_criteria_results:
-    operated_consistently: true
-    evidence_available: true
-    management_review: true
-  risk_mitigations:
-    RIB-BPR: Daily queue review mitigates aging exceptions and unclear ownership by forcing same-day assignment, status updates, and escalation when service-level thresholds are at risk.
-    RIB-DM: Queue review identifies missing cause codes, incomplete disposition notes, and unresolved reconciliation references before exceptions are closed.
-    RIB-RR: Daily review surfaces customer-impacting or threshold-sensitive events that may require incident escalation or management reporting.
-  coverage_by_risk:
-    RIB-BPR: strong
-    RIB-DM: partial
-    RIB-RR: partial
-  open_issues:
-  - issue_id: IS-PAY-002
-    description: Two prior-quarter days lacked end-of-day supervisor sign-off on the queue review log.
-    severity: Low
-    age_days: 18
-    owner: Payment Operations Manager
-    status: Open
-  evidence_quality:
-    rating: Strong
-    last_tested: '2026-02-15'
-    sample_size: 60
-    exceptions_noted: 2
-    notes: Three months of daily queue review logs sampled; supervisor sign-off complete on 58 of 60 days.
-- control_id: CTRL-PAY-002
-  control_name: Dual approval for high-value exception resolution
-  control_type: Authorization
-  owner: Treasury Operations
-  frequency: Per high-value exception
-  description: High-value payment exceptions require independent operations manager approval before release, reversal, repair, or closure. The approver must be different from the preparer.
-  design_rating: Strong
-  operating_rating: Satisfactory
-  design_rationale: The control is preventive, requires maker-checker segregation, and blocks release or closure until an independent approver records a decision.
-  operating_rationale: Sample evidence supports independent approval, with two late approvals noted but no same-user prepare/approve exceptions.
-  risk_mitigations:
-    RIB-BPR: Dual approval reduces the chance that high-value exceptions are resolved incorrectly, prematurely closed, or released without independent judgment.
-    RIB-IFR: Preparer and approver segregation constrains override abuse for high-value payment exceptions.
-  coverage_by_risk:
-    RIB-BPR: strong
-  open_issues:
-  - issue_id: IS-PAY-008
-    description: Two high-value exceptions approved 12 and 17 minutes after the SLA-defined approval window during quarter-end peak volume.
-    severity: Medium
-    age_days: 26
-    owner: Treasury Operations
-    status: In Remediation
-  evidence_quality:
-    rating: Adequate
-    last_tested: '2026-02-28'
-    sample_size: 40
-    exceptions_noted: 2
-    notes: Independent maker-checker confirmed for 40 of 40 sampled approvals; timing exceptions tracked separately.
-- control_id: CTRL-PAY-003
-  control_name: Privileged payment queue entitlement review
-  control_type: System and Application Restrictions
-  owner: Technology Owner
-  frequency: Monthly for privileged users, quarterly for business users
-  description: Payment queue entitlements are reviewed by the application owner and business manager. Privileged users, emergency access, and segregation conflicts are tracked to closure.
-  design_rating: Satisfactory
+  description: Payment Operations Manager performs a documented exception reporting control for Payment Exception Handling
+    to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Improvement Needed
   operating_rating: Improvement Needed
-  design_rationale: The entitlement review covers privileged and business-user access, but reviewer instructions do not yet require explicit evidence of segregation analysis.
-  operating_rationale: The most recent monthly review found seven aged access exceptions and two incomplete manager attestations.
-  evidence_gaps:
-  - Obtain closure evidence for aged privileged-access exceptions.
-  - Add explicit segregation-of-duties review evidence to the monthly package.
-  operating_criteria_results:
-    operated_consistently: false
-    evidence_available: true
-    open_issues_considered: true
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
   risk_mitigations:
-    RIB-CYB: Entitlement review mitigates excessive access and unauthorized workflow changes by forcing management challenge of privileged users, emergency access, and segregation conflicts.
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
   coverage_by_risk:
-    RIB-CYB: partial
+    RIB-BPR: partial
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
   open_issues:
-  - issue_id: IS-PAY-014
-    description: Seven aged privileged-access exceptions remain open beyond the 30-day closure target with no remediation evidence attached.
+  - issue_id: ISS-PAYEXC-001
+    description: Payment Exception Handling control evidence requires remediation for business process execution monitoring.
     severity: High
-    age_days: 42
-    owner: Technology Owner
-    status: Open
-  - issue_id: IS-PAY-019
-    description: Two business-line manager attestations for monthly entitlement review submitted without segregation-of-duties analysis.
-    severity: Medium
-    age_days: 21
-    owner: CISO Office
-    status: Open
-  - issue_id: IS-PAY-022
-    description: Emergency-access usage during prior-quarter outage was not recertified within the 5-day post-event window.
-    severity: Medium
-    age_days: 35
-    owner: Information Security
+    age_days: 20
+    owner: Payment Operations Manager
     status: In Remediation
   evidence_quality:
-    rating: Limited
-    last_tested: '2026-02-05'
-    sample_size: 18
-    exceptions_noted: 9
-    notes: Reviewer instructions do not yet require explicit segregation analysis; closure evidence missing for aged items.
-- control_id: CTRL-PAY-004
-  control_name: Payment exception reconciliation
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 46
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-002
+  control_name: Payment Exception Handling Data Quality And Reconciliation Control
   control_type: Reconciliation
   owner: Payment Operations Manager
   frequency: Daily
-  description: Daily reconciliation compares exception workflow disposition, wire transfer platform status, and ledger settlement records. Unmatched breaks require aging, root cause, and closure evidence.
-  design_rating: Strong
+  description: Payment Operations Manager performs a documented reconciliation control for Payment Exception Handling to identify,
+    evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Satisfactory
   operating_rating: Satisfactory
-  design_rationale: The reconciliation uses three independent sources, requires break aging, and ties closure to documented root cause and ledger disposition.
-  operating_rationale: Daily reconciliation evidence is complete for the prior quarter, with one aged break escalated according to procedure.
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
   risk_mitigations:
-    RIB-DM: Three-way reconciliation mitigates inaccurate or incomplete exception data by comparing workflow disposition to transaction and ledger records before closure.
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
   coverage_by_risk:
     RIB-DM: strong
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 47
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-003
+  control_name: Payment Exception Handling Cybersecurity And Privileged Access Control
+  control_type: System and Application Restrictions
+  owner: Payment Operations Manager
+  frequency: Daily
+  description: Payment Operations Manager performs a documented system and application restrictions control for Payment Exception
+    Handling to identify, evidence, escalate, and resolve cybersecurity and privileged access exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the cybersecurity and privileged access root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
+  risk_mitigations:
+    RIB-CYB: Mitigates cybersecurity and privileged access through owner review, exception capture, evidence retention, and
+      escalation.
+  coverage_by_risk:
+    RIB-CYB: partial
+  mapped_root_causes_per_risk:
+    RIB-CYB:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
   open_issues:
-  - issue_id: IS-PAY-026
-    description: One aged ledger-to-workflow reconciliation break ($2.1M) escalated per procedure but remained open 11 days pending vendor confirmation.
-    severity: Medium
-    age_days: 11
+  - issue_id: ISS-PAYEXC-003
+    description: Payment Exception Handling control evidence requires remediation for cybersecurity and privileged access
+      monitoring.
+    severity: High
+    age_days: 32
     owner: Payment Operations Manager
     status: In Remediation
   evidence_quality:
-    rating: Strong
-    last_tested: '2026-03-01'
-    sample_size: 90
-    exceptions_noted: 1
-    notes: Daily three-way reconciliation evidence complete for 89 of 90 sampled days; aged break escalated and tracked.
-- control_id: CTRL-PAY-005
-  control_name: SLA breach and volume monitoring
-  control_type: Exception Reporting
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 48
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-004
+  control_name: Payment Exception Handling Operational Resiliency Control
+  control_type: Business Continuity Planning and Awareness
   owner: Payment Operations Manager
-  frequency: Daily dashboard, weekly management review
-  description: Workflow reporting highlights SLA breaches, aged items, repeat exceptions, and volume spikes for management review and escalation.
+  frequency: Daily
+  description: Payment Operations Manager performs a documented business continuity planning and awareness control for Payment
+    Exception Handling to identify, evidence, escalate, and resolve operational resiliency exposure.
   design_rating: Satisfactory
   operating_rating: Satisfactory
-  design_rationale: The dashboard covers aging, volume, breach thresholds, and high-value queues with weekly management review.
-  operating_rationale: Dashboard evidence shows daily refreshes and weekly review notes, though vendor SLA data arrives one day after internal queue metrics.
+  design_rationale: The control design is aligned to the operational resiliency root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
   risk_mitigations:
-    RIB-BPR: SLA monitoring identifies aged items and capacity stress before unresolved exceptions create customer or settlement impact.
-    RIB-TPR: The dashboard tracks vendor message repair timeliness and flags external support delays for vendor manager review.
+    RIB-ORS: Mitigates operational resiliency through owner review, exception capture, evidence retention, and escalation.
   coverage_by_risk:
-    RIB-BPR: partial
-    RIB-TPR: partial
-  open_issues:
-  - issue_id: IS-PAY-031
-    description: Vendor SLA data lags internal queue metrics by one business day, delaying weekly third-party performance review.
-    severity: Medium
-    age_days: 30
-    owner: Vendor Manager
-    status: Open
+    RIB-ORS: strong
+  mapped_root_causes_per_risk:
+    RIB-ORS:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
   evidence_quality:
     rating: Adequate
-    last_tested: '2026-02-20'
-    sample_size: 13
-    exceptions_noted: 1
-    notes: Weekly management review notes complete; vendor SLA data ingested with 1-day lag on 11 of 13 weeks.
-- control_id: CTRL-PAY-006
-  control_name: Incident escalation and reportability triage
-  control_type: Risk Escalation Processes
-  owner: Compliance Officer
-  frequency: Per threshold event
-  description: Potential reportable incidents are escalated to Compliance and Operational Risk through the incident portal, with triage documented against customer impact, outage duration, dollar exposure,
-    and notification thresholds.
-  design_rating: Satisfactory
-  operating_rating: Improvement Needed
-  design_rationale: The escalation procedure defines threshold factors and routes potential incidents to Compliance and Operational Risk.
-  operating_rationale: Two prior-quarter events were escalated after the internal target because the initial queue review did not identify potential reportability.
-  evidence_gaps:
-  - Retain Compliance triage memo for potential reportable payment incidents.
-  - Confirm timer start for customer-impacting exceptions.
-  operating_criteria_results:
-    operated_consistently: false
-    evidence_available: true
-    timely_escalation: false
+    last_tested: '2026-04-30'
+    sample_size: 49
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-005
+  control_name: Payment Exception Handling Third-Party Performance Control
+  control_type: Third Party Due Diligence
+  owner: Payment Operations Manager
+  frequency: Daily
+  description: Payment Operations Manager performs a documented third party due diligence control for Payment Exception Handling
+    to identify, evidence, escalate, and resolve third-party performance exposure.
+  design_rating: Strong
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the third-party performance root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
   risk_mitigations:
-    RIB-RR: Incident triage mitigates missed or late reporting by requiring Compliance review of threshold-sensitive payment exceptions.
-    RIB-ORS: Escalation routes operational disruptions to incident management when payment exception handling may exceed tolerance.
+    RIB-TPR: Mitigates third-party performance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-TPR: strong
+  mapped_root_causes_per_risk:
+    RIB-TPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 50
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-006
+  control_name: Payment Exception Handling Regulatory Reporting And Escalation Control
+  control_type: Risk Escalation Processes
+  owner: Payment Operations Manager
+  frequency: Daily
+  description: Payment Operations Manager performs a documented risk escalation processes control for Payment Exception Handling
+    to identify, evidence, escalate, and resolve regulatory reporting and escalation exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the regulatory reporting and escalation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
+  risk_mitigations:
+    RIB-RR: Mitigates regulatory reporting and escalation through owner review, exception capture, evidence retention, and
+      escalation.
   coverage_by_risk:
     RIB-RR: partial
-    RIB-ORS: partial
+  mapped_root_causes_per_risk:
+    RIB-RR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
   open_issues:
-  - issue_id: IS-PAY-027
-    description: Two prior-quarter customer-impacting exceptions escalated to Compliance after the internal 4-hour reportability triage target.
+  - issue_id: ISS-PAYEXC-006
+    description: Payment Exception Handling control evidence requires remediation for regulatory reporting and escalation
+      monitoring.
     severity: High
-    age_days: 48
-    owner: Compliance Officer
-    status: Open
-  - issue_id: IS-PAY-029
-    description: Reportability timer start point is ambiguous when an exception is initially classified as routine and later reclassified as customer-impacting.
-    severity: Medium
-    age_days: 31
-    owner: Compliance Officer
+    age_days: 50
+    owner: Payment Operations Manager
     status: In Remediation
   evidence_quality:
-    rating: Limited
-    last_tested: '2026-02-10'
-    sample_size: 8
-    exceptions_noted: 3
-    notes: Compliance triage memo missing for 3 of 8 reviewed events; timer-start documentation requires clarification.
-- control_id: CTRL-PAY-007
-  control_name: Payment exception continuity exercise
-  control_type: Business Continuity Planning and Awareness
-  owner: Business Continuity Lead
-  frequency: Annual exercise with semiannual tabletop refresh
-  description: Payment Operations tests manual exception handling, alternate-site operations, key-person coverage, and vendor communication during workflow or site disruption.
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 51
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-007
+  control_name: Payment Exception Handling Internal Fraud And Override Control
+  control_type: Segregation of Duties
+  owner: Payment Operations Manager
+  frequency: Daily
+  description: Payment Operations Manager performs a documented segregation of duties control for Payment Exception Handling
+    to identify, evidence, escalate, and resolve internal fraud and override exposure.
   design_rating: Satisfactory
   operating_rating: Satisfactory
-  design_rationale: The exercise covers system outage, site disruption, manual queue handling, and vendor communication procedures.
-  operating_rationale: The latest exercise met the four-hour recovery objective but identified a manual capacity constraint for peak-volume days.
+  design_rationale: The control design is aligned to the internal fraud and override root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
   risk_mitigations:
-    RIB-ORS: Continuity exercise mitigates operational disruption by validating manual processing capacity, alternate-site readiness, and recovery communication paths.
+    RIB-IFR: Mitigates internal fraud and override through owner review, exception capture, evidence retention, and escalation.
   coverage_by_risk:
-    RIB-ORS: partial
-  open_issues:
-  - issue_id: IS-PAY-035
-    description: Latest exercise demonstrated 125 exceptions/day manual capacity vs. peak-volume requirement of 180 exceptions/day; gap not closed.
-    severity: High
-    age_days: 95
-    owner: Business Continuity Lead
-    status: Open
+    RIB-IFR: strong
+  mapped_root_causes_per_risk:
+    RIB-IFR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
   evidence_quality:
     rating: Adequate
-    last_tested: '2025-11-12'
-    sample_size: 1
-    exceptions_noted: 1
-    notes: Annual exercise after-action report complete; semiannual tabletop refresh scheduled for 2026-Q2.
+    last_tested: '2026-04-30'
+    sample_size: 52
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-008
+  control_name: Payment Exception Handling Data Quality And Reconciliation Control
+  control_type: Reconciliation
+  owner: Payment Operations Manager
+  frequency: Daily
+  description: Payment Operations Manager performs a documented reconciliation control for Payment Exception Handling to identify,
+    evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
+  risk_mitigations:
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-DM: partial
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-PAYEXC-008
+    description: Payment Exception Handling control evidence requires remediation for data quality and reconciliation monitoring.
+    severity: High
+    age_days: 62
+    owner: Payment Operations Manager
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 53
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-PAYEXC-009
+  control_name: Payment Exception Handling Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Payment Operations Manager
+  frequency: Daily
+  description: Payment Operations Manager performs a documented exception reporting control for Payment Exception Handling
+    to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Payment
+    Exception Handling.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 54
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
 risks:
 - taxonomy_node_id: RIB-BPR
-  risk_id: RI-DEMO-001
-  risk_description: Payment exceptions may not be assigned, investigated, approved, or resolved within required timeframes, causing delayed high-value payments, incorrect closure, customer harm, or downstream
-    rework.
-  risk_event: A customer-impacting high-value wire exception remains unresolved beyond the same-day escalation threshold because ownership and approval steps are not completed on time.
-  applicability_rationale: Business Process Risk materializes because the process relies on daily human review, aged queue management, independent approval, and timely escalation for 45 exceptions per business
-    day.
-  confidence: 0.91
+  risk_id: RISK-PAYEXC-001
+  risk_description: Business Process Execution risk in Payment Exception Handling may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating model.
+  risk_event: Payment Exception Handling experiences a business process execution event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Payment Exception Handling is a critical process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
   causes:
-  - manual workflow
-  - aging exceptions
-  - unclear ownership
-  - capacity constraints during volume spikes
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
   consequences:
-  - late or incorrect payment release
-  - customer or correspondent bank impact
-  - operational loss, fee reimbursement, or rework
-  - management escalation for SLA breaches
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
   impact_scores:
     financial_impact: 3
     regulatory_impact: 2
     reputational_impact: 3
   impact_rationales:
-    financial_impact: Average daily exception value is $18.5M, so incorrect or delayed resolution could create meaningful loss, reimbursement, or settlement exposure.
-    regulatory_impact: Regulatory impact is moderate because most exceptions are operational, but customer-impacting high-value delays can trigger escalation expectations.
-    reputational_impact: Repeated high-value payment delays can affect treasury clients and correspondent relationships.
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
   overall_impact_score: 3
-  overall_impact_rationale: Overall impact is Significant because customer, financial, and reputational dimensions are all meaningful for high-value payment exception delays.
-  likelihood_score: 3
-  likelihood_rating: Medium High
-  likelihood_rationale: Likelihood is Medium High because the queue operates daily, carries 45 exceptions per business day, and had a 6.4% aged exception breach rate in the prior quarter.
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
   assumptions:
-  - Daily volumes are based on the prior-quarter workflow dashboard.
-  - High-value customer-impacting exceptions require same-day escalation.
-  exposure_metrics:
-  - metric_name: open exception count
-    metric_value: '45'
-    metric_unit: exceptions per business day
-    description: Average daily open exception inflow observed in the workflow dashboard.
-    source: Payment Exception Workflow dashboard, prior quarter
-    supports:
-    - likelihood
-    - impact
-  - metric_name: aged exception volume
-    metric_value: '17'
-    metric_unit: items over SLA at quarter-end
-    description: Open exceptions older than the defined same-day or next-day service level.
-    source: SLA breach dashboard
-    supports:
-    - likelihood
-  - metric_name: SLA breach rate
-    metric_value: 6.4%
-    metric_unit: prior-quarter exceptions
-    description: Share of payment exceptions that exceeded the documented resolution service level.
-    source: Weekly management review deck
-    supports:
-    - likelihood
-  - metric_name: high-value exception dollars
-    metric_value: $18.5M
-    metric_unit: average daily exception value
-    description: Average aggregate value of high-value payment exceptions requiring investigation.
-    source: Wire Transfer Platform and Core Banking Ledger
-    supports:
-    - impact
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
   mapped_controls:
-  - CTRL-PAY-001
-  - CTRL-PAY-002
-  - CTRL-PAY-005
-  recommended_action: Continue weekly review of aged exceptions and require same-day supervisor sign-off when high-value customer-impacting items approach SLA breach.
-  risk_appetite:
-    threshold: Medium
-    statement: Tolerate up to 5% quarterly SLA breach rate on payment exceptions; zero tolerance for unresolved customer-impacting high-value items beyond same-day escalation window.
-    status: at_threshold
-    category: Operational
-  coverage_gaps:
-  - Peak-volume staffing capacity not explicitly addressed by current controls.
-  - Correspondent bank-specific SLA differentials not codified in queue review procedure.
-  action_plan:
-  - action: Implement SLA-aware staffing model with surge capacity for quarter-end peak volume.
-    owner: Head of Payment Operations
-    due_date: 2026-Q3
-    status: In Progress
-    priority: High
-  - action: Codify correspondent bank SLA differentials in queue review procedure and dashboard thresholds.
-    owner: Payment Operations Manager
-    due_date: 2026-Q2
-    status: Planned
-    priority: Medium
-  - action: Add automated supervisor escalation alert at 75% of SLA window for high-value items.
-    owner: Technology Owner
-    due_date: 2026-Q3
-    status: Planned
-    priority: Medium
-  review:
-    reviewer: Payment Operations Manager
-    review_status: Approved
-    approval_status: Approved
-    challenge_comments: Confirm whether the SLA threshold differs for correspondent bank exceptions and whether peak-volume staffing assumptions remain valid. Approved with action plan tracking peak-volume
-      capacity item.
-    challenged_fields:
-    - applicability
-    - likelihood_score
-    - control_mapping
-    ai_original_value: 'Likelihood: Medium (score 3)'
-    reviewer_adjusted_value: 'Likelihood: Medium-High (score 3) — retained but flagged for re-assessment after Q2 staffing review'
-    reviewer_rationale: AI rating reasonable given current SLA breach trend; flagging for re-assessment if Q2 peak-volume staffing model is not implemented on schedule.
+  - CTL-PAYEXC-001
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 19
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 1.15
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
   evidence_references:
-  - evidence_id: PAYEX-EVID-001
-    evidence_type: Workflow dashboard
-    description: Prior-quarter queue volume, aging, and SLA breach report.
-    source: Payment Exception Workflow dashboard export
-- taxonomy_node_id: RIB-DM
-  risk_id: RI-DEMO-002
-  risk_description: Payment exception data may be inaccurate, incomplete, or unreconciled across workflow, wire platform, and ledger records, causing incorrect disposition, reporting errors, or delayed
-    settlement correction.
-  risk_event: An exception is closed in the workflow while the wire platform and ledger retain an unmatched break or missing root-cause data.
-  applicability_rationale: Data Management Risk materializes because exception closure depends on accurate status, cause codes, approver data, and reconciliation across three systems.
-  confidence: 0.88
-  causes:
-  - interface breaks
-  - manual data entry
-  - unreconciled data
-  - missing required fields
-  consequences:
-  - incorrect exception closure
-  - unresolved ledger or settlement break
-  - inaccurate management or incident reporting
-  - additional manual repair work
-  impact_scores:
-    financial_impact: 3
-    regulatory_impact: 3
-    reputational_impact: 2
-  impact_rationales:
-    financial_impact: Reconciliation breaks can affect high-value wires and require payment repair or reimbursement.
-    regulatory_impact: Incomplete data can impair incident triage, audit trails, and regulatory inquiry response.
-    reputational_impact: Reputational impact is lower than customer and financial impact unless data errors recur or affect external clients.
-  overall_impact_score: 3
-  overall_impact_rationale: Overall impact is Significant because inaccurate exception and reconciliation data can drive incorrect operational decisions and customer-impacting outcomes.
-  likelihood_score: 3
-  likelihood_rating: Medium High
-  likelihood_rationale: Likelihood is Medium High because reconciliation occurs daily, 11 breaks were open at month-end, and 3.8% of reviewed exceptions missed a required cause or approver field.
-  assumptions:
-  - Ledger and workflow reconciliation is performed daily.
-  - Required field completeness is measured from quality assurance sampling.
-  exposure_metrics:
-  - metric_name: reconciliation breaks
-    metric_value: '11'
-    metric_unit: open breaks at month-end
-    description: Open workflow-to-ledger or workflow-to-wire-platform differences.
-    source: Daily payment exception reconciliation log
-    supports:
-    - likelihood
-    - impact
-  - metric_name: missing required fields
-    metric_value: 3.8%
-    metric_unit: sampled exceptions
-    description: Exceptions missing required root cause, approver, or disposition fields.
-    source: Quality assurance sample
-    supports:
-    - likelihood
-  - metric_name: data quality exceptions
-    metric_value: '29'
-    metric_unit: message repairs per month
-    description: Average monthly payment messages requiring data repair before resolution.
-    source: Wire Transfer Platform repair queue
-    supports:
-    - likelihood
-  mapped_controls:
-  - CTRL-PAY-004
-  - CTRL-PAY-001
-  recommended_action: Add monthly quality assurance sampling for required exception fields and track repeat data defects by upstream message source.
+  - evidence_id: EV-PAYEXC-001
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting business process execution assessment.
+    source: Generic source pack
   risk_appetite:
-    threshold: Medium
-    statement: Tolerate up to 5% missing-field rate on sampled exceptions; zero tolerance for unreconciled high-value ledger breaks beyond 5 business days.
-    status: within
-    category: Operational
-  coverage_gaps:
-  - Upstream message source defect tracking not yet covered by mapped controls.
-  action_plan:
-  - action: Establish monthly data quality sampling with root-cause analysis by upstream message source.
-    owner: Operations Data Steward
-    due_date: 2026-Q2
-    status: Planned
-    priority: Medium
-  - action: Implement automated required-field validation at workflow closure to block premature disposition.
-    owner: Technology Owner
-    due_date: 2026-Q3
-    status: Planned
-    priority: Medium
-  review:
-    reviewer: Operations Data Steward
-    review_status: Approved
-    approval_status: Approved
-    challenge_comments: Validate whether upstream message repair data is complete enough to support this likelihood rating. Approved; sampling plan addresses residual concern.
-    challenged_fields:
-    - impact_scores
-    - exposure_metrics
-    - control_mapping
-    ai_original_value: 'Reputational impact: 3'
-    reviewer_adjusted_value: 'Reputational impact: 2'
-    reviewer_rationale: Adjusted down because data errors are typically operational and not externally visible unless they affect customer payment delivery.
-  evidence_references:
-  - evidence_id: PAYEX-EVID-002
-    evidence_type: Reconciliation log
-    description: Daily workflow-to-ledger reconciliation and aged break detail.
-    source: Payment Operations reconciliation workbook
-- taxonomy_node_id: RIB-CYB
-  risk_id: RI-DEMO-003
-  risk_description: Unauthorized or excessive access to payment exception queues may allow users to view sensitive payment details, alter exception status, or bypass payment repair controls.
-  risk_event: A privileged workflow user retains access after role change and modifies exception status or payment repair details without appropriate business approval.
-  applicability_rationale: Cybersecurity Risk materializes because the process uses privileged workflow roles, sensitive payment data, emergency access, and workflow status changes that can affect transaction
-    disposition.
-  confidence: 0.89
-  causes:
-  - excessive entitlement
-  - credential compromise
-  - weak segregation monitoring
-  - delayed access removal
-  consequences:
-  - unauthorized payment queue changes
-  - customer or confidential data exposure
-  - fraud, operational loss, or audit issue
-  - regulatory or information security escalation
-  impact_scores:
-    financial_impact: 4
-    regulatory_impact: 3
-    reputational_impact: 4
-  impact_rationales:
-    financial_impact: Privileged access can affect high-value payment disposition and repair activity, creating severe loss potential in a plausible misuse scenario.
-    regulatory_impact: Unauthorized access to payment data can trigger information security, privacy, and supervisory concerns.
-    reputational_impact: Access misuse affecting payment queues would be visible to business clients and control stakeholders.
-  overall_impact_score: 4
-  overall_impact_rationale: Overall impact is Severe because privileged payment queue access can affect high-value transaction integrity, sensitive data, and client trust.
-  likelihood_score: 3
-  likelihood_rating: Medium High
-  likelihood_rationale: Likelihood is Medium High because privileged access reviews occur monthly but the most recent review found seven aged exceptions, two incomplete attestations, and recurring emergency-access
-    use.
-  assumptions:
-  - Privileged access exceptions are unresolved until closure evidence is attached.
-  - Emergency-access use remains active for payment support during outage windows.
-  exposure_metrics:
-  - metric_name: privileged user count
-    metric_value: '18'
-    metric_unit: privileged workflow users
-    description: Users with administrative or elevated payment queue permissions.
-    source: Identity and Access Management entitlement extract
-    supports:
-    - impact
-    - likelihood
-  - metric_name: access review exceptions
-    metric_value: '7'
-    metric_unit: open items over 30 days
-    description: Aged access exceptions pending closure evidence after manager review.
-    source: Monthly entitlement review
-    supports:
-    - likelihood
-  - metric_name: security incidents
-    metric_value: '2'
-    metric_unit: access alerts in the prior quarter
-    description: Payment queue access alerts escalated to Information Security for review.
-    source: Security monitoring queue
-    supports:
-    - likelihood
-  mapped_controls:
-  - CTRL-PAY-003
-  recommended_action: Accelerate closure of aged privileged-access exceptions, require segregation review evidence, and add Information Security sign-off for emergency-access recertification.
-  risk_appetite:
-    threshold: Low
-    statement: Zero tolerance for unauthorized payment queue changes or privileged access exceptions remaining open beyond the 30-day closure target. Aged privileged exceptions and incomplete attestations
-      require CRO escalation.
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Payment Exception Handling.
     status: outside
-    category: Cyber
-  coverage_gaps:
-  - Single-control coverage — no compensating monitoring control for real-time privileged access changes.
-  - Emergency-access usage post-event recertification not enforced by technical control.
-  - Segregation-of-duties analysis is not yet a required reviewer artifact.
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Payment Exception Handling.
   action_plan:
-  - action: Close 7 aged privileged-access exceptions and produce remediation evidence for each.
-    owner: Technology Owner
-    due_date: '2026-05-31'
+  - action: Close evidence and control gaps for business process execution in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-07-31'
     status: In Progress
-    priority: Critical
-  - action: Implement automated SoD conflict detection in IAM and require resolution before entitlement approval.
-    owner: CISO Office
-    due_date: 2026-Q3
-    status: Planned
     priority: High
-  - action: Increase privileged-access review frequency from monthly to bi-weekly for payment queue administrators.
-    owner: Information Security
-    due_date: 2026-Q2
-    status: Planned
-    priority: High
-  - action: Add real-time alerting for emergency-access activation outside approved change windows.
-    owner: CISO Office
-    due_date: 2026-Q3
-    status: Planned
-    priority: High
+  coverage_gaps:
+  - Business Process Execution needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
   review:
-    reviewer: Information Security
-    review_status: Challenged
-    approval_status: Pending
-    challenge_comments: Challenge whether monthly privileged access review is frequent and complete enough for payment queue administrators. Residual rating elevated to High pending action plan progress;
-      CRO notification triggered per appetite framework.
+    review_status: Reviewed and adjusted
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
     challenged_fields:
     - likelihood_score
-    - control_operating_effectiveness
-    - recommended_action
-    ai_original_value: 'Residual rating: Medium-22; Operating effectiveness: Improvement Needed'
-    reviewer_adjusted_value: 'Residual rating: High-36; Operating effectiveness: Improvement Needed (confirmed); CRO escalation required'
-    reviewer_rationale: Reviewer override raised residual rating from Medium to High based on (1) seven aged privileged exceptions exceeding 30-day target, (2) absence of compensating real-time monitoring
-      control, and (3) emergency-access recertification gap. Aligned with appetite framework requiring CRO escalation when residual is two or more bands above the Low threshold.
-  evidence_references:
-  - evidence_id: PAYEX-EVID-003
-    evidence_type: Entitlement review
-    description: Monthly privileged-user review showing aged exceptions and incomplete attestations.
-    source: Identity and Access Management certification package
-- taxonomy_node_id: RIB-RR
-  risk_id: RI-DEMO-004
-  risk_description: Reportable payment incidents or management reporting events may be identified, escalated, classified, or reported late because threshold evaluation is incomplete or exception data is
-    not routed to Compliance in time.
-  risk_event: A customer-impacting exception with potential notification implications is not escalated to Compliance until after the internal reportability triage target.
-  applicability_rationale: Regulatory Reporting Risk materializes because exception events can involve customer impact, outage duration, dollar exposure, and notification thresholds that require timely
-    Compliance triage.
-  confidence: 0.85
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-PAYEXC-002
+  risk_description: Data Quality And Reconciliation risk in Payment Exception Handling may not be captured, evidenced, or
+    escalated within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating
+    model.
+  risk_event: Payment Exception Handling experiences a data quality and reconciliation event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Payment Exception Handling is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
   causes:
-  - missed escalation
-  - manual reporting
-  - late incident classification
-  - incomplete threshold data
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
   consequences:
-  - late incident notification analysis
-  - inaccurate management reporting
-  - regulatory challenge or remediation
-  - delayed customer-impact response
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
   impact_scores:
     financial_impact: 2
-    regulatory_impact: 4
-    reputational_impact: 3
-  impact_rationales:
-    financial_impact: Financial exposure is moderate because reporting failures primarily drive remediation and potential penalties rather than direct payment loss.
-    regulatory_impact: Regulatory impact is severe when reportability triage or notification timing is missed.
-    reputational_impact: Late or corrected incident reporting can reduce confidence from regulators and executive stakeholders.
-  overall_impact_score: 4
-  overall_impact_rationale: Overall impact is Severe because the regulatory dimension drives the risk when incident or threshold-sensitive payment events are escalated late.
-  likelihood_score: 2
-  likelihood_rating: Medium Low
-  likelihood_rationale: Likelihood is Medium Low because threshold events are less frequent than daily operational exceptions, but two prior-quarter events missed the internal escalation target.
-  assumptions:
-  - Compliance triage is required for threshold-sensitive payment exceptions.
-  - Incident portal timestamps are the system of record for escalation timeliness.
-  exposure_metrics:
-  - metric_name: reporting SLA breaches
-    metric_value: '3'
-    metric_unit: triage breaches in the prior quarter
-    description: Potential incident reviews not completed within the internal reportability triage target.
-    source: Incident Management Portal
-    supports:
-    - likelihood
-  - metric_name: late incident escalations
-    metric_value: '2'
-    metric_unit: customer-impacting events
-    description: Events escalated to Compliance after the expected timer start.
-    source: Compliance incident triage log
-    supports:
-    - likelihood
-    - impact
-  - metric_name: report corrections
-    metric_value: '4'
-    metric_unit: management report reclassifications
-    description: Prior-quarter payment exception items reclassified after management report issuance.
-    source: Weekly operational risk report
-    supports:
-    - impact
-  mapped_controls:
-  - CTRL-PAY-006
-  - CTRL-PAY-001
-  recommended_action: Clarify reportability timer start, add Compliance triage checklist fields to the exception workflow, and require same-day escalation for customer-impacting threshold events.
-  risk_appetite:
-    threshold: Low
-    statement: Zero tolerance for late incident notification to regulators. All customer-impacting threshold events must reach Compliance triage within 4 hours of identification.
-    status: outside
-    category: Compliance
-  coverage_gaps:
-  - Reportability timer-start logic is process-dependent rather than system-enforced.
-  - Compliance triage checklist not yet integrated into exception workflow.
-  action_plan:
-  - action: Define and document reportability timer-start rules covering reclassification scenarios.
-    owner: Compliance Officer
-    due_date: 2026-Q2
-    status: In Progress
-    priority: High
-  - action: Embed Compliance triage checklist fields directly in the exception workflow with mandatory completion.
-    owner: Technology Owner
-    due_date: 2026-Q3
-    status: Planned
-    priority: High
-  - action: Conduct quarterly tabletop exercise on reportability triage with Operational Risk and Compliance.
-    owner: Operational Risk Reviewer
-    due_date: 2026-Q2
-    status: Planned
-    priority: Medium
-  review:
-    reviewer: Compliance Officer
-    review_status: Pending Review
-    approval_status: Pending
-    challenge_comments: Review reportability thresholds with Compliance before final approval. Recommend escalating to ERC if Q2 timer-start clarification is delayed.
-    challenged_fields:
-    - impact_scores
-    - likelihood_score
-    - management_response
-    ai_original_value: 'Management response: Monitor'
-    reviewer_adjusted_value: 'Management response: Mitigate (active remediation required)'
-    reviewer_rationale: Upgraded from Monitor to Mitigate because residual is outside Compliance appetite (Low threshold) and two prior-quarter late escalations indicate a pattern, not isolated events.
-  evidence_references:
-  - evidence_id: PAYEX-EVID-004
-    evidence_type: Incident triage log
-    description: Prior-quarter reportability triage timestamps and late escalation detail.
-    source: Incident Management Portal
-- taxonomy_node_id: RIB-ORS
-  risk_id: RI-DEMO-005
-  risk_description: Payment exception handling may not continue within tolerance during workflow outage, staffing disruption, site disruption, or third-party service interruption, delaying high-value payment
-    resolution.
-  risk_event: A workflow outage forces manual exception handling during peak volume and the manual process cannot clear customer-impacting high-value exceptions within the four-hour recovery target.
-  applicability_rationale: Operational Resiliency Risk materializes because the process is time-sensitive, system-dependent, vendor-supported, and subject to defined recovery expectations.
-  confidence: 0.84
-  causes:
-  - single points of failure
-  - manual recovery gaps
-  - untested peak-volume workarounds
-  - vendor communication delay
-  consequences:
-  - delayed high-value payment repair
-  - customer and treasury operations impact
-  - breach of recovery tolerance
-  - incident management escalation
-  impact_scores:
-    financial_impact: 3
     regulatory_impact: 2
-    reputational_impact: 3
+    reputational_impact: 2
   impact_rationales:
-    financial_impact: Manual recovery delays can create loss, fee reimbursement, or compensation exposure for high-value clients.
-    regulatory_impact: Regulatory impact is moderate unless disruption triggers reportability or recurring resilience weaknesses.
-    reputational_impact: Sustained payment repair delays can reduce client and executive confidence.
-  overall_impact_score: 4
-  overall_impact_rationale: Overall impact is Severe because customer and liquidity dimensions can be severe during a payment workflow outage or capacity disruption.
-  likelihood_score: 2
-  likelihood_rating: Medium Low
-  likelihood_rationale: Likelihood is Medium Low because major disruptions are not daily, but the latest exercise found manual capacity limits against peak-volume assumptions.
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
   assumptions:
-  - The payment exception workflow is the primary queue of record.
-  - Manual processing capacity is based on the latest continuity exercise.
-  exposure_metrics:
-  - metric_name: RTO
-    metric_value: '4'
-    metric_unit: hours
-    description: Target recovery time objective for payment exception operations.
-    source: Business continuity plan
-    supports:
-    - impact
-  - metric_name: RPO
-    metric_value: '15'
-    metric_unit: minutes
-    description: Target data recovery point for workflow transaction status.
-    source: Technology disaster recovery standard
-    supports:
-    - impact
-  - metric_name: manual backlog capacity
-    metric_value: '125'
-    metric_unit: exceptions per day
-    description: Maximum manual processing capacity demonstrated in the latest exercise.
-    source: Continuity exercise after-action report
-    supports:
-    - likelihood
-    - impact
-  - metric_name: critical system availability
-    metric_value: 99.72%
-    metric_unit: prior-quarter availability
-    description: Payment Exception Workflow availability in the prior quarter.
-    source: Technology service dashboard
-    supports:
-    - likelihood
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
   mapped_controls:
-  - CTRL-PAY-007
-  - CTRL-PAY-006
-  recommended_action: Increase manual processing surge capacity, document vendor contact procedures, and retest peak-volume exception handling within the recovery objective.
+  - CTL-PAYEXC-002
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 26
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 1.5
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-PAYEXC-002
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting data quality and reconciliation assessment.
+    source: Generic source pack
   risk_appetite:
-    threshold: Medium
-    statement: Tolerate brief workflow disruptions within RTO of 4 hours and RPO of 15 minutes; zero tolerance for missed RTO on customer-impacting high-value payments.
-    status: at_threshold
-    category: Resiliency
-  coverage_gaps:
-  - Manual processing surge capacity (125/day) below peak-volume requirement (180/day) — capacity gap of 55 exceptions/day.
-  - Vendor communication procedures during disruption rely on manual contact, not documented runbook.
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Payment Exception Handling.
+    status: within
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Payment Exception Handling.
   action_plan:
-  - action: Cross-train 4 additional staff to lift manual processing capacity from 125 to 200 exceptions/day.
-    owner: Head of Payment Operations
-    due_date: 2026-Q3
-    status: In Progress
-    priority: High
-  - action: Document vendor disruption-communication runbook with escalation contacts and notification timelines.
-    owner: Vendor Manager
-    due_date: 2026-Q2
+  - action: Close evidence and control gaps for data quality and reconciliation in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-09-30'
     status: Planned
     priority: Medium
-  - action: Retest peak-volume exception handling in semiannual tabletop and validate new capacity.
-    owner: Business Continuity Lead
-    due_date: 2026-Q3
-    status: Planned
-    priority: High
+  coverage_gaps: []
   review:
-    reviewer: Business Continuity Lead
     review_status: Pending Review
-    approval_status: Pending
-    challenge_comments: Confirm whether manual workarounds have capacity for peak payment volume. Pending approval until cross-training plan is funded and dated.
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
     challenged_fields:
-    - impact_scores
     - likelihood_score
     - control_mapping
-    ai_original_value: 'Likelihood: Low (score 2)'
-    reviewer_adjusted_value: 'Likelihood: Medium-Low (score 2) — retained with explicit caveat on peak-volume capacity gap'
-    reviewer_rationale: Retained likelihood at 2 because availability is 99.72% and exercise demonstrated recovery, but flagged the 55 exceptions/day capacity gap as material to the residual rating until
-      cross-training is complete.
-  evidence_references:
-  - evidence_id: PAYEX-EVID-005
-    evidence_type: Continuity exercise
-    description: Annual exercise results, manual processing capacity, and recovery objective evidence.
-    source: Business continuity after-action report
-- taxonomy_node_id: RIB-TPR
-  risk_id: RI-DEMO-006
-  risk_description: Third-party payment service providers may fail to meet message repair, incident notification, security, or continuity obligations, delaying exception resolution or weakening evidence
-    for vendor oversight.
-  risk_event: A payment message repair vendor misses SLA commitments during a processing issue and does not provide timely incident or root-cause information to Payment Operations.
-  applicability_rationale: Third Party Risk materializes because external providers support payment routing, message repair, SLA reporting, and continuity communication for the exception process.
-  confidence: 0.82
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-CYB
+  risk_id: RISK-PAYEXC-003
+  risk_description: Cybersecurity And Privileged Access risk in Payment Exception Handling may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating
+    model.
+  risk_event: Payment Exception Handling experiences a cybersecurity and privileged access event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Cybersecurity And Privileged Access is applicable because Payment Exception Handling is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
   causes:
-  - outsourced processing
-  - vendor system dependency
-  - weak SLA monitoring
-  - delayed incident notification
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
   consequences:
-  - late payment repair or resolution
-  - incomplete vendor oversight evidence
-  - customer or correspondent bank impact
-  - third-party risk escalation
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
   impact_scores:
     financial_impact: 3
     regulatory_impact: 3
     reputational_impact: 3
   impact_rationales:
-    financial_impact: Vendor failure can delay or misroute high-value repair activity and create reimbursement or operational loss exposure.
-    regulatory_impact: Vendor incident and continuity failures can create oversight and notification concerns.
-    reputational_impact: Service-provider issues are visible to treasury clients when payment repair is delayed.
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to cybersecurity
+      and privileged access.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when cybersecurity and
+      privileged access is outside tolerance.
   overall_impact_score: 3
-  overall_impact_rationale: Overall impact is Significant because vendor performance can affect payment repair timing, customer outcomes, and oversight evidence.
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for cybersecurity and privileged access.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-PAYEXC-003
+  exposure_metrics:
+  - metric_name: Cybersecurity And Privileged Access exposure count
+    metric_value: 33
+    metric_unit: items
+    description: Current-period exposure count for cybersecurity and privileged access.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Cybersecurity And Privileged Access breach rate
+    metric_value: 1.85
+    metric_unit: '%'
+    description: Trailing breach rate for cybersecurity and privileged access thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-PAYEXC-003
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting cybersecurity and privileged access assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Cybersecurity And Privileged Access should remain within documented tolerance for Payment Exception Handling.
+    status: outside
+    category: Cybersecurity And Privileged Access
+  recommended_action: Close evidence and control gaps for cybersecurity and privileged access in Payment Exception Handling.
+  action_plan:
+  - action: Close evidence and control gaps for cybersecurity and privileged access in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Cybersecurity And Privileged Access needs stronger evidence, threshold automation, or owner challenge before residual
+    risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate cybersecurity and privileged access scoring against source evidence, KRIs, controls, and
+      open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-ORS
+  risk_id: RISK-PAYEXC-004
+  risk_description: Operational Resiliency risk in Payment Exception Handling may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating model.
+  risk_event: Payment Exception Handling experiences a operational resiliency event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Operational Resiliency is applicable because Payment Exception Handling is a critical process with
+    recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to operational
+      resiliency.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when operational resiliency
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for operational resiliency.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-PAYEXC-004
+  exposure_metrics:
+  - metric_name: Operational Resiliency exposure count
+    metric_value: 40
+    metric_unit: items
+    description: Current-period exposure count for operational resiliency.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Operational Resiliency breach rate
+    metric_value: 2.2
+    metric_unit: '%'
+    description: Trailing breach rate for operational resiliency thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-PAYEXC-004
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting operational resiliency assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Operational Resiliency should remain within documented tolerance for Payment Exception Handling.
+    status: within
+    category: Operational Resiliency
+  recommended_action: Close evidence and control gaps for operational resiliency in Payment Exception Handling.
+  action_plan:
+  - action: Close evidence and control gaps for operational resiliency in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate operational resiliency scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-TPR
+  risk_id: RISK-PAYEXC-005
+  risk_description: Third-Party Performance risk in Payment Exception Handling may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating model.
+  risk_event: Payment Exception Handling experiences a third-party performance event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Third-Party Performance is applicable because Payment Exception Handling is a critical process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to third-party
+      performance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when third-party performance
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for third-party performance.
   likelihood_score: 2
   likelihood_rating: Medium Low
-  likelihood_rationale: Likelihood is Medium Low because vendor SLA breach exposure occurred five times last quarter, but the breaches were concentrated in message repair rather than all payment exception
-    activity.
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
   assumptions:
-  - Vendor SLA dashboard covers message repair and exception support activities.
-  - Critical vendor inventory is current for the payment exception process.
-  exposure_metrics:
-  - metric_name: vendor SLA breaches
-    metric_value: '5'
-    metric_unit: message repair misses in the prior quarter
-    description: Third-party support items that missed documented repair or response service levels.
-    source: Vendor SLA Portal
-    supports:
-    - likelihood
-  - metric_name: outsourced transaction volume
-    metric_value: 38%
-    metric_unit: cross-border payment messages
-    description: Share of cross-border payment messages supported by a third-party processor.
-    source: Vendor manager quarterly review
-    supports:
-    - impact
-  - metric_name: critical vendor count
-    metric_value: '2'
-    metric_unit: critical third parties
-    description: Vendors rated critical for payment routing, message repair, or continuity support.
-    source: Third-party risk inventory
-    supports:
-    - impact
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
   mapped_controls:
-  - CTRL-PAY-005
-  recommended_action: Collect vendor SLA evidence, document root-cause review for missed message repair targets, and request current SOC and continuity attestations.
-  risk_appetite:
-    threshold: Medium
-    statement: Tolerate up to 3 vendor SLA breaches per quarter on critical message repair services; zero tolerance for missed vendor incident notification within 24 hours.
-    status: within
-    category: Third Party
-  coverage_gaps:
-  - Single mapped control — no direct vendor oversight or SOC review control in this process.
-  - 'Vendor concentration: 38% of cross-border messages routed through one third-party processor.'
-  action_plan:
-  - action: Obtain current SOC 1 Type 2 and continuity attestations from critical message repair vendor.
-    owner: Vendor Manager
-    due_date: 2026-Q2
-    status: In Progress
-    priority: Medium
-  - action: Initiate vendor diversification assessment for cross-border message repair to reduce concentration.
-    owner: Treasury Risk
-    due_date: 2026-Q4
-    status: Planned
-    priority: Medium
-  - action: Require vendor root-cause analysis report within 5 business days of any missed SLA breach.
-    owner: Vendor Manager
-    due_date: 2026-Q2
-    status: Planned
-    priority: Medium
-  review:
-    reviewer: Vendor Manager
-    review_status: Approved
-    approval_status: Approved
-    challenge_comments: Add vendor-specific evidence once third-party payment processor data is uploaded. Approved at current rating; concentration risk flagged for separate enterprise review.
-    challenged_fields:
-    - exposure_metrics
-    - control_mapping
-    - recommended_action
-    ai_original_value: 'Coverage: Adequate (one mapped control)'
-    reviewer_adjusted_value: 'Coverage: Partial — flagged single-control gap and concentration risk'
-    reviewer_rationale: While the single mapped control is operating, vendor concentration (38% through one provider) and absence of direct SOC review control warrant explicit gap recognition rather than
-      'adequate' coverage.
+  - CTL-PAYEXC-005
+  exposure_metrics:
+  - metric_name: Third-Party Performance exposure count
+    metric_value: 47
+    metric_unit: items
+    description: Current-period exposure count for third-party performance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Third-Party Performance breach rate
+    metric_value: 2.55
+    metric_unit: '%'
+    description: Trailing breach rate for third-party performance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
   evidence_references:
-  - evidence_id: PAYEX-EVID-006
-    evidence_type: Vendor oversight
-    description: Vendor SLA dashboard and quarterly third-party performance review.
-    source: Vendor SLA Portal
+  - evidence_id: EV-PAYEXC-005
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting third-party performance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Third-Party Performance should remain within documented tolerance for Payment Exception Handling.
+    status: within
+    category: Third-Party Performance
+  recommended_action: Close evidence and control gaps for third-party performance in Payment Exception Handling.
+  action_plan:
+  - action: Close evidence and control gaps for third-party performance in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate third-party performance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-RR
+  risk_id: RISK-PAYEXC-006
+  risk_description: Regulatory Reporting And Escalation risk in Payment Exception Handling may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating
+    model.
+  risk_event: Payment Exception Handling experiences a regulatory reporting and escalation event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Regulatory Reporting And Escalation is applicable because Payment Exception Handling is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      reporting and escalation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory reporting
+      and escalation is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory reporting and escalation.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-PAYEXC-006
+  exposure_metrics:
+  - metric_name: Regulatory Reporting And Escalation exposure count
+    metric_value: 54
+    metric_unit: items
+    description: Current-period exposure count for regulatory reporting and escalation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Reporting And Escalation breach rate
+    metric_value: 2.9
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory reporting and escalation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-PAYEXC-006
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting regulatory reporting and escalation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Reporting And Escalation should remain within documented tolerance for Payment Exception Handling.
+    status: outside
+    category: Regulatory Reporting And Escalation
+  recommended_action: Close evidence and control gaps for regulatory reporting and escalation in Payment Exception Handling.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory reporting and escalation in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Regulatory Reporting And Escalation needs stronger evidence, threshold automation, or owner challenge before residual
+    risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate regulatory reporting and escalation scoring against source evidence, KRIs, controls, and
+      open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-IFR
+  risk_id: RISK-PAYEXC-007
+  risk_description: Internal Fraud And Override risk in Payment Exception Handling may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating model.
+  risk_event: Payment Exception Handling experiences a internal fraud and override event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Internal Fraud And Override is applicable because Payment Exception Handling is a critical process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to internal fraud
+      and override.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when internal fraud
+      and override is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for internal fraud and override.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-PAYEXC-007
+  exposure_metrics:
+  - metric_name: Internal Fraud And Override exposure count
+    metric_value: 61
+    metric_unit: items
+    description: Current-period exposure count for internal fraud and override.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Internal Fraud And Override breach rate
+    metric_value: 3.25
+    metric_unit: '%'
+    description: Trailing breach rate for internal fraud and override thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-PAYEXC-007
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting internal fraud and override assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Internal Fraud And Override should remain within documented tolerance for Payment Exception Handling.
+    status: within
+    category: Internal Fraud And Override
+  recommended_action: Close evidence and control gaps for internal fraud and override in Payment Exception Handling.
+  action_plan:
+  - action: Close evidence and control gaps for internal fraud and override in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate internal fraud and override scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-PAYEXC-008
+  risk_description: Data Quality And Reconciliation risk in Payment Exception Handling may not be captured, evidenced, or
+    escalated within tolerance, creating financial, regulatory, or reputational exposure for the Payment Operations operating
+    model.
+  risk_event: Payment Exception Handling experiences a data quality and reconciliation event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Payment Exception Handling is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Payment Operations Manager
+  - Executive Owner, Payment Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring payment exception handling volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily operational, monthly governance review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-PAYEXC-008
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 68
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 3.6
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-PAYEXC-008
+    evidence_type: Source artifact
+    description: Payment Exception Handling evidence supporting data quality and reconciliation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Payment Exception Handling.
+    status: outside
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Payment Exception Handling.
+  action_plan:
+  - action: Close evidence and control gaps for data quality and reconciliation in Payment Exception Handling.
+    owner: Payment Operations Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Data Quality And Reconciliation needs stronger evidence, threshold automation, or owner challenge before residual risk
+    approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Payment Operations Manager
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
 executive_summary:
-  headline: Payment Exception Handling shows one high residual access risk and several medium residual risks tied to escalation, resiliency, and evidence quality.
+  headline: Payment Exception Handling captures 8 risk records across 7 risk subcategories for Payment Operations.
   key_messages:
-  - Six material risk records were generated from a realistic high-value payment exception process, including specific exposure metrics and evidence references.
-  - Privileged payment queue access is the highest residual concern because aged entitlement exceptions weaken an otherwise defined access review.
-  - Regulatory reporting and operational resiliency require business challenge because reportability triage and manual recovery evidence are not yet fully mature.
+  - Payment Operations shows differentiated risk capture based on process evidence and source-pack complexity.
+  - 4 high or critical residual records require visible management action.
+  - Ratings are matrix-calculated from impact, likelihood, and control environment evidence.
   top_residual_risks:
-  - 'IT Security / Cybersecurity Risk: High-36'
-  - 'Regulatory Reporting Risk: Medium-24'
-  - 'Operational Resiliency Risk: Medium-24'
+  - RISK-PAYEXC-001 Business Process Execution
+  - RISK-PAYEXC-003 Cybersecurity And Privileged Access
+  - RISK-PAYEXC-006 Regulatory Reporting And Escalation
+  - RISK-PAYEXC-008 Data Quality And Reconciliation
   recommended_actions:
-  - Close aged privileged-access exceptions and add segregation evidence to monthly entitlement review.
-  - Clarify incident reportability timer starts and add Compliance triage fields to the workflow.
-  - Retest manual exception handling at peak volume and collect vendor SLA and continuity evidence.
+  - Use the Knowledge Base tab to compare BU source packs and risk-type concentrations.
+  - Validate High and Critical residual records through owner challenge and independent review.
+  - Track due dates through the issue and action-plan fields before executive export.

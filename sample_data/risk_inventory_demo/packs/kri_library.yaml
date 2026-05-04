@@ -1,0 +1,989 @@
+version: 1.2.0
+kri_library:
+- kri_id: KRI-GEN-001
+  kri_name: Business Process Execution Threshold Indicator 01
+  risk_taxonomy_id: RIB-BPR
+  metric_definition: Measures current-period movement in business process execution exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for business process execution in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-002
+  kri_name: Data Quality And Reconciliation Threshold Indicator 02
+  risk_taxonomy_id: RIB-DM
+  metric_definition: Measures current-period movement in data quality and reconciliation exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for data quality and reconciliation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-003
+  kri_name: Cybersecurity And Privileged Access Threshold Indicator 03
+  risk_taxonomy_id: RIB-CYB
+  metric_definition: Measures current-period movement in cybersecurity and privileged access exposure against the generic
+    profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for cybersecurity and privileged access in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-004
+  kri_name: Regulatory Compliance Threshold Indicator 04
+  risk_taxonomy_id: RIB-COM
+  metric_definition: Measures current-period movement in regulatory compliance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for regulatory compliance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-005
+  kri_name: Operational Resiliency Threshold Indicator 05
+  risk_taxonomy_id: RIB-ORS
+  metric_definition: Measures current-period movement in operational resiliency exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for operational resiliency in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-006
+  kri_name: Third-Party Performance Threshold Indicator 06
+  risk_taxonomy_id: RIB-TPR
+  metric_definition: Measures current-period movement in third-party performance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for third-party performance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-007
+  kri_name: Technology Operations Threshold Indicator 07
+  risk_taxonomy_id: RIB-IT
+  metric_definition: Measures current-period movement in technology operations exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for technology operations in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-008
+  kri_name: Regulatory Reporting And Escalation Threshold Indicator 08
+  risk_taxonomy_id: RIB-RR
+  metric_definition: Measures current-period movement in regulatory reporting and escalation exposure against the generic
+    profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for regulatory reporting and escalation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-009
+  kri_name: Model Performance Threshold Indicator 09
+  risk_taxonomy_id: RIB-MDL
+  metric_definition: Measures current-period movement in model performance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for model performance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-010
+  kri_name: External Fraud Threshold Indicator 10
+  risk_taxonomy_id: RIB-EFR
+  metric_definition: Measures current-period movement in external fraud exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for external fraud in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-011
+  kri_name: Privacy And Confidential Data Threshold Indicator 11
+  risk_taxonomy_id: RIB-PRI
+  metric_definition: Measures current-period movement in privacy and confidential data exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for privacy and confidential data in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-012
+  kri_name: Project And Change Management Threshold Indicator 12
+  risk_taxonomy_id: RIB-PCM
+  metric_definition: Measures current-period movement in project and change management exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for project and change management in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-013
+  kri_name: Contract And Documentation Threshold Indicator 13
+  risk_taxonomy_id: RIB-CON
+  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for contract and documentation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-014
+  kri_name: Human Capital Capacity Threshold Indicator 14
+  risk_taxonomy_id: RIB-HCM
+  metric_definition: Measures current-period movement in human capital capacity exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for human capital capacity in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-015
+  kri_name: Internal Fraud And Override Threshold Indicator 15
+  risk_taxonomy_id: RIB-IFR
+  metric_definition: Measures current-period movement in internal fraud and override exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for internal fraud and override in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-016
+  kri_name: Litigation And Dispute Threshold Indicator 16
+  risk_taxonomy_id: RIB-LIT
+  metric_definition: Measures current-period movement in litigation and dispute exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for litigation and dispute in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-017
+  kri_name: Employment Practices Threshold Indicator 17
+  risk_taxonomy_id: RIB-EMP
+  metric_definition: Measures current-period movement in employment practices exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for employment practices in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-018
+  kri_name: Business Process Execution Threshold Indicator 18
+  risk_taxonomy_id: RIB-BPR
+  metric_definition: Measures current-period movement in business process execution exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for business process execution in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-019
+  kri_name: Data Quality And Reconciliation Threshold Indicator 19
+  risk_taxonomy_id: RIB-DM
+  metric_definition: Measures current-period movement in data quality and reconciliation exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for data quality and reconciliation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-020
+  kri_name: Cybersecurity And Privileged Access Threshold Indicator 20
+  risk_taxonomy_id: RIB-CYB
+  metric_definition: Measures current-period movement in cybersecurity and privileged access exposure against the generic
+    profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for cybersecurity and privileged access in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-021
+  kri_name: Regulatory Compliance Threshold Indicator 21
+  risk_taxonomy_id: RIB-COM
+  metric_definition: Measures current-period movement in regulatory compliance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for regulatory compliance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-022
+  kri_name: Operational Resiliency Threshold Indicator 22
+  risk_taxonomy_id: RIB-ORS
+  metric_definition: Measures current-period movement in operational resiliency exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for operational resiliency in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-023
+  kri_name: Third-Party Performance Threshold Indicator 23
+  risk_taxonomy_id: RIB-TPR
+  metric_definition: Measures current-period movement in third-party performance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for third-party performance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-024
+  kri_name: Technology Operations Threshold Indicator 24
+  risk_taxonomy_id: RIB-IT
+  metric_definition: Measures current-period movement in technology operations exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for technology operations in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-025
+  kri_name: Regulatory Reporting And Escalation Threshold Indicator 25
+  risk_taxonomy_id: RIB-RR
+  metric_definition: Measures current-period movement in regulatory reporting and escalation exposure against the generic
+    profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for regulatory reporting and escalation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-026
+  kri_name: Model Performance Threshold Indicator 26
+  risk_taxonomy_id: RIB-MDL
+  metric_definition: Measures current-period movement in model performance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for model performance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-027
+  kri_name: External Fraud Threshold Indicator 27
+  risk_taxonomy_id: RIB-EFR
+  metric_definition: Measures current-period movement in external fraud exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for external fraud in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-028
+  kri_name: Privacy And Confidential Data Threshold Indicator 28
+  risk_taxonomy_id: RIB-PRI
+  metric_definition: Measures current-period movement in privacy and confidential data exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for privacy and confidential data in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-029
+  kri_name: Project And Change Management Threshold Indicator 29
+  risk_taxonomy_id: RIB-PCM
+  metric_definition: Measures current-period movement in project and change management exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for project and change management in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-030
+  kri_name: Contract And Documentation Threshold Indicator 30
+  risk_taxonomy_id: RIB-CON
+  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for contract and documentation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-031
+  kri_name: Human Capital Capacity Threshold Indicator 31
+  risk_taxonomy_id: RIB-HCM
+  metric_definition: Measures current-period movement in human capital capacity exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for human capital capacity in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-032
+  kri_name: Internal Fraud And Override Threshold Indicator 32
+  risk_taxonomy_id: RIB-IFR
+  metric_definition: Measures current-period movement in internal fraud and override exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for internal fraud and override in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-033
+  kri_name: Litigation And Dispute Threshold Indicator 33
+  risk_taxonomy_id: RIB-LIT
+  metric_definition: Measures current-period movement in litigation and dispute exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for litigation and dispute in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-034
+  kri_name: Employment Practices Threshold Indicator 34
+  risk_taxonomy_id: RIB-EMP
+  metric_definition: Measures current-period movement in employment practices exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for employment practices in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-035
+  kri_name: Business Process Execution Threshold Indicator 35
+  risk_taxonomy_id: RIB-BPR
+  metric_definition: Measures current-period movement in business process execution exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for business process execution in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-036
+  kri_name: Data Quality And Reconciliation Threshold Indicator 36
+  risk_taxonomy_id: RIB-DM
+  metric_definition: Measures current-period movement in data quality and reconciliation exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for data quality and reconciliation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-037
+  kri_name: Cybersecurity And Privileged Access Threshold Indicator 37
+  risk_taxonomy_id: RIB-CYB
+  metric_definition: Measures current-period movement in cybersecurity and privileged access exposure against the generic
+    profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Daily
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for cybersecurity and privileged access in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-038
+  kri_name: Regulatory Compliance Threshold Indicator 38
+  risk_taxonomy_id: RIB-COM
+  metric_definition: Measures current-period movement in regulatory compliance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for regulatory compliance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-039
+  kri_name: Operational Resiliency Threshold Indicator 39
+  risk_taxonomy_id: RIB-ORS
+  metric_definition: Measures current-period movement in operational resiliency exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for operational resiliency in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-040
+  kri_name: Third-Party Performance Threshold Indicator 40
+  risk_taxonomy_id: RIB-TPR
+  metric_definition: Measures current-period movement in third-party performance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for third-party performance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-041
+  kri_name: Technology Operations Threshold Indicator 41
+  risk_taxonomy_id: RIB-IT
+  metric_definition: Measures current-period movement in technology operations exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for technology operations in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-042
+  kri_name: Regulatory Reporting And Escalation Threshold Indicator 42
+  risk_taxonomy_id: RIB-RR
+  metric_definition: Measures current-period movement in regulatory reporting and escalation exposure against the generic
+    profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for regulatory reporting and escalation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-043
+  kri_name: Model Performance Threshold Indicator 43
+  risk_taxonomy_id: RIB-MDL
+  metric_definition: Measures current-period movement in model performance exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for model performance in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-044
+  kri_name: External Fraud Threshold Indicator 44
+  risk_taxonomy_id: RIB-EFR
+  metric_definition: Measures current-period movement in external fraud exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for external fraud in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-045
+  kri_name: Privacy And Confidential Data Threshold Indicator 45
+  risk_taxonomy_id: RIB-PRI
+  metric_definition: Measures current-period movement in privacy and confidential data exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for privacy and confidential data in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-046
+  kri_name: Project And Change Management Threshold Indicator 46
+  risk_taxonomy_id: RIB-PCM
+  metric_definition: Measures current-period movement in project and change management exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for project and change management in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-047
+  kri_name: Contract And Documentation Threshold Indicator 47
+  risk_taxonomy_id: RIB-CON
+  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for contract and documentation in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-048
+  kri_name: Human Capital Capacity Threshold Indicator 48
+  risk_taxonomy_id: RIB-HCM
+  metric_definition: Measures current-period movement in human capital capacity exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for human capital capacity in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-049
+  kri_name: Internal Fraud And Override Threshold Indicator 49
+  risk_taxonomy_id: RIB-IFR
+  metric_definition: Measures current-period movement in internal fraud and override exposure against the generic profile
+    threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for internal fraud and override in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-050
+  kri_name: Litigation And Dispute Threshold Indicator 50
+  risk_taxonomy_id: RIB-LIT
+  metric_definition: Measures current-period movement in litigation and dispute exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for litigation and dispute in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+- kri_id: KRI-GEN-051
+  kri_name: Employment Practices Threshold Indicator 51
+  risk_taxonomy_id: RIB-EMP
+  metric_definition: Measures current-period movement in employment practices exposure against the generic profile threshold.
+  formula: current exceptions / in-scope population * 100
+  unit: '%'
+  measurement_frequency: Monthly
+  data_source: KRI dashboard source pack
+  owner: Business Unit Risk Owner
+  thresholds:
+    green: <2
+    amber: 2 to 5
+    red: '>5'
+  rationale: Provides a leading indicator for employment practices in the selected knowledge-base archetype.
+  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+  use_cases:
+  - BU scorecard
+  - Executive risk pack
+  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.

@@ -1,0 +1,18 @@
+version: "1.0.0"
+scale:
+  1:
+    label: "Low"
+    definition: "Rare or unlikely based on low exposure, limited transaction volume, or stable process conditions."
+    example_frequency: "Once every 3 or more years"
+  2:
+    label: "Medium Low"
+    definition: "Plausible but not expected; exposure exists with limited historical pattern or infrequent triggering events."
+    example_frequency: "Once every 1 to 3 years"
+  3:
+    label: "Medium High"
+    definition: "Reasonably expected given volume, complexity, manual activity, known issue history, or recurring event drivers."
+    example_frequency: "Once per year"
+  4:
+    label: "High"
+    definition: "Expected, recurring, or already observed based on high exposure, frequent triggers, weak process conditions, or event history."
+    example_frequency: "Once per quarter or more frequent"

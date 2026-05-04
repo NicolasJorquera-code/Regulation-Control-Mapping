@@ -1,0 +1,992 @@
+version: 1.2.0
+risk_appetite_framework:
+  statement: Treasury & Liquidity Operations maintains documented tolerance thresholds for Securities Trade Settlement and
+    Collateral Operations; residual High or Critical requires owner action and independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
+  category_thresholds:
+    operational: Medium
+    cyber: Low
+    regulatory: Low
+    talent: Medium
+  escalation_rules:
+  - Residual above tolerance requires named action plan.
+  - Critical residual requires executive notification within one business day.
+scenario:
+  run_id: DEMO-RI-SECSET-001
+  tenant_id: generic-demo
+  process_id: PROC-SECURITIES-SETTLE
+  process_name: Securities Trade Settlement and Collateral Operations
+  product: Trade capture validation
+  business_unit: Treasury & Liquidity Operations
+  description: Trade capture validation, settlement matching, collateral movement approval, fail management, margin call handling,
+    and post-settlement reconciliation.
+  systems:
+  - Treasury Workstation
+  - Custody Portal
+  - Collateral Management Platform
+  - General Ledger Platform
+  stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+controls:
+- control_id: CTL-SECSET-001
+  control_name: Securities Trade Settlement and Collateral Operations Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented exception reporting control for Securities Trade Settlement
+    and Collateral Operations to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: partial
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-SECSET-001
+    description: Securities Trade Settlement and Collateral Operations control evidence requires remediation for business
+      process execution monitoring.
+    severity: High
+    age_days: 20
+    owner: Securities Operations Lead
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 46
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-002
+  control_name: Securities Trade Settlement and Collateral Operations Data Quality And Reconciliation Control
+  control_type: Reconciliation
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented reconciliation control for Securities Trade Settlement and
+    Collateral Operations to identify, evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-DM: strong
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 47
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-003
+  control_name: Securities Trade Settlement and Collateral Operations Third-Party Performance Control
+  control_type: Third Party Due Diligence
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented third party due diligence control for Securities Trade Settlement
+    and Collateral Operations to identify, evidence, escalate, and resolve third-party performance exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the third-party performance root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-TPR: Mitigates third-party performance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-TPR: partial
+  mapped_root_causes_per_risk:
+    RIB-TPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-SECSET-003
+    description: Securities Trade Settlement and Collateral Operations control evidence requires remediation for third-party
+      performance monitoring.
+    severity: High
+    age_days: 32
+    owner: Securities Operations Lead
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 48
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-004
+  control_name: Securities Trade Settlement and Collateral Operations Technology Operations Control
+  control_type: System Change Management
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented system change management control for Securities Trade Settlement
+    and Collateral Operations to identify, evidence, escalate, and resolve technology operations exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the technology operations root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-IT: Mitigates technology operations through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-IT: strong
+  mapped_root_causes_per_risk:
+    RIB-IT:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 49
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-005
+  control_name: Securities Trade Settlement and Collateral Operations Regulatory Reporting And Escalation Control
+  control_type: Risk Escalation Processes
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented risk escalation processes control for Securities Trade Settlement
+    and Collateral Operations to identify, evidence, escalate, and resolve regulatory reporting and escalation exposure.
+  design_rating: Strong
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the regulatory reporting and escalation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-RR: Mitigates regulatory reporting and escalation through owner review, exception capture, evidence retention, and
+      escalation.
+  coverage_by_risk:
+    RIB-RR: strong
+  mapped_root_causes_per_risk:
+    RIB-RR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 50
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-006
+  control_name: Securities Trade Settlement and Collateral Operations Operational Resiliency Control
+  control_type: Business Continuity Planning and Awareness
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented business continuity planning and awareness control for Securities
+    Trade Settlement and Collateral Operations to identify, evidence, escalate, and resolve operational resiliency exposure.
+  design_rating: Satisfactory
+  operating_rating: Strong
+  design_rationale: The control design is aligned to the operational resiliency root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-ORS: Mitigates operational resiliency through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-ORS: strong
+  mapped_root_causes_per_risk:
+    RIB-ORS:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 51
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-007
+  control_name: Securities Trade Settlement and Collateral Operations Internal Fraud And Override Control
+  control_type: Segregation of Duties
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented segregation of duties control for Securities Trade Settlement
+    and Collateral Operations to identify, evidence, escalate, and resolve internal fraud and override exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the internal fraud and override root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-IFR: Mitigates internal fraud and override through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-IFR: strong
+  mapped_root_causes_per_risk:
+    RIB-IFR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 52
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-SECSET-008
+  control_name: Securities Trade Settlement and Collateral Operations Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Securities Operations Lead
+  frequency: Daily
+  description: Securities Operations Lead performs a documented exception reporting control for Securities Trade Settlement
+    and Collateral Operations to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Securities
+    Trade Settlement and Collateral Operations.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 53
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+risks:
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-SECSET-001
+  risk_description: Business Process Execution risk in Securities Trade Settlement and Collateral Operations may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Treasury &
+    Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a business process execution event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Securities Trade Settlement and Collateral Operations
+    is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-001
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 19
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 1.15
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-001
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Securities Trade Settlement and Collateral
+      Operations.
+    status: outside
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Securities Trade Settlement and Collateral
+    Operations.
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Securities Trade Settlement and Collateral Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Business Process Execution needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-SECSET-002
+  risk_description: Data Quality And Reconciliation risk in Securities Trade Settlement and Collateral Operations may not
+    be captured, evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the
+    Treasury & Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a data quality and reconciliation event that
+    breaches the documented threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Securities Trade Settlement and Collateral
+    Operations is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed
+    evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-002
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 26
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 1.5
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-002
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting data quality and reconciliation
+      assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Securities Trade Settlement and
+      Collateral Operations.
+    status: within
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Securities Trade Settlement and
+    Collateral Operations.
+  action_plan:
+  - action: Close evidence and control gaps for data quality and reconciliation in Securities Trade Settlement and Collateral
+      Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-TPR
+  risk_id: RISK-SECSET-003
+  risk_description: Third-Party Performance risk in Securities Trade Settlement and Collateral Operations may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Treasury &
+    Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a third-party performance event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Third-Party Performance is applicable because Securities Trade Settlement and Collateral Operations
+    is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to third-party
+      performance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when third-party performance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for third-party performance.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-003
+  exposure_metrics:
+  - metric_name: Third-Party Performance exposure count
+    metric_value: 33
+    metric_unit: items
+    description: Current-period exposure count for third-party performance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Third-Party Performance breach rate
+    metric_value: 1.85
+    metric_unit: '%'
+    description: Trailing breach rate for third-party performance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-003
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting third-party performance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Third-Party Performance should remain within documented tolerance for Securities Trade Settlement and Collateral
+      Operations.
+    status: outside
+    category: Third-Party Performance
+  recommended_action: Close evidence and control gaps for third-party performance in Securities Trade Settlement and Collateral
+    Operations.
+  action_plan:
+  - action: Close evidence and control gaps for third-party performance in Securities Trade Settlement and Collateral Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Third-Party Performance needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate third-party performance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-IT
+  risk_id: RISK-SECSET-004
+  risk_description: Technology Operations risk in Securities Trade Settlement and Collateral Operations may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Treasury &
+    Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a technology operations event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Technology Operations is applicable because Securities Trade Settlement and Collateral Operations
+    is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to technology
+      operations.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when technology operations
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for technology operations.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-004
+  exposure_metrics:
+  - metric_name: Technology Operations exposure count
+    metric_value: 40
+    metric_unit: items
+    description: Current-period exposure count for technology operations.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Technology Operations breach rate
+    metric_value: 2.2
+    metric_unit: '%'
+    description: Trailing breach rate for technology operations thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-004
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting technology operations assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Technology Operations should remain within documented tolerance for Securities Trade Settlement and Collateral
+      Operations.
+    status: within
+    category: Technology Operations
+  recommended_action: Close evidence and control gaps for technology operations in Securities Trade Settlement and Collateral
+    Operations.
+  action_plan:
+  - action: Close evidence and control gaps for technology operations in Securities Trade Settlement and Collateral Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate technology operations scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-RR
+  risk_id: RISK-SECSET-005
+  risk_description: Regulatory Reporting And Escalation risk in Securities Trade Settlement and Collateral Operations may
+    not be captured, evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for
+    the Treasury & Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a regulatory reporting and escalation event
+    that breaches the documented threshold before remediation is completed.
+  applicability_rationale: Regulatory Reporting And Escalation is applicable because Securities Trade Settlement and Collateral
+    Operations is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed
+    evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      reporting and escalation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory reporting
+      and escalation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory reporting and escalation.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-005
+  exposure_metrics:
+  - metric_name: Regulatory Reporting And Escalation exposure count
+    metric_value: 47
+    metric_unit: items
+    description: Current-period exposure count for regulatory reporting and escalation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Reporting And Escalation breach rate
+    metric_value: 2.55
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory reporting and escalation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-005
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting regulatory reporting and escalation
+      assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Reporting And Escalation should remain within documented tolerance for Securities Trade Settlement
+      and Collateral Operations.
+    status: within
+    category: Regulatory Reporting And Escalation
+  recommended_action: Close evidence and control gaps for regulatory reporting and escalation in Securities Trade Settlement
+    and Collateral Operations.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory reporting and escalation in Securities Trade Settlement and Collateral
+      Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate regulatory reporting and escalation scoring against source evidence, KRIs, controls, and
+      open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-ORS
+  risk_id: RISK-SECSET-006
+  risk_description: Operational Resiliency risk in Securities Trade Settlement and Collateral Operations may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Treasury &
+    Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a operational resiliency event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Operational Resiliency is applicable because Securities Trade Settlement and Collateral Operations
+    is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to operational
+      resiliency.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when operational resiliency
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for operational resiliency.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-006
+  exposure_metrics:
+  - metric_name: Operational Resiliency exposure count
+    metric_value: 54
+    metric_unit: items
+    description: Current-period exposure count for operational resiliency.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Operational Resiliency breach rate
+    metric_value: 2.9
+    metric_unit: '%'
+    description: Trailing breach rate for operational resiliency thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-006
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting operational resiliency assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Operational Resiliency should remain within documented tolerance for Securities Trade Settlement and Collateral
+      Operations.
+    status: within
+    category: Operational Resiliency
+  recommended_action: Close evidence and control gaps for operational resiliency in Securities Trade Settlement and Collateral
+    Operations.
+  action_plan:
+  - action: Close evidence and control gaps for operational resiliency in Securities Trade Settlement and Collateral Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate operational resiliency scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-IFR
+  risk_id: RISK-SECSET-007
+  risk_description: Internal Fraud And Override risk in Securities Trade Settlement and Collateral Operations may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Treasury &
+    Liquidity Operations operating model.
+  risk_event: Securities Trade Settlement and Collateral Operations experiences a internal fraud and override event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Internal Fraud And Override is applicable because Securities Trade Settlement and Collateral Operations
+    is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Securities Operations Lead
+  - Executive Owner, Treasury Operations
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring securities trade settlement and collateral operations volume and open
+      remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to internal fraud
+      and override.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when internal fraud
+      and override is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for internal fraud and override.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects daily market close and settlement cycle, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-SECSET-007
+  exposure_metrics:
+  - metric_name: Internal Fraud And Override exposure count
+    metric_value: 61
+    metric_unit: items
+    description: Current-period exposure count for internal fraud and override.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Internal Fraud And Override breach rate
+    metric_value: 3.25
+    metric_unit: '%'
+    description: Trailing breach rate for internal fraud and override thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-SECSET-007
+    evidence_type: Source artifact
+    description: Securities Trade Settlement and Collateral Operations evidence supporting internal fraud and override assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Internal Fraud And Override should remain within documented tolerance for Securities Trade Settlement and Collateral
+      Operations.
+    status: within
+    category: Internal Fraud And Override
+  recommended_action: Close evidence and control gaps for internal fraud and override in Securities Trade Settlement and Collateral
+    Operations.
+  action_plan:
+  - action: Close evidence and control gaps for internal fraud and override in Securities Trade Settlement and Collateral
+      Operations.
+    owner: Securities Operations Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Securities Operations Lead
+    challenge_comments: Validate internal fraud and override scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+executive_summary:
+  headline: Securities Trade Settlement and Collateral Operations captures 7 risk records across 7 risk subcategories for
+    Treasury & Liquidity Operations.
+  key_messages:
+  - Treasury & Liquidity Operations shows differentiated risk capture based on process evidence and source-pack complexity.
+  - 2 high or critical residual records require visible management action.
+  - Ratings are matrix-calculated from impact, likelihood, and control environment evidence.
+  top_residual_risks:
+  - RISK-SECSET-001 Business Process Execution
+  - RISK-SECSET-003 Third-Party Performance
+  recommended_actions:
+  - Use the Knowledge Base tab to compare BU source packs and risk-type concentrations.
+  - Validate High and Critical residual records through owner challenge and independent review.
+  - Track due dates through the issue and action-plan fields before executive export.

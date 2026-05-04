@@ -2,6 +2,25 @@
 
 This document is a detailed handoff for the current Risk Inventory Builder demo frontend and its supporting data generation path. It is written for a highly capable downstream system that needs to understand the UI, object graph, fixture relationships, generated fields, deterministic calculations, provenance boundaries, and known implementation quirks without rediscovering the codebase from scratch.
 
+## 2026-05 Workbench Update
+
+The current Risk Inventory Builder direction is now a simplified executive workbench, not a many-tab dashboard. The top-level demo tabs are:
+
+- `Knowledge Base`
+- `Risk Inventory`
+- `Control Mapping`
+- `Gap Analysis`
+- `Review & Challenge`
+- `Executive Report`
+
+The former `Process Map`, `Residual Risk`, `KRI Program`, and `Agent Run Trace` tabs are intentionally removed from the top-level navigation. Their useful content is consolidated into `Risk Inventory`, `Review & Challenge`, and the executive workbook source trace. The user selects a risk in the left pane and reviews the full risk profile: statement, root causes, impact, frequency, inherent risk, residual risk, management response, mitigation plan, controls, gaps, synthetic controls, KRIs, evidence, issues, review/challenge, and an impact-by-frequency heatmap.
+
+When no process is selected, `Risk Inventory` shows the portfolio view: a business-unit-by-enterprise-risk-category heatmap plus the aggregated risk table.
+
+Terminology update: user-facing labels should say `Frequency`, not `Likelihood`. The internal `LikelihoodAssessment` model and deterministic scoring tests remain backward-compatible.
+
+APQC update: APQC is optional process-normalization metadata only. It can appear in source trace or technical metadata when a process includes `apqc_crosswalk`, but policy/process documents, controls, obligations, issues/events, evidence, KRIs, taxonomies, and scoring YAML drive the risk engine. Useful APQC framing references are [APQC Process Frameworks](https://www.apqc.org/process-frameworks), [APQC Cross-Industry PCF](https://www.apqc.org/resource-library/resource-listing/apqc-process-classification-framework-pcf-cross-industry-pdf-6), and [APQC Banking PCF](https://www.apqc.org/resource-library/resource-listing/apqc-process-classification-framework-pcf-banking-pcf-pdf-1).
+
 ## 1. Scope And Snapshot
 
 This document describes the current Streamlit implementation in:
@@ -20,9 +39,9 @@ This document describes the current Streamlit implementation in:
 
 The frontend is a Streamlit application. It is not a React or Next.js frontend. All frontend behavior is expressed as Python render functions, Streamlit widgets, session state, dataframe renderers, custom HTML snippets, and inline CSS.
 
-The demo is currently a read-only, deterministic, fixture-backed experience. It presents multi-business-unit workspace data, per-process risk inventory runs, risk-to-control mappings, residual risk calculations, KRI recommendations, review/challenge fields, and Excel export. Demo Mode does not require LLM credentials.
+The demo is currently a deterministic, fixture-backed experience. It presents multi-business-unit workspace data, per-process risk inventory runs, risk-to-control mappings, residual risk calculations, KRI recommendations, review/challenge fields, source trace, and Excel export. Demo Mode does not require LLM credentials.
 
-Important current-state note: the UI still uses a top-level `Business Unit` selector followed by a `Process Focus` selector. It also still uses risk selectboxes inside several tabs. A process-first table-to-detail interaction is a desired direction, but it is not the current fully implemented UI in `risk_inventory_tab.py`.
+Important current-state note: the UI still uses a top-level `Business Unit` selector followed by a `Process Focus` selector. Once a process is selected, `Risk Inventory` now uses a single selected risk id in Streamlit session state and renders a workbench-style table/detail experience.
 
 ## 2. High-Level Product Intent
 
@@ -449,27 +468,9 @@ If the user chooses a process, `_render_demo_workspace()` finds the selected pro
 selected_run = workspace.run_for_procedure(selected_proc.procedure_id)
 ```
 
-### 6.3 Scope Lens
+### 6.3 Scope Controls
 
-After the selector, `_render_scope_lens()` renders a compact metric strip.
-
-It shows:
-
-- Current Lens: selected business unit name or `All Business Units`
-- Focus: selected process name or `Workspace Dashboard`
-- Risk Records: selected run record count or workspace rollup row count
-- Mapped Controls: sum of mapped controls
-
-If a selected run exists:
-
-- risk count = `len(selected_run.records)`
-- control count = sum of `len(record.control_mappings)`
-
-If no selected run exists:
-
-- rows come from `_workspace_control_mapping_rows(workspace, selected_bu_id)`
-- risk count = `len(rows)`
-- control count = sum of `row["Mapped Controls"]`
+The former dominant scope metric strip has been removed. Scope is now expressed through compact Business Unit and Process Focus selectors. Knowledge-pack readiness is no longer rendered in the frontend.
 
 ### 6.4 Demo Tabs
 
@@ -478,11 +479,11 @@ The current demo creates these top-level tabs:
 1. `Knowledge Base`
 2. `Risk Inventory`
 3. `Control Mapping`
-4. `Residual Risk`
+4. `Gap Analysis`
 5. `Review & Challenge`
 6. `Executive Report`
 
-There is no current `Source Trace` tab.
+There is no dedicated `Residual Risk`, `KRI Program`, or `Agent Run Trace` top-level tab. Residual risk and KRI content now render inside the selected risk profile. Source trace appears inside selected risk detail, review dossiers, and the Excel workbook.
 
 ## 7. Knowledge Base Tab
 
@@ -495,7 +496,8 @@ It contains these sub-tabs:
 3. `Risk Taxonomy (2-Tier)`
 4. `Control Taxonomy`
 5. `Controls Register`
-6. `KRI Library`
+6. `Obligations`
+7. `KRI Library`
 
 ### 7.1 Business Units Sub-Tab
 
@@ -708,9 +710,9 @@ It shows the count of configured root-cause taxonomy entries if `workspace` is p
 This panel shows:
 
 - `Impact`: `int(record.impact_assessment.overall_impact_score)`
-- `Likelihood`: `int(record.likelihood_assessment.likelihood_score)`
+- `Frequency`: `int(record.likelihood_assessment.likelihood_score)`
 - `Mapped Controls`: `len(record.control_mappings)`
-- likelihood rationale from `record.likelihood_assessment.rationale`
+- frequency rationale from `record.likelihood_assessment.rationale`
 
 ### 8.9 Impact Dimensions
 
@@ -831,9 +833,11 @@ Each control card shows:
 
 Finally, the tab renders all mapped controls in the process using `_run_control_mapping_rows(run)`.
 
-## 10. Residual Risk Tab
+## 10. Residual Risk Detail
 
-`_render_residual_risk(run, workspace)` is currently selected-risk oriented.
+There is no longer a top-level `Residual Risk` tab. Residual risk content is rendered inside the selected `Risk Inventory` profile under the snapshot row, scoring rationale, controls/coverage, mitigation plan, and review/challenge expanders.
+
+The legacy `_render_residual_risk(run, workspace)` helper remains in code as a compatibility/reference helper, but it is not part of the active demo tab list.
 
 It:
 
@@ -1519,11 +1523,11 @@ This section maps frontend-visible information to its origin.
 | Risk event | Risk Inventory | `RiskStatement.risk_event` | risk fixture or taxonomy example fallback |
 | Exposure metrics | Excel export, KRI guidance | `ExposureMetric` | risk fixture or taxonomy metric fallback |
 | Impact score | Risk Inventory, Excel | `ImpactAssessment` | risk fixture; fallback by loader |
-| Likelihood score | Risk Inventory, Excel | `LikelihoodAssessment` | risk fixture; fallback by loader or graph |
+| Frequency score | Risk Inventory, Excel | `LikelihoodAssessment` | risk fixture; fallback by loader or graph |
 | Inherent risk | tiles, Excel | `InherentRiskAssessment` | deterministic matrix calculation |
 | Mapped controls | Control Mapping | `ControlMapping` | risk fixture `mapped_controls` plus fixture controls |
-| Control evidence quality | Residual Risk tab | `EvidenceQuality` | fixture control `evidence_quality` |
-| Open issues | Residual Risk tab | `OpenIssue` | fixture control `open_issues` |
+| Control evidence quality | Risk Inventory profile | `EvidenceQuality` | fixture control `evidence_quality` |
+| Open issues | Risk Inventory profile | `OpenIssue` | fixture control `open_issues` |
 | Control environment | Residual Risk tab | `ControlEnvironmentAssessment` | deterministic worse-of control ratings |
 | Residual risk | Risk Inventory, Residual Risk, Excel | `ResidualRiskAssessment` | deterministic residual matrix |
 | Management response | badges, residual view, Excel | `ManagementResponse` | management response rules and fixture recommended action |
@@ -1622,34 +1626,25 @@ The data model has enough provenance for a source trace view:
 
 However, the frontend does not currently have a dedicated `Source Trace` tab. Provenance appears in multiple places rather than in one audit-oriented view.
 
-### 21.2 Source Documents Are Partially Incorrect
+### 21.2 Source Documents Should Stay Fixture-Specific
 
-As described earlier, `ProcessContext.source_documents` is hard-coded in the demo loader. This should be changed to use `fixture_path.name`.
-
-Until that fix is made, `run.run_manifest["fixture"]` is the reliable source of truth for which YAML fixture generated a run.
+`ProcessContext.source_documents` should continue to use the fixture name that generated each run, not a hard-coded payment exception fixture. `run.run_manifest["fixture"]` remains the reliable source of truth for which YAML fixture generated a run.
 
 ### 21.3 Business Unit Still Leads The Demo Interaction
 
 The current demo starts with business unit selection and then process selection. The target mental model is process-first: show a process, then show its business owners and provenance. That requires changing the selector order and rendering process context as the primary object.
 
-### 21.4 Risk Detail Is Spread Across Tabs
+### 21.4 Risk Detail Is Consolidated But Can Be Made Richer
 
-Current per-risk details are split across:
-
-- Risk Inventory
-- Control Mapping
-- Residual Risk
-- Review & Challenge
-
-Each tab has its own risk selector. This means risk selection is not a single cross-tab state.
+Per-risk details now live in the `Risk Inventory` workbench and reuse one selected risk id in session state. The next improvement is better table row selection and richer evidence/rationale grouping, especially when moving beyond Streamlit's native table limitations.
 
 ### 21.5 Review Edits Are Not Persisted Into The Run
 
 Review status and challenge comments widgets do not currently update `RiskInventoryRun`.
 
-### 21.6 One Workspace Procedure Has No Run
+### 21.6 Every Demo Process Should Keep A Run Fixture
 
-`End-of-Day Wire Reconciliation` appears in workspace procedures but has no fixture in `run_fixtures`. The UI should either clearly mark it as not generated or add a fixture.
+The demo target is 5 business units, 2 deep processes each, and 10 run fixtures. Any new process added to the workspace should include a corresponding run fixture before demo use.
 
 ### 21.7 Root-Cause Taxonomy UI Is Deferred
 
@@ -1657,18 +1652,20 @@ The root-cause taxonomy is loaded in the workspace model and referenced in risk 
 
 ## 22. Recommended Frontend Design Direction
 
-The strongest next frontend design is:
+The strongest next frontend design is the workbench now implemented in `Risk Inventory`:
 
-1. Make `Process Lens` the first selector.
-2. Treat Business Unit as metadata and an optional filter.
-3. Render process owner, BU head, systems, criticality, cadence, source document, run id, and deterministic/LLM status above all tabs.
-4. Add a dedicated `Source Trace` tab.
-5. Convert Risk Inventory into a process-level selectable table.
-6. Use one selected risk id in session state.
-7. Render a risk detail view from the selected row.
-8. Move risk-specific control, residual, KRI, evidence, and review details into that risk detail page.
-9. Keep Control Mapping and Residual Risk top-level tabs as process-level summaries.
-10. Make review edits persist back into the run object or into a separate review state object.
+1. Keep Business Unit and Process Focus as compact scope controls, not dominant page chrome.
+2. Keep knowledge-pack readiness inside the `Knowledge Base` tab as an expander.
+3. Use a single selected risk id in Streamlit session state.
+4. Render a left-side risk list/table and a right-side consolidated risk detail profile.
+5. Move risk-specific residual risk, KRI, evidence, issues, mitigation, control gaps, synthetic controls, and review/challenge content into expandable sections on the risk detail profile.
+6. Show a per-risk impact-by-frequency heatmap in the detail panel.
+7. Show a portfolio business-unit-by-risk-category heatmap when no process focus is selected.
+8. Keep `Control Mapping` and `Gap Analysis` as process or workspace summary tabs.
+9. Keep traceability visible in selected risk details, review dossiers, workbook source trace, and configuration snapshot.
+10. Persist review edits into a review-state object and include them in the executive workbook.
+
+The next meaningful frontend upgrade is not adding more tabs. It is improving selection ergonomics, richer detail expansion, stronger traceability, workbook polish, and eventually replacing Streamlit table limitations with a production web UI once the demo narrative is proven.
 
 ## 23. Minimum Data Contract For A Future ASI Consumer
 
@@ -1676,8 +1673,8 @@ A downstream system that wants to reason over this demo should treat these as ca
 
 - Workspace: `RiskInventoryWorkspace.workspace_id`
 - Business unit: `BusinessUnit.bu_id`
-- Procedure: `Procedure.procedure_id`
-- Process link: `Procedure.process_id`
+- Process: `Process.process_id`
+- Legacy alias: `Procedure.procedure_id`
 - Run: `RiskInventoryRun.run_id`
 - Process context: `RiskInventoryRun.input_context.process_id`
 - Risk record: `RiskInventoryRecord.risk_id`
@@ -1691,9 +1688,9 @@ The most important joins are:
 
 ```text
 BusinessUnit.bu_id
-  -> Procedure.bu_id
+  -> Process.bu_id
 
-Procedure.process_id
+Process.process_id
   -> RiskInventoryRun.input_context.process_id
 
 RiskInventoryRun.records[*].taxonomy_node.id
@@ -1725,4 +1722,3 @@ validator.py checks matrix consistency and rationale quality.
 risk_inventory_tab.py renders the Streamlit frontend from those objects.
 export.py projects the same run into Excel.
 ```
-

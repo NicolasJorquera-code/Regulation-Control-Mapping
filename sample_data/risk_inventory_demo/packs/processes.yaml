@@ -1,0 +1,346 @@
+version: 1.2.0
+processes:
+- process_id: PROC-PAY-EXCEPTION
+  process_name: Payment Exception Handling
+  bu_id: BU-PAYOPS
+  description: Investigation and resolution of failed, returned, held, duplicate, or amended payment instructions across wire
+    and ACH channels.
+  owner: Payment Operations Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily operational, monthly governance review
+  criticality: Critical
+  related_systems:
+  - Payment Workflow Platform
+  - Wire Transfer Gateway
+  - ACH Operations Platform
+  - Sanctions Screening Platform
+  - General Ledger Reconciliation Platform
+  upstream_dependencies:
+  - Payment intake queue
+  - Sanctions screening feed
+  - Customer service escalation queue
+  downstream_dependencies:
+  - Ledger posting
+  - Customer notification
+  - Incident escalation
+  event_triggers:
+  - Daily exception queue close
+  - High-value payment over SLA
+  - Potential customer impact
+  data_objects:
+  - Payment instruction
+  - Exception reason code
+  - Approval log
+  - Ledger entry
+  - Customer notice
+  apqc_crosswalk:
+    framework: APQC Banking PCF
+    version: 7.2.2
+    process_id: banking-payment-operations
+    process_name: Manage payment operations exceptions
+    confidence: 0.78
+    rationale: Optional process-normalization metadata; risk conclusions come from generic source packs, controls, issues,
+      obligations, evidence, and scoring matrices.
+- process_id: PROC-PAY-RECON
+  process_name: End-of-Day Wire Reconciliation
+  bu_id: BU-PAYOPS
+  description: Daily reconciliation of high-value payment activity to settlement reports, ledger postings, and exception-aging
+    logs before close certification.
+  owner: Treasury Operations Lead
+  last_reviewed: '2026-04-30'
+  cadence: Daily
+  criticality: Critical
+  related_systems:
+  - Wire Transfer Gateway
+  - Settlement Statement Portal
+  - General Ledger Reconciliation Platform
+  - Treasury Workstation
+  upstream_dependencies:
+  - Settlement statement feed
+  - Wire operations closeout
+  - Ledger batch
+  downstream_dependencies:
+  - Cash position certification
+  - GL close
+  - Regulatory reporting input
+  event_triggers:
+  - End-of-day close
+  - Unmatched settlement item
+  - Ledger variance
+  data_objects:
+  - Wire transaction
+  - Ledger posting
+  - Settlement statement
+  - Reconciliation break
+  - Supervisor sign-off
+  apqc_crosswalk:
+    framework: APQC Banking PCF
+    version: 7.2.2
+    process_id: banking-payment-reconciliation
+    process_name: Reconcile payments and settlement activity
+    confidence: 0.74
+    rationale: Optional process benchmark metadata; not used for scoring.
+- process_id: PROC-CUST-ONBOARD
+  process_name: Retail Customer Onboarding (CIP / KYC)
+  bu_id: BU-RETAIL
+  description: New deposit account opening across branch and digital channels, including identity verification, OFAC screening,
+    CIP completion, CDD/EDD triggering, and account funding controls.
+  owner: Retail Compliance Officer
+  last_reviewed: '2026-04-30'
+  cadence: Continuous; monthly QA sampling
+  criticality: Critical
+  related_systems:
+  - Digital Onboarding Platform
+  - Identity Verification Service
+  - Sanctions Screening Platform
+  - Due Diligence Workflow
+  - Deposit Core Platform
+  upstream_dependencies:
+  - Digital application
+  - Branch intake
+  - Identity service
+  downstream_dependencies:
+  - Customer due diligence file
+  - Deposit account booking
+  - Fraud investigation queue
+  event_triggers:
+  - New account application
+  - Identity verification exception
+  - OFAC potential match
+  data_objects:
+  - Customer profile
+  - Beneficial ownership record
+  - CIP evidence
+  - OFAC disposition
+  - Account opening approval
+- process_id: PROC-RETAIL-DISPUTES
+  process_name: Retail Deposit Dispute Intake and Resolution
+  bu_id: BU-RETAIL
+  description: Consumer deposit dispute intake, investigation, provisional credit decisioning, customer communication, and
+    closure evidence retention.
+  owner: Retail Service Recovery Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily case intake with weekly aging review
+  criticality: High
+  related_systems:
+  - Dispute Case Platform
+  - Card Processor Portal
+  - ACH Operations Queue
+  - Deposit Core Platform
+  upstream_dependencies:
+  - Customer complaint intake
+  - Card processor file
+  - ACH return file
+  downstream_dependencies:
+  - Customer communication
+  - Provisional credit posting
+  - Complaint reporting
+  event_triggers:
+  - Customer dispute filed
+  - Regulatory response deadline approaching
+  - Processor documentation request
+  data_objects:
+  - Dispute case
+  - Customer attestation
+  - Transaction record
+  - Provisional credit decision
+  - Closure notice
+- process_id: PROC-CL-UNDERWRITE
+  process_name: Commercial Loan Underwriting & Risk Rating
+  bu_id: BU-COMMLEND
+  description: Commercial loan underwriting, financial spreading, borrower risk-rating assignment, covenant design, and credit
+    committee approval.
+  owner: Credit Underwriting Lead
+  last_reviewed: '2026-04-30'
+  cadence: Per credit decision; quarterly portfolio review
+  criticality: High
+  related_systems:
+  - Loan Origination Platform
+  - Financial Spreading Tool
+  - Risk Rating Model
+  - Credit Committee Portal
+  upstream_dependencies:
+  - Borrower financial package
+  - Relationship manager credit memo
+  - Collateral valuation
+  downstream_dependencies:
+  - Credit committee decision
+  - Loan booking
+  - Covenant setup
+  event_triggers:
+  - New credit request
+  - Material renewal
+  - Risk rating override request
+  data_objects:
+  - Credit memo
+  - Financial spread
+  - Risk rating output
+  - Covenant schedule
+  - Approval minutes
+- process_id: PROC-COVENANT-MONITOR
+  process_name: Commercial Covenant Monitoring
+  bu_id: BU-COMMLEND
+  description: Borrower compliance certificate intake, covenant calculation, exception escalation, waiver approval, and portfolio
+    trend reporting.
+  owner: Credit Administration Manager
+  last_reviewed: '2026-04-30'
+  cadence: Monthly and quarterly, based on covenant schedule
+  criticality: High
+  related_systems:
+  - Loan Servicing Platform
+  - Covenant Tracking Tool
+  - Document Repository
+  - Credit Risk Dashboard
+  upstream_dependencies:
+  - Borrower financial statements
+  - Covenant schedule
+  - Relationship manager follow-up
+  downstream_dependencies:
+  - Credit risk reporting
+  - Waiver approval
+  - Problem-loan management
+  event_triggers:
+  - Covenant due date
+  - Covenant breach
+  - Aged missing borrower package
+  data_objects:
+  - Covenant test
+  - Borrower financial package
+  - Exception record
+  - Waiver memo
+  - Portfolio watchlist flag
+- process_id: PROC-LIQUIDITY-STRESS
+  process_name: Liquidity Stress Monitoring and Escalation
+  bu_id: BU-TREASURY
+  description: Daily liquidity stress monitoring, trigger evaluation, contingency funding escalation, source-data validation,
+    and governance reporting.
+  owner: Liquidity Risk Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily monitoring with weekly governance review
+  criticality: Critical
+  related_systems:
+  - Liquidity Monitoring Platform
+  - Treasury Workstation
+  - Deposit Data Mart
+  - Market Data Feed
+  upstream_dependencies:
+  - Deposit balance feed
+  - Wholesale funding report
+  - Market rate feed
+  downstream_dependencies:
+  - Contingency funding plan
+  - Executive liquidity dashboard
+  - Regulatory liquidity package
+  event_triggers:
+  - Daily liquidity close
+  - Stress trigger breach
+  - Large outflow alert
+  data_objects:
+  - Liquidity position
+  - Stress scenario
+  - Funding source
+  - Escalation memo
+  - Management action log
+- process_id: PROC-SECURITIES-SETTLE
+  process_name: Securities Trade Settlement and Collateral Operations
+  bu_id: BU-TREASURY
+  description: Trade capture validation, settlement matching, collateral movement approval, fail management, margin call handling,
+    and post-settlement reconciliation.
+  owner: Securities Operations Lead
+  last_reviewed: '2026-04-30'
+  cadence: Daily market close and settlement cycle
+  criticality: Critical
+  related_systems:
+  - Treasury Workstation
+  - Custody Portal
+  - Collateral Management Platform
+  - General Ledger Platform
+  upstream_dependencies:
+  - Trade blotter
+  - Broker confirmation
+  - Custody statement
+  downstream_dependencies:
+  - Collateral reporting
+  - Cash forecasting
+  - GL reconciliation
+  event_triggers:
+  - New securities trade
+  - Settlement fail
+  - Collateral margin call
+  data_objects:
+  - Trade ticket
+  - Settlement instruction
+  - Collateral movement
+  - Settlement fail
+  - GL entry
+- process_id: PROC-ACCESS-RECERT
+  process_name: Privileged Access Recertification
+  bu_id: BU-TECHCYBER
+  description: Periodic certification of privileged access, role-change removals, emergency access review, shared-account
+    review, and evidence retention.
+  owner: Identity Governance Manager
+  last_reviewed: '2026-04-30'
+  cadence: Monthly certification with weekly exception aging
+  criticality: Critical
+  related_systems:
+  - Access Governance Platform
+  - Privileged Access Management Platform
+  - Service Desk Platform
+  - Configuration Inventory
+  upstream_dependencies:
+  - HR role feed
+  - Application owner roster
+  - Privileged access inventory
+  downstream_dependencies:
+  - Access removal tickets
+  - Evidence repository
+  - Cyber risk dashboard
+  event_triggers:
+  - Monthly certification launch
+  - Role change
+  - Emergency access activation
+  data_objects:
+  - Entitlement record
+  - Certification decision
+  - Exception disposition
+  - Removal ticket
+  - Session log
+  apqc_crosswalk:
+    framework: APQC Cross-Industry PCF
+    version: '8.0'
+    process_id: '8.0'
+    process_name: Manage Information Technology
+    confidence: 0.69
+    rationale: Optional process benchmark metadata for technology governance.
+- process_id: PROC-VULN-REMEDIATION
+  process_name: Critical Vulnerability Remediation
+  bu_id: BU-TECHCYBER
+  description: Identification, triage, owner assignment, remediation tracking, exception approval, and closure validation
+    for critical and high vulnerabilities.
+  owner: Cyber Vulnerability Manager
+  last_reviewed: '2026-04-30'
+  cadence: Continuous scanning with weekly remediation review
+  criticality: Critical
+  related_systems:
+  - Vulnerability Management Platform
+  - Patch Orchestration Platform
+  - Configuration Inventory
+  - Service Desk Platform
+  upstream_dependencies:
+  - Authenticated scan results
+  - Asset criticality inventory
+  - Threat intelligence feed
+  downstream_dependencies:
+  - Patch deployment
+  - Risk acceptance workflow
+  - Cyber executive dashboard
+  event_triggers:
+  - Critical vulnerability detected
+  - SLA breach
+  - Emergency patch release
+  data_objects:
+  - Vulnerability finding
+  - Asset record
+  - Remediation ticket
+  - Exception approval
+  - Closure validation

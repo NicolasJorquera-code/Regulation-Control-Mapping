@@ -121,6 +121,21 @@ class ValidationFinding(BaseModel):
     recommendation: str = ""
 
 
+class AgentTraceEvent(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    stage: str
+    agent: str = ""
+    mode: str = "deterministic_fallback"  # deterministic_fallback | live_llm | skipped
+    status: str = "completed"
+    summary: str = ""
+    inputs_used: list[str] = Field(default_factory=list)
+    tools_called: list[str] = Field(default_factory=list)
+    validation_findings: list[str] = Field(default_factory=list)
+    output_refs: list[str] = Field(default_factory=list)
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
 class ProcessContext(BaseModel):
     process_id: str
     process_name: str
@@ -281,6 +296,23 @@ class EvidenceQuality(BaseModel):
     notes: str = ""
 
 
+class ControlInventoryEntry(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+    control_id: str
+    control_name: str
+    control_type: str = ""
+    description: str = ""
+    owner: str = ""
+    frequency: str = ""
+    process_ids: list[str] = Field(default_factory=list)
+    taxonomy_node_ids: list[str] = Field(default_factory=list)
+    mapped_root_causes: list[str] = Field(default_factory=list)
+    design_rating: str = "Satisfactory"
+    operating_rating: str = "Satisfactory"
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class ControlMapping(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -362,6 +394,49 @@ class ActionItem(BaseModel):
     priority: str = "Medium"
 
 
+class RiskControlGap(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    gap_id: str
+    risk_id: str
+    gap_type: str
+    severity: str = "Medium"
+    description: str
+    root_causes: list[str] = Field(default_factory=list)
+    existing_control_ids: list[str] = Field(default_factory=list)
+    recommendation: str = ""
+
+
+class SyntheticControlRecommendation(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    recommendation_id: str
+    risk_id: str
+    control_name: str
+    control_type: str
+    control_statement: str
+    rationale: str
+    addressed_root_causes: list[str] = Field(default_factory=list)
+    suggested_owner: str = ""
+    frequency: str = ""
+    expected_evidence: str = ""
+    priority: str = "Medium"
+
+
+class ReviewDecision(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    risk_id: str
+    reviewer: str = ""
+    review_status: ReviewStatus = ReviewStatus.PENDING_REVIEW
+    approval_status: ApprovalStatus = ApprovalStatus.DRAFT
+    challenge_comments: str = ""
+    reviewer_adjusted_value: str = ""
+    reviewer_rationale: str = ""
+    final_approved_value: str = ""
+    decided_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
 class RiskInventoryRecord(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -385,6 +460,8 @@ class RiskInventoryRecord(BaseModel):
     risk_appetite: RiskAppetite | None = None
     action_plan: list[ActionItem] = Field(default_factory=list)
     coverage_gaps: list[str] = Field(default_factory=list)
+    control_gaps: list[RiskControlGap] = Field(default_factory=list)
+    synthetic_control_recommendations: list[SyntheticControlRecommendation] = Field(default_factory=list)
     demo_record: bool = False
 
 
@@ -436,21 +513,100 @@ class BusinessUnit(BaseModel):
     employee_count: int = 0
     risk_profile_summary: str = ""
     procedure_ids: list[str] = Field(default_factory=list)
+    process_ids: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _sync_process_ids(self) -> "BusinessUnit":
+        if self.process_ids and not self.procedure_ids:
+            object.__setattr__(self, "procedure_ids", list(self.process_ids))
+        if self.procedure_ids and not self.process_ids:
+            object.__setattr__(self, "process_ids", list(self.procedure_ids))
+        return self
 
 
-class Procedure(BaseModel):
+class Process(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    procedure_id: str
-    procedure_name: str
+    process_id: str
+    process_name: str
     bu_id: str
-    process_id: str = ""  # links to RiskInventoryRun.input_context.process_id
     description: str = ""
     owner: str = ""
     last_reviewed: str = ""
     cadence: str = ""
     criticality: str = "Standard"
     related_systems: list[str] = Field(default_factory=list)
+    upstream_dependencies: list[str] = Field(default_factory=list)
+    downstream_dependencies: list[str] = Field(default_factory=list)
+    event_triggers: list[str] = Field(default_factory=list)
+    data_objects: list[str] = Field(default_factory=list)
+    apqc_crosswalk: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_procedure_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        if "procedure_id" in data and not data.get("process_id"):
+            data["process_id"] = data["procedure_id"]
+        if "procedure_name" in data and not data.get("process_name"):
+            data["process_name"] = data["procedure_name"]
+        return data
+
+    @property
+    def procedure_id(self) -> str:
+        return self.process_id
+
+    @property
+    def procedure_name(self) -> str:
+        return self.process_name
+
+
+Procedure = Process
+
+
+class IssueRecord(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    issue_id: str
+    title: str
+    description: str = ""
+    severity: str = "Medium"
+    status: str = "Open"
+    owner: str = ""
+    process_id: str = ""
+    control_id: str = ""
+    risk_id: str = ""
+    age_days: int = 0
+    source: str = ""
+
+
+class RegulatoryObligation(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    obligation_id: str
+    name: str
+    framework: str = ""
+    citation: str = ""
+    description: str = ""
+    process_ids: list[str] = Field(default_factory=list)
+    risk_taxonomy_ids: list[str] = Field(default_factory=list)
+    control_expectations: list[str] = Field(default_factory=list)
+
+
+class EvidenceArtifact(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    evidence_id: str
+    name: str
+    artifact_type: str = ""
+    description: str = ""
+    source_system: str = ""
+    owner: str = ""
+    process_id: str = ""
+    control_id: str = ""
+    retention: str = ""
+    sample_period: str = ""
 
 
 class RootCauseTaxonomyEntry(BaseModel):
@@ -516,27 +672,70 @@ class RiskInventoryWorkspace(BaseModel):
     bank_id: str = ""
     bank_name: str = ""
     business_units: list[BusinessUnit] = Field(default_factory=list)
-    procedures: list[Procedure] = Field(default_factory=list)
+    processes: list[Process] = Field(default_factory=list)
     risk_taxonomy_l1: list[RiskTaxonomyLevel1] = Field(default_factory=list)
     risk_taxonomy_l2: list[RiskTaxonomyNode] = Field(default_factory=list)
     control_taxonomy: list[ControlTaxonomyEntry] = Field(default_factory=list)
     root_cause_taxonomy: list[RootCauseTaxonomyEntry] = Field(default_factory=list)
     bank_controls: list[dict[str, Any]] = Field(default_factory=list)
+    control_inventory: list[ControlInventoryEntry] = Field(default_factory=list)
+    issues: list[IssueRecord] = Field(default_factory=list)
+    regulatory_obligations: list[RegulatoryObligation] = Field(default_factory=list)
+    evidence_artifacts: list[EvidenceArtifact] = Field(default_factory=list)
+    risk_appetite_framework: dict[str, Any] = Field(default_factory=dict)
     kri_library: list[KRIDefinition] = Field(default_factory=list)
     runs: list[RiskInventoryRun] = Field(default_factory=list)
+    agent_trace: list[AgentTraceEvent] = Field(default_factory=list)
+    knowledge_pack_manifest: dict[str, Any] = Field(default_factory=dict)
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
-    def procedures_for_bu(self, bu_id: str) -> list[Procedure]:
-        return [p for p in self.procedures if p.bu_id == bu_id]
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_workspace_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        if "procedures" in data and "processes" not in data:
+            data["processes"] = data["procedures"]
+        if "bank_controls" in data and "control_inventory" not in data:
+            data["control_inventory"] = data["bank_controls"]
+        return data
 
-    def run_for_procedure(self, procedure_id: str) -> RiskInventoryRun | None:
-        proc = next((p for p in self.procedures if p.procedure_id == procedure_id), None)
-        if not proc:
-            return None
+    @model_validator(mode="after")
+    def _sync_control_views(self) -> "RiskInventoryWorkspace":
+        if self.control_inventory and not self.bank_controls:
+            object.__setattr__(
+                self,
+                "bank_controls",
+                [control.model_dump() for control in self.control_inventory],
+            )
+        if self.bank_controls and not self.control_inventory:
+            object.__setattr__(
+                self,
+                "control_inventory",
+                [ControlInventoryEntry.model_validate(control) for control in self.bank_controls],
+            )
+        return self
+
+    @property
+    def procedures(self) -> list[Process]:
+        return self.processes
+
+    def processes_for_bu(self, bu_id: str) -> list[Process]:
+        return [p for p in self.processes if p.bu_id == bu_id]
+
+    def procedures_for_bu(self, bu_id: str) -> list[Process]:
+        return self.processes_for_bu(bu_id)
+
+    def run_for_process(self, process_id: str) -> RiskInventoryRun | None:
+        proc = next((p for p in self.processes if p.process_id == process_id), None)
+        target_process_id = proc.process_id if proc else process_id
         return next(
-            (r for r in self.runs if r.input_context.process_id == proc.process_id),
+            (r for r in self.runs if r.input_context.process_id == target_process_id),
             None,
         )
+
+    def run_for_procedure(self, procedure_id: str) -> RiskInventoryRun | None:
+        return self.run_for_process(procedure_id)
 
     def kris_for_taxonomy(self, taxonomy_id: str) -> list[KRIDefinition]:
         return [k for k in self.kri_library if k.risk_taxonomy_id == taxonomy_id]

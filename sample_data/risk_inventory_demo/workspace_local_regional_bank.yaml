@@ -1,25 +1,19 @@
 version: 1.2.0
-workspace_id: WS-LARGE-GLOBAL-BANK
+workspace_id: WS-LOCAL-REGIONAL-BANK
 auto_generate_missing_runs: false
 business_unit_ids:
 - BU-PAYOPS
 - BU-RETAIL
 - BU-COMMLEND
-- BU-TREASURY
 - BU-TECHCYBER
 process_ids:
 - PROC-PAY-EXCEPTION
-- PROC-PAY-RECON
 - PROC-CUST-ONBOARD
 - PROC-RETAIL-DISPUTES
 - PROC-CL-UNDERWRITE
-- PROC-COVENANT-MONITOR
-- PROC-LIQUIDITY-STRESS
-- PROC-SECURITIES-SETTLE
 - PROC-ACCESS-RECERT
-- PROC-VULN-REMEDIATION
 knowledge_pack:
-  description: Modular generic demo pack for the Large Global Bank archetype.
+  description: Modular generic demo pack for the Local Regional Bank archetype.
   files:
     business_units: packs/business_units.yaml
     processes: packs/processes.yaml
@@ -30,9 +24,9 @@ knowledge_pack:
     risk_appetite_framework: packs/risk_appetite_framework.yaml
     kri_library: packs/kri_library.yaml
 bank:
-  bank_id: DEMO-FS-LARGE-GLOBAL
-  bank_name: Large Global Bank
-  description: Full-complexity generic banking archetype spanning five business units and ten process fixtures.
+  bank_id: DEMO-FS-LOCAL-REGIONAL
+  bank_name: Local Regional Bank
+  description: Focused regional archetype with a smaller source pack and lower operating-model complexity.
 risk_taxonomy_l1:
 - code: OPS
   name: Operational

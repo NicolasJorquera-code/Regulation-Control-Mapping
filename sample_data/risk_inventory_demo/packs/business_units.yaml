@@ -1,0 +1,57 @@
+version: 1.2.0
+business_units:
+- bu_id: BU-PAYOPS
+  bu_name: Payment Operations
+  description: End-to-end processing for high-value wires, ACH exceptions, returns, repairs, sanctions holds, and daily payment
+    reconciliation.
+  head: Executive Owner, Payment Operations
+  employee_count: 312
+  risk_profile_summary: 'Operational-heavy risk capture: exception aging, reconciliation data quality, duplicate payment rules,
+    correspondent service dependencies, and payment release access.'
+  process_ids:
+  - PROC-PAY-EXCEPTION
+  - PROC-PAY-RECON
+- bu_id: BU-RETAIL
+  bu_name: Retail Banking & Onboarding
+  description: Branch and digital deposit account opening, identity verification, customer due diligence, and consumer deposit
+    dispute resolution.
+  head: Executive Owner, Retail Banking
+  employee_count: 1840
+  risk_profile_summary: 'Compliance-heavy risk capture: CIP/KYC, OFAC disposition, Reg E dispute timing, privacy notices,
+    customer harm, and external fraud signals.'
+  process_ids:
+  - PROC-CUST-ONBOARD
+  - PROC-RETAIL-DISPUTES
+- bu_id: BU-COMMLEND
+  bu_name: Commercial Lending
+  description: Commercial underwriting, risk rating, covenant setup, borrower package intake, monitoring, waiver approval,
+    and breach escalation.
+  head: Executive Owner, Commercial Lending
+  employee_count: 410
+  risk_profile_summary: 'Credit-adjacent operational risk capture: model performance, risk-rating overrides, covenant monitoring
+    timeliness, documentation quality, and contract enforceability.'
+  process_ids:
+  - PROC-CL-UNDERWRITE
+  - PROC-COVENANT-MONITOR
+- bu_id: BU-TREASURY
+  bu_name: Treasury & Liquidity Operations
+  description: Liquidity stress monitoring, contingency funding governance, securities settlement, collateral operations,
+    custody interaction, and funding reporting.
+  head: Executive Owner, Treasury Operations
+  employee_count: 96
+  risk_profile_summary: 'Resiliency and reporting risk capture: market-data dependency, funding trigger escalation, settlement
+    fails, collateral calls, and close-cycle data integrity.'
+  process_ids:
+  - PROC-LIQUIDITY-STRESS
+  - PROC-SECURITIES-SETTLE
+- bu_id: BU-TECHCYBER
+  bu_name: Technology & Cyber Operations
+  description: Identity governance, privileged access, vulnerability remediation, secure change, cyber incident support, and
+    production evidence retention.
+  head: Executive Owner, Technology & Cyber Operations
+  employee_count: 538
+  risk_profile_summary: 'Cyber-heavy risk capture: privileged access drift, emergency access aging, vulnerability SLA breaches,
+    patch exceptions, change governance, and evidence closure quality.'
+  process_ids:
+  - PROC-ACCESS-RECERT
+  - PROC-VULN-REMEDIATION

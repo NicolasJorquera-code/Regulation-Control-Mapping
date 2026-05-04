@@ -1,0 +1,41 @@
+version: 1.2.0
+framework:
+  framework_id: RAF-GENERIC-2026
+  statement: The demo archetype accepts ordinary operating risk but maintains low tolerance for unresolved customer harm,
+    regulatory exposure, cyber exposure, and evidence gaps that prevent independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
+  next_review: '2027-04-30'
+  category_thresholds:
+    Operational:
+      green: Residual Low
+      amber: Residual Medium with action owner
+      red: Residual High or Critical
+    Cyber:
+      green: No critical SLA breaches
+      amber: Limited aged exceptions
+      red: Critical or repeated SLA breach
+    Regulatory Compliance:
+      green: No material misses
+      amber: Self-identified issue in remediation
+      red: Customer harm or late regulatory obligation
+    Talent:
+      green: Capacity within tolerance
+      amber: Named dependency being remediated
+      red: Capacity gap impairs critical process
+  escalation_rules:
+    Low: Accept and monitor through routine owner attestation.
+    Medium: Monitor with KRI trend and quarterly review.
+    High: Mitigate with named owner and due date.
+    Critical: Escalate to executive governance within one business day.
+  bu_overlays:
+    BU-PAYOPS: 'Operational-heavy risk capture: exception aging, reconciliation data quality, duplicate payment rules, correspondent
+      service dependencies, and payment release access.'
+    BU-RETAIL: 'Compliance-heavy risk capture: CIP/KYC, OFAC disposition, Reg E dispute timing, privacy notices, customer
+      harm, and external fraud signals.'
+    BU-COMMLEND: 'Credit-adjacent operational risk capture: model performance, risk-rating overrides, covenant monitoring
+      timeliness, documentation quality, and contract enforceability.'
+    BU-TREASURY: 'Resiliency and reporting risk capture: market-data dependency, funding trigger escalation, settlement fails,
+      collateral calls, and close-cycle data integrity.'
+    BU-TECHCYBER: 'Cyber-heavy risk capture: privileged access drift, emergency access aging, vulnerability SLA breaches,
+      patch exceptions, change governance, and evidence closure quality.'

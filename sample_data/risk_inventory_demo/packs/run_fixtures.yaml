@@ -1,0 +1,32 @@
+version: 1.2.0
+run_fixtures:
+- run_id: DEMO-RI-PAYEXC-001
+  process_id: PROC-PAY-EXCEPTION
+  fixture_path: payment_exception_handling.yaml
+- run_id: DEMO-RI-PAYREC-001
+  process_id: PROC-PAY-RECON
+  fixture_path: end_of_day_wire_reconciliation.yaml
+- run_id: DEMO-RI-CUSTONB-001
+  process_id: PROC-CUST-ONBOARD
+  fixture_path: customer_onboarding.yaml
+- run_id: DEMO-RI-DISP-001
+  process_id: PROC-RETAIL-DISPUTES
+  fixture_path: retail_deposit_disputes.yaml
+- run_id: DEMO-RI-CLUW-001
+  process_id: PROC-CL-UNDERWRITE
+  fixture_path: commercial_loan_underwriting.yaml
+- run_id: DEMO-RI-COVMON-001
+  process_id: PROC-COVENANT-MONITOR
+  fixture_path: commercial_covenant_monitoring.yaml
+- run_id: DEMO-RI-LIQ-001
+  process_id: PROC-LIQUIDITY-STRESS
+  fixture_path: liquidity_stress_monitoring.yaml
+- run_id: DEMO-RI-SECSET-001
+  process_id: PROC-SECURITIES-SETTLE
+  fixture_path: securities_trade_settlement.yaml
+- run_id: DEMO-RI-ACCESS-001
+  process_id: PROC-ACCESS-RECERT
+  fixture_path: privileged_access_recertification.yaml
+- run_id: DEMO-RI-VULN-001
+  process_id: PROC-VULN-REMEDIATION
+  fixture_path: critical_vulnerability_remediation.yaml

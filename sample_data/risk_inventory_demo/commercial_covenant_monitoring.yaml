@@ -1,0 +1,956 @@
+version: 1.2.0
+risk_appetite_framework:
+  statement: Commercial Lending maintains documented tolerance thresholds for Commercial Covenant Monitoring; residual High
+    or Critical requires owner action and independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
+  category_thresholds:
+    operational: Medium
+    cyber: Low
+    regulatory: Low
+    talent: Medium
+  escalation_rules:
+  - Residual above tolerance requires named action plan.
+  - Critical residual requires executive notification within one business day.
+scenario:
+  run_id: DEMO-RI-COVMON-001
+  tenant_id: generic-demo
+  process_id: PROC-COVENANT-MONITOR
+  process_name: Commercial Covenant Monitoring
+  product: Borrower compliance certificate intake
+  business_unit: Commercial Lending
+  description: Borrower compliance certificate intake, covenant calculation, exception escalation, waiver approval, and portfolio
+    trend reporting.
+  systems:
+  - Loan Servicing Platform
+  - Covenant Tracking Tool
+  - Document Repository
+  - Credit Risk Dashboard
+  stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+controls:
+- control_id: CTL-COVMON-001
+  control_name: Commercial Covenant Monitoring Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented exception reporting control for Commercial Covenant Monitoring
+    to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: partial
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-COVMON-001
+    description: Commercial Covenant Monitoring control evidence requires remediation for business process execution monitoring.
+    severity: High
+    age_days: 20
+    owner: Credit Administration Manager
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 46
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-002
+  control_name: Commercial Covenant Monitoring Data Quality And Reconciliation Control
+  control_type: Reconciliation
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented reconciliation control for Commercial Covenant Monitoring
+    to identify, evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-DM: strong
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 47
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-003
+  control_name: Commercial Covenant Monitoring Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented internal compliance monitoring control for Commercial Covenant
+    Monitoring to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: partial
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-COVMON-003
+    description: Commercial Covenant Monitoring control evidence requires remediation for regulatory compliance monitoring.
+    severity: High
+    age_days: 32
+    owner: Credit Administration Manager
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 48
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-004
+  control_name: Commercial Covenant Monitoring Regulatory Reporting And Escalation Control
+  control_type: Risk Escalation Processes
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented risk escalation processes control for Commercial Covenant
+    Monitoring to identify, evidence, escalate, and resolve regulatory reporting and escalation exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the regulatory reporting and escalation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-RR: Mitigates regulatory reporting and escalation through owner review, exception capture, evidence retention, and
+      escalation.
+  coverage_by_risk:
+    RIB-RR: strong
+  mapped_root_causes_per_risk:
+    RIB-RR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 49
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-005
+  control_name: Commercial Covenant Monitoring Contract And Documentation Control
+  control_type: Authorization
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented authorization control for Commercial Covenant Monitoring
+    to identify, evidence, escalate, and resolve contract and documentation exposure.
+  design_rating: Strong
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the contract and documentation root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-CON: Mitigates contract and documentation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-CON: strong
+  mapped_root_causes_per_risk:
+    RIB-CON:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 50
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-006
+  control_name: Commercial Covenant Monitoring Human Capital Capacity Control
+  control_type: Staffing and Resourcing Adequacy
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented staffing and resourcing adequacy control for Commercial
+    Covenant Monitoring to identify, evidence, escalate, and resolve human capital capacity exposure.
+  design_rating: Satisfactory
+  operating_rating: Strong
+  design_rationale: The control design is aligned to the human capital capacity root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-HCM: Mitigates human capital capacity through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-HCM: strong
+  mapped_root_causes_per_risk:
+    RIB-HCM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 51
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-007
+  control_name: Commercial Covenant Monitoring Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented exception reporting control for Commercial Covenant Monitoring
+    to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 52
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-COVMON-008
+  control_name: Commercial Covenant Monitoring Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Credit Administration Manager
+  frequency: Monthly
+  description: Credit Administration Manager performs a documented exception reporting control for Commercial Covenant Monitoring
+    to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Covenant Monitoring.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 53
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+risks:
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-COVMON-001
+  risk_description: Business Process Execution risk in Commercial Covenant Monitoring may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating model.
+  risk_event: Commercial Covenant Monitoring experiences a business process execution event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Commercial Covenant Monitoring is a high process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-001
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 19
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 1.15
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-001
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: outside
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Business Process Execution needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-COVMON-002
+  risk_description: Data Quality And Reconciliation risk in Commercial Covenant Monitoring may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Covenant Monitoring experiences a data quality and reconciliation event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Commercial Covenant Monitoring is a high
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-002
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 26
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 1.5
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-002
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting data quality and reconciliation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: within
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for data quality and reconciliation in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-COM
+  risk_id: RISK-COVMON-003
+  risk_description: Regulatory Compliance risk in Commercial Covenant Monitoring may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating model.
+  risk_event: Commercial Covenant Monitoring experiences a regulatory compliance event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Regulatory Compliance is applicable because Commercial Covenant Monitoring is a high process with
+    recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      compliance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory compliance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory compliance.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-003
+  exposure_metrics:
+  - metric_name: Regulatory Compliance exposure count
+    metric_value: 33
+    metric_unit: items
+    description: Current-period exposure count for regulatory compliance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Compliance breach rate
+    metric_value: 1.85
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory compliance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-003
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting regulatory compliance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Compliance should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: outside
+    category: Regulatory Compliance
+  recommended_action: Close evidence and control gaps for regulatory compliance in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory compliance in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Regulatory Compliance needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate regulatory compliance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-RR
+  risk_id: RISK-COVMON-004
+  risk_description: Regulatory Reporting And Escalation risk in Commercial Covenant Monitoring may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Covenant Monitoring experiences a regulatory reporting and escalation event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Regulatory Reporting And Escalation is applicable because Commercial Covenant Monitoring is a high
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      reporting and escalation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory reporting
+      and escalation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory reporting and escalation.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-004
+  exposure_metrics:
+  - metric_name: Regulatory Reporting And Escalation exposure count
+    metric_value: 40
+    metric_unit: items
+    description: Current-period exposure count for regulatory reporting and escalation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Reporting And Escalation breach rate
+    metric_value: 2.2
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory reporting and escalation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-004
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting regulatory reporting and escalation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Reporting And Escalation should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: within
+    category: Regulatory Reporting And Escalation
+  recommended_action: Close evidence and control gaps for regulatory reporting and escalation in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory reporting and escalation in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate regulatory reporting and escalation scoring against source evidence, KRIs, controls, and
+      open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-CON
+  risk_id: RISK-COVMON-005
+  risk_description: Contract And Documentation risk in Commercial Covenant Monitoring may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating model.
+  risk_event: Commercial Covenant Monitoring experiences a contract and documentation event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Contract And Documentation is applicable because Commercial Covenant Monitoring is a high process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to contract and
+      documentation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when contract and documentation
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for contract and documentation.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-005
+  exposure_metrics:
+  - metric_name: Contract And Documentation exposure count
+    metric_value: 47
+    metric_unit: items
+    description: Current-period exposure count for contract and documentation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Contract And Documentation breach rate
+    metric_value: 2.55
+    metric_unit: '%'
+    description: Trailing breach rate for contract and documentation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-005
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting contract and documentation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Contract And Documentation should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: within
+    category: Contract And Documentation
+  recommended_action: Close evidence and control gaps for contract and documentation in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for contract and documentation in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate contract and documentation scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-HCM
+  risk_id: RISK-COVMON-006
+  risk_description: Human Capital Capacity risk in Commercial Covenant Monitoring may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating model.
+  risk_event: Commercial Covenant Monitoring experiences a human capital capacity event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Human Capital Capacity is applicable because Commercial Covenant Monitoring is a high process with
+    recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to human capital
+      capacity.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when human capital capacity
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for human capital capacity.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-006
+  exposure_metrics:
+  - metric_name: Human Capital Capacity exposure count
+    metric_value: 54
+    metric_unit: items
+    description: Current-period exposure count for human capital capacity.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Human Capital Capacity breach rate
+    metric_value: 2.9
+    metric_unit: '%'
+    description: Trailing breach rate for human capital capacity thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-006
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting human capital capacity assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Human Capital Capacity should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: within
+    category: Human Capital Capacity
+  recommended_action: Close evidence and control gaps for human capital capacity in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for human capital capacity in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate human capital capacity scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-COVMON-007
+  risk_description: Business Process Execution risk in Commercial Covenant Monitoring may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating model.
+  risk_event: Commercial Covenant Monitoring experiences a business process execution event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Commercial Covenant Monitoring is a high process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Administration Manager
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial covenant monitoring volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects monthly and quarterly, based on covenant schedule, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-COVMON-007
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 61
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 3.25
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-COVMON-007
+    evidence_type: Source artifact
+    description: Commercial Covenant Monitoring evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Commercial Covenant Monitoring.
+    status: within
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Commercial Covenant Monitoring.
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Commercial Covenant Monitoring.
+    owner: Credit Administration Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Administration Manager
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+executive_summary:
+  headline: Commercial Covenant Monitoring captures 7 risk records across 6 risk subcategories for Commercial Lending.
+  key_messages:
+  - Commercial Lending shows differentiated risk capture based on process evidence and source-pack complexity.
+  - 2 high or critical residual records require visible management action.
+  - Ratings are matrix-calculated from impact, likelihood, and control environment evidence.
+  top_residual_risks:
+  - RISK-COVMON-001 Business Process Execution
+  - RISK-COVMON-003 Regulatory Compliance
+  recommended_actions:
+  - Use the Knowledge Base tab to compare BU source packs and risk-type concentrations.
+  - Validate High and Critical residual records through owner challenge and independent review.
+  - Track due dates through the issue and action-plan fields before executive export.

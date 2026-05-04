@@ -1,411 +1,968 @@
-version: "1.2.0"
+version: 1.2.0
 risk_appetite_framework:
-  statement: "The bank maintains low tolerance for credit-rating drift, model performance degradation, and covenant monitoring lapses. Residual risk above Medium in Credit, Operational, or Model categories requires CRO + CCO joint escalation within 5 business days."
-  effective_date: "2026-01-01"
-  approver: "Board Risk Committee"
+  statement: Commercial Lending maintains documented tolerance thresholds for Commercial Loan Underwriting & Risk Rating;
+    residual High or Critical requires owner action and independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
   category_thresholds:
-    operational: "Medium"
-    model: "Low"
-    third_party: "Medium"
-    compliance: "Low"
+    operational: Medium
+    cyber: Low
+    regulatory: Low
+    talent: Medium
   escalation_rules:
-    - "Residual at threshold: monthly monitoring by 1LOD with quarterly 2LOD review."
-    - "Residual above threshold: CCO/CRO joint remediation plan with quarterly progress review."
-    - "Residual two or more bands above threshold for Model or Credit categories: Board Risk Committee escalation within 10 business days."
+  - Residual above tolerance requires named action plan.
+  - Critical residual requires executive notification within one business day.
 scenario:
-  run_id: "DEMO-RI-CLUW-001"
-  tenant_id: "demo-bank"
-  process_id: "PROC-CL-UNDERWRITE"
-  process_name: "Commercial Loan Underwriting & Risk Rating"
-  product: "Commercial and industrial loans ($1M – $50M)"
-  business_unit: "Commercial Lending"
-  description: "Underwriting workflow for commercial and industrial loan applications, including financial spreading, risk rating model assignment, covenant design, credit committee approval, loan documentation, and post-close booking. The process services applications $1M – $50M originated by relationship managers across the commercial banking footprint."
+  run_id: DEMO-RI-CLUW-001
+  tenant_id: generic-demo
+  process_id: PROC-CL-UNDERWRITE
+  process_name: Commercial Loan Underwriting & Risk Rating
+  product: Commercial loan underwriting
+  business_unit: Commercial Lending
+  description: Commercial loan underwriting, financial spreading, borrower risk-rating assignment, covenant design, and credit
+    committee approval.
   systems:
-    - "Loan Origination System"
-    - "Financial Spreading Tool"
-    - "Risk Rating Model"
-    - "Credit Committee Portal"
-    - "Loan Documentation Repository"
-    - "Core Banking Loan System"
+  - Loan Origination Platform
+  - Financial Spreading Tool
+  - Risk Rating Model
+  - Credit Committee Portal
   stakeholders:
-    - "SVP, Credit Underwriting"
-    - "Chief Credit Officer"
-    - "Credit Committee"
-    - "Model Risk Management"
-    - "Loan Operations Manager"
-    - "Internal Audit"
-    - "Loan Documentation Counsel"
-
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
 controls:
-  - control_id: "CTRL-CL-001"
-    control_name: "Credit committee approval for loans above delegated authority"
-    control_type: "Authorization"
-    owner: "Chief Credit Officer"
-    frequency: "Per credit decision above threshold"
-    description: "Loans exceeding delegated lending authority require formal credit committee approval with documented quorum, deliberation, and conditions."
-    design_rating: "Strong"
-    operating_rating: "Strong"
-    design_rationale: "Committee structure, quorum rules, and approval thresholds are documented and consistently applied; full meeting record retained."
-    operating_rationale: "Sample evidence shows 100% of loans above delegated authority have committee approval with documented conditions."
-    risk_mitigations:
-      RIB-BPR: "Committee approval introduces independent senior judgment for material credit decisions and constrains delegated-authority drift."
-      RIB-IFR: "Multi-party deliberation reduces unilateral approval capability for material loans."
-    coverage_by_risk:
-      RIB-BPR: "strong"
-      RIB-IFR: "strong"
-    evidence_quality:
-      rating: "Strong"
-      last_tested: "2026-02-12"
-      sample_size: 35
-      exceptions_noted: 0
-
-  - control_id: "CTRL-CL-002"
-    control_name: "Independent risk rating validation"
-    control_type: "Reconciliation"
-    owner: "Credit Risk Review"
-    frequency: "Sample-based, monthly"
-    description: "Credit Risk Review (2LOD) independently validates risk rating model output and reviewer-assigned overrides on a monthly sample of newly underwritten loans."
-    design_rating: "Satisfactory"
-    operating_rating: "Improvement Needed"
-    design_rationale: "2LOD validation pattern is sound, but sample size of 8% of monthly originations is below industry benchmark of 15%."
-    operating_rationale: "Latest validation found 12% disagreement rate on borderline ratings, with no documented override rationale on 4 of 8 disagreements."
-    risk_mitigations:
-      RIB-MDL: "Independent rating validation challenges model output and reviewer judgment, identifying systematic bias before portfolio impact accumulates."
-      RIB-BPR: "Sampling-based validation provides quality assurance on the rating step that drives downstream pricing and capital decisions."
-    coverage_by_risk:
-      RIB-MDL: "partial"
-      RIB-BPR: "partial"
-    open_issues:
-      - issue_id: "IS-CL-002"
-        description: "12% rating disagreement rate without documented override rationale on 4 of 8 disagreements; trend not yet escalated to CCO."
-        severity: "Medium"
-        age_days: 35
-        owner: "Credit Risk Review"
-        status: "Open"
-    evidence_quality:
-      rating: "Adequate"
-      last_tested: "2026-02-28"
-      sample_size: 65
-      exceptions_noted: 8
-
-  - control_id: "CTRL-CL-003"
-    control_name: "Risk rating model performance monitoring"
-    control_type: "Surveillance"
-    owner: "Model Risk Management"
-    frequency: "Quarterly"
-    description: "Quarterly monitoring of risk rating model performance against realized loan defaults, downgrades, and migration metrics, with annual recalibration cycle."
-    design_rating: "Satisfactory"
-    operating_rating: "Improvement Needed"
-    design_rationale: "Performance monitoring scope and metrics align with SR 11-7 model risk management guidance."
-    operating_rationale: "Q4 monitoring identified rating-migration drift in the middle-market segment; recalibration scheduled for Q3 but not yet started."
-    risk_mitigations:
-      RIB-MDL: "Performance monitoring is the primary control identifying model drift before portfolio impact."
-    coverage_by_risk:
-      RIB-MDL: "partial"
-    open_issues:
-      - issue_id: "IS-CL-005"
-        description: "Risk rating model recalibration deferred from Q2 to Q3 without documented MRM approval."
-        severity: "High"
-        age_days: 28
-        owner: "Model Risk Management"
-        status: "Open"
-    evidence_quality:
-      rating: "Adequate"
-      last_tested: "2026-01-31"
-      sample_size: 0
-      exceptions_noted: 0
-      notes: "Quarterly performance monitoring report retained; annual independent model validation pending."
-
-  - control_id: "CTRL-CL-004"
-    control_name: "Covenant design checklist and post-close monitoring setup"
-    control_type: "Directive"
-    owner: "Loan Operations Manager"
-    frequency: "Per loan closing"
-    description: "Mandatory covenant design checklist completed at credit committee and translated into post-close monitoring schedule loaded into the loan administration system."
-    design_rating: "Satisfactory"
-    operating_rating: "Satisfactory"
-    design_rationale: "Checklist covers financial, reporting, and operating covenants with mapping to monitoring schedule fields."
-    operating_rationale: "Sample shows checklist completion on 92% of closings; missing checklist on 3 of 35 sampled loans."
-    risk_mitigations:
-      RIB-BPR: "Checklist enforces consistency in covenant design and ensures translation to monitoring system at booking."
-    coverage_by_risk:
-      RIB-BPR: "partial"
-    evidence_quality:
-      rating: "Adequate"
-      last_tested: "2026-02-15"
-      sample_size: 35
-      exceptions_noted: 3
-
-  - control_id: "CTRL-CL-005"
-    control_name: "Loan documentation legal review"
-    control_type: "Authorization"
-    owner: "Loan Documentation Counsel"
-    frequency: "Per loan closing"
-    description: "Legal review of all loan documents prior to funding, with documented sign-off on documentation completeness and lien perfection."
-    design_rating: "Strong"
-    operating_rating: "Satisfactory"
-    design_rationale: "Independent legal review with required sign-off; documentation checklist mapped to documentation repository fields."
-    operating_rationale: "Sample shows 100% legal sign-off; 1 instance of late lien perfection filing identified and remediated."
-    risk_mitigations:
-      RIB-CON: "Legal review and lien perfection are the primary mitigants for documentation and contract risk in commercial lending."
-    coverage_by_risk:
-      RIB-CON: "strong"
-    evidence_quality:
-      rating: "Strong"
-      last_tested: "2026-02-20"
-      sample_size: 35
-      exceptions_noted: 1
-
+- control_id: CTL-CLUW-001
+  control_name: Commercial Loan Underwriting & Risk Rating Model Performance Control
+  control_type: Verification and Validation
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented verification and validation control for Commercial Loan Underwriting
+    & Risk Rating to identify, evidence, escalate, and resolve model performance exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the model performance root causes in the generic knowledge pack and defines
+    owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-MDL: Mitigates model performance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-MDL: partial
+  mapped_root_causes_per_risk:
+    RIB-MDL:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-CLUW-001
+    description: Commercial Loan Underwriting & Risk Rating control evidence requires remediation for model performance monitoring.
+    severity: High
+    age_days: 20
+    owner: Credit Underwriting Lead
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 46
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-002
+  control_name: Commercial Loan Underwriting & Risk Rating Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented exception reporting control for Commercial Loan Underwriting
+    & Risk Rating to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 47
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-003
+  control_name: Commercial Loan Underwriting & Risk Rating Contract And Documentation Control
+  control_type: Authorization
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented authorization control for Commercial Loan Underwriting & Risk
+    Rating to identify, evidence, escalate, and resolve contract and documentation exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the contract and documentation root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-CON: Mitigates contract and documentation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-CON: strong
+  mapped_root_causes_per_risk:
+    RIB-CON:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 48
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-004
+  control_name: Commercial Loan Underwriting & Risk Rating Data Quality And Reconciliation Control
+  control_type: Reconciliation
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented reconciliation control for Commercial Loan Underwriting & Risk
+    Rating to identify, evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-DM: strong
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 49
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-005
+  control_name: Commercial Loan Underwriting & Risk Rating Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented internal compliance monitoring control for Commercial Loan Underwriting
+    & Risk Rating to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Strong
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: strong
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 50
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-006
+  control_name: Commercial Loan Underwriting & Risk Rating Internal Fraud And Override Control
+  control_type: Segregation of Duties
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented segregation of duties control for Commercial Loan Underwriting
+    & Risk Rating to identify, evidence, escalate, and resolve internal fraud and override exposure.
+  design_rating: Satisfactory
+  operating_rating: Strong
+  design_rationale: The control design is aligned to the internal fraud and override root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-IFR: Mitigates internal fraud and override through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-IFR: strong
+  mapped_root_causes_per_risk:
+    RIB-IFR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 51
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-007
+  control_name: Commercial Loan Underwriting & Risk Rating Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented exception reporting control for Commercial Loan Underwriting
+    & Risk Rating to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 52
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CLUW-008
+  control_name: Commercial Loan Underwriting & Risk Rating Model Performance Control
+  control_type: Verification and Validation
+  owner: Credit Underwriting Lead
+  frequency: Monthly
+  description: Credit Underwriting Lead performs a documented verification and validation control for Commercial Loan Underwriting
+    & Risk Rating to identify, evidence, escalate, and resolve model performance exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the model performance root causes in the generic knowledge pack and defines
+    owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Commercial
+    Loan Underwriting & Risk Rating.
+  risk_mitigations:
+    RIB-MDL: Mitigates model performance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-MDL: strong
+  mapped_root_causes_per_risk:
+    RIB-MDL:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 53
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
 risks:
-  - taxonomy_node_id: "RIB-MDL"
-    risk_id: "RI-CLUW-001"
-    risk_description: "The risk rating model may produce ratings that diverge from realized credit performance because of drift in the underlying portfolio composition, macroeconomic conditions, or model calibration assumptions, leading to mispriced risk and capital allocation."
-    risk_event: "The risk rating model under-rates middle-market loans for two consecutive quarters before recalibration, resulting in systematic underpricing and reserve under-provisioning."
-    applicability_rationale: "Model Risk materializes because the bank uses a quantitative rating model that drives loan pricing, regulatory capital, and reserve decisions, subject to SR 11-7 model risk management standards."
-    confidence: 0.88
-    causes:
-      - "model design assumptions"
-      - "calibration drift"
-      - "weak SLA monitoring"
-    consequences:
-      - "loan mispricing"
-      - "capital and reserve misstatement"
-      - "MRM exam findings"
-    impact_scores:
-      financial_impact: 4
-      regulatory_impact: 3
-      reputational_impact: 2
-    overall_impact_score: 4
-    overall_impact_rationale: "Overall impact is Severe because model drift in the rating engine systematically affects pricing and capital decisions across new originations, with material aggregate financial exposure and SR 11-7 supervisory implications."
-    likelihood_score: 3
-    likelihood_rating: "Medium High"
-    likelihood_rationale: "Likelihood is Medium High because Q4 monitoring identified rating-migration drift in the middle-market segment and the planned Q2 recalibration was deferred to Q3 without documented MRM approval."
-    assumptions:
-      - "Q4 performance monitoring sample reflects current portfolio behavior."
-      - "Recalibration deferral does not reflect documented model-stability evidence."
-    exposure_metrics:
-      - metric_name: "rating migration drift (middle-market)"
-        metric_value: "1.4 notches"
-        metric_unit: "average downgrade vs. expected"
-        description: "Average notch difference between expected and realized rating migration in the middle-market segment over the prior four quarters."
-        source: "Quarterly model performance monitoring"
-        supports: ["likelihood", "impact"]
-      - metric_name: "rating disagreement rate"
-        metric_value: "12%"
-        metric_unit: "of validated sample"
-        description: "Share of independently validated ratings that disagreed with the model + reviewer rating."
-        source: "Credit Risk Review monthly validation"
-        supports: ["likelihood"]
-      - metric_name: "monthly origination volume"
-        metric_value: "$245M"
-        metric_unit: "average monthly fundings"
-        description: "Average monthly commercial loan funding volume."
-        source: "Loan Origination System"
-        supports: ["impact"]
-    mapped_controls: ["CTRL-CL-002", "CTRL-CL-003"]
-    recommended_action: "Restart Q3 model recalibration with documented MRM approval, expand independent validation sample to 15% of originations, and implement an interim conservative override on middle-market borderline ratings."
-    coverage_gaps:
-      - "Recalibration deferral does not yet have documented MRM approval or compensating control."
-      - "Independent validation sample size (8%) is below industry benchmark (15%)."
-    action_plan:
-      - action: "Document MRM approval for recalibration timing or restart Q2 cycle with compensating override on middle-market borderline ratings."
-        owner: "Model Risk Management"
-        due_date: "2026-05-15"
-        status: "In Progress"
-        priority: "Critical"
-      - action: "Expand independent validation sample from 8% to 15% of monthly originations."
-        owner: "Credit Risk Review"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "High"
-      - action: "Add documented override rationale requirement when 2LOD validation disagrees with assigned rating."
-        owner: "Credit Risk Review"
-        due_date: "2026-Q2"
-        status: "Planned"
-        priority: "High"
-    review:
-      reviewer: "Model Risk Management"
-      review_status: "Challenged"
-      approval_status: "Pending"
-      challenge_comments: "Residual rating elevated to High pending recalibration restart and validation sample expansion. CRO + CCO joint escalation triggered per Model appetite threshold (Low)."
-      challenged_fields: ["likelihood_score", "control_operating_effectiveness", "management_response"]
-      ai_original_value: "Residual rating: Medium-22; Management response: Monitor"
-      reviewer_adjusted_value: "Residual rating: High-32; Management response: Mitigate"
-      reviewer_rationale: "Override raised residual to High based on (1) deferred recalibration without MRM approval, (2) sustained rating drift signal in middle-market, and (3) under-sized independent validation sample. Aligned with appetite framework requiring CRO + CCO escalation when Model residual is two or more bands above Low threshold."
-    evidence_references:
-      - evidence_id: "CLUW-EVID-001"
-        evidence_type: "Model performance monitoring"
-        description: "Q4 risk rating model performance monitoring report and migration analysis."
-        source: "Model Risk Management quarterly package"
-
-  - taxonomy_node_id: "RIB-BPR"
-    risk_id: "RI-CLUW-002"
-    risk_description: "Covenant design or post-close monitoring setup may be incomplete or inconsistent, causing missed covenant triggers and delayed identification of borrower deterioration."
-    risk_event: "A loan closes without the documented covenant checklist being translated into the monitoring schedule, and a financial covenant breach is not identified until the borrower's next quarterly submission."
-    applicability_rationale: "Business Process Risk materializes because the multi-step underwriting-to-booking process depends on consistent execution across credit, documentation, and loan operations roles."
-    confidence: 0.83
-    causes:
-      - "manual workflow"
-      - "unclear ownership"
-      - "missing required fields"
-    consequences:
-      - "missed covenant triggers"
-      - "delayed borrower deterioration identification"
-      - "rework on loan booking"
-    impact_scores:
-      financial_impact: 3
-      regulatory_impact: 2
-      reputational_impact: 2
-    overall_impact_score: 3
-    overall_impact_rationale: "Overall impact is Significant because missed covenant triggers can delay identification of borrower deterioration, resulting in higher charge-off severity."
-    likelihood_score: 2
-    likelihood_rating: "Medium Low"
-    likelihood_rationale: "Likelihood is Medium Low because checklist completion is at 92% with only 3 of 35 sampled loans missing the checklist, and loan operations identifies setup gaps within the first monitoring cycle."
-    assumptions:
-      - "Sampling reflects current loan booking practice."
-    exposure_metrics:
-      - metric_name: "covenant checklist completion"
-        metric_value: "92%"
-        metric_unit: "% of closed loans"
-        description: "Share of closed loans with completed covenant design checklist."
-        source: "Loan Operations sample audit"
-        supports: ["likelihood"]
-      - metric_name: "missed covenant triggers (trailing 12 months)"
-        metric_value: "2"
-        metric_unit: "missed triggers"
-        description: "Covenant triggers identified after the covenant test date over the trailing 12 months."
-        source: "Credit administration trigger log"
-        supports: ["likelihood", "impact"]
-    mapped_controls: ["CTRL-CL-004", "CTRL-CL-001"]
-    recommended_action: "Implement system enforcement that prevents loan booking without completed covenant checklist and integrate checklist directly with monitoring schedule fields."
-    coverage_gaps:
-      - "Covenant checklist completion is procedurally required but not system-enforced at booking."
-    action_plan:
-      - action: "System-enforce covenant checklist completion as a precondition to loan booking in core banking."
-        owner: "Loan Operations Manager"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "High"
-    review:
-      reviewer: "SVP, Credit Underwriting"
-      review_status: "Approved"
-      approval_status: "Approved"
-      challenge_comments: "Approved at current rating with action plan tracking system enforcement."
-      challenged_fields: ["likelihood_score"]
-
-  - taxonomy_node_id: "RIB-CON"
-    risk_id: "RI-CLUW-003"
-    risk_description: "Loan documentation may be incomplete, inconsistent with credit approval terms, or have lien perfection deficiencies that impair the bank's collateral position or enforceability of remedies."
-    risk_event: "A lien perfection filing is missed or filed late on a secured loan, impairing the bank's secured position relative to other creditors in a default scenario."
-    applicability_rationale: "Contract Risk materializes because commercial loans are documented under detailed credit agreements, security agreements, and perfection requirements that must align with approved terms."
-    confidence: 0.80
-    causes:
-      - "manual workflow"
-      - "interface breaks"
-    consequences:
-      - "impaired collateral position"
-      - "loss severity increase on default"
-      - "audit and legal findings"
-    impact_scores:
-      financial_impact: 3
-      regulatory_impact: 2
-      reputational_impact: 2
-    overall_impact_score: 3
-    overall_impact_rationale: "Overall impact is Significant because documentation defects directly affect loss-given-default and the bank's enforcement position."
-    likelihood_score: 1
-    likelihood_rating: "Low"
-    likelihood_rationale: "Likelihood is Low because legal review is independent and operating well, with only 1 late lien perfection identified and remediated in the prior period."
-    assumptions:
-      - "Legal review covers all secured loan closings."
-    exposure_metrics:
-      - metric_name: "late lien perfections"
-        metric_value: "1"
-        metric_unit: "in trailing 12 months"
-        description: "Lien perfection filings completed after the documented filing window."
-        source: "Loan documentation repository audit"
-        supports: ["likelihood"]
-      - metric_name: "documentation defect rate"
-        metric_value: "2.9%"
-        metric_unit: "% of sampled loans"
-        description: "Share of sampled loan files with one or more documentation defects identified in post-close review."
-        source: "Quarterly documentation audit"
-        supports: ["likelihood"]
-    mapped_controls: ["CTRL-CL-005"]
-    recommended_action: "Maintain current legal-review control and add automated lien perfection deadline alerting in the documentation repository."
-    coverage_gaps:
-      - "Single mapped control on documentation; consider adding a 1LOD documentation completeness review prior to legal sign-off."
-    action_plan:
-      - action: "Add automated lien perfection deadline alerting in loan documentation repository."
-        owner: "Technology Owner"
-        due_date: "2026-Q4"
-        status: "Planned"
-        priority: "Medium"
-    review:
-      reviewer: "Loan Documentation Counsel"
-      review_status: "Approved"
-      approval_status: "Approved"
-      challenge_comments: "Approved; single-control coverage acceptable given strong operating evidence."
-
-  - taxonomy_node_id: "RIB-IFR"
-    risk_id: "RI-CLUW-004"
-    risk_description: "Underwriters or relationship managers may bypass risk-rating model output, exception protocols, or delegated-authority limits to advance or approve loans outside policy."
-    risk_event: "A relationship manager assigns a more favorable risk rating than the model suggests without documented override rationale, advancing the loan to committee with materially understated risk."
-    applicability_rationale: "Internal Fraud Risk materializes because underwriters and relationship managers have judgment-based override authority over risk ratings and limited automated override controls."
-    confidence: 0.78
-    causes:
-      - "excessive privileges"
-      - "weak segregation"
-      - "override abuse"
-    consequences:
-      - "credit losses on under-rated loans"
-      - "audit and regulatory findings"
-      - "reputational impact"
-    impact_scores:
-      financial_impact: 3
-      regulatory_impact: 2
-      reputational_impact: 2
-    overall_impact_score: 3
-    overall_impact_rationale: "Overall impact is Significant because override abuse on credit decisions creates direct credit-loss exposure and concentrated reputational impact."
-    likelihood_score: 2
-    likelihood_rating: "Medium Low"
-    likelihood_rationale: "Likelihood is Medium Low because committee approval and 2LOD validation provide meaningful detection, but 4 of 8 rating disagreements lacked documented override rationale."
-    assumptions:
-      - "Override behavior is observable through 2LOD validation sample."
-    exposure_metrics:
-      - metric_name: "rating overrides without documented rationale"
-        metric_value: "4"
-        metric_unit: "of 8 disagreements in latest validation"
-        description: "Risk rating overrides where no documented rationale was retained."
-        source: "Credit Risk Review monthly validation"
-        supports: ["likelihood"]
-    mapped_controls: ["CTRL-CL-001", "CTRL-CL-002"]
-    recommended_action: "Require documented override rationale field in the rating workflow before submission to committee, with automated population of override rationale completeness in the 2LOD validation sample."
-    coverage_gaps:
-      - "Override rationale is procedurally required but not system-enforced."
-    action_plan:
-      - action: "Add system-enforced override rationale field in the risk rating workflow."
-        owner: "Technology Owner"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "High"
-    review:
-      reviewer: "Internal Audit"
-      review_status: "Pending Review"
-      approval_status: "Pending"
-      challenge_comments: "Recommend monthly trending of override rationale completeness; 4 of 8 missing rationale is a meaningful population that warrants control redesign."
-      challenged_fields: ["control_design_effectiveness", "management_response"]
-
+- taxonomy_node_id: RIB-MDL
+  risk_id: RISK-CLUW-001
+  risk_description: Model Performance risk in Commercial Loan Underwriting & Risk Rating may not be captured, evidenced, or
+    escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a model performance event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Model Performance is applicable because Commercial Loan Underwriting & Risk Rating is a high process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to model performance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when model performance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for model performance.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-001
+  exposure_metrics:
+  - metric_name: Model Performance exposure count
+    metric_value: 19
+    metric_unit: items
+    description: Current-period exposure count for model performance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Model Performance breach rate
+    metric_value: 1.15
+    metric_unit: '%'
+    description: Trailing breach rate for model performance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-001
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting model performance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Model Performance should remain within documented tolerance for Commercial Loan Underwriting & Risk Rating.
+    status: outside
+    category: Model Performance
+  recommended_action: Close evidence and control gaps for model performance in Commercial Loan Underwriting & Risk Rating.
+  action_plan:
+  - action: Close evidence and control gaps for model performance in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Model Performance needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate model performance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-CLUW-002
+  risk_description: Business Process Execution risk in Commercial Loan Underwriting & Risk Rating may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a business process execution event that breaches the
+    documented threshold before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Commercial Loan Underwriting & Risk Rating is
+    a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-002
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 26
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 1.5
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-002
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Commercial Loan Underwriting & Risk
+      Rating.
+    status: within
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Commercial Loan Underwriting & Risk
+    Rating.
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-CON
+  risk_id: RISK-CLUW-003
+  risk_description: Contract And Documentation risk in Commercial Loan Underwriting & Risk Rating may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a contract and documentation event that breaches the
+    documented threshold before remediation is completed.
+  applicability_rationale: Contract And Documentation is applicable because Commercial Loan Underwriting & Risk Rating is
+    a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to contract and
+      documentation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when contract and documentation
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for contract and documentation.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-003
+  exposure_metrics:
+  - metric_name: Contract And Documentation exposure count
+    metric_value: 33
+    metric_unit: items
+    description: Current-period exposure count for contract and documentation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Contract And Documentation breach rate
+    metric_value: 1.85
+    metric_unit: '%'
+    description: Trailing breach rate for contract and documentation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-003
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting contract and documentation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Contract And Documentation should remain within documented tolerance for Commercial Loan Underwriting & Risk
+      Rating.
+    status: within
+    category: Contract And Documentation
+  recommended_action: Close evidence and control gaps for contract and documentation in Commercial Loan Underwriting & Risk
+    Rating.
+  action_plan:
+  - action: Close evidence and control gaps for contract and documentation in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate contract and documentation scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-CLUW-004
+  risk_description: Data Quality And Reconciliation risk in Commercial Loan Underwriting & Risk Rating may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial
+    Lending operating model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a data quality and reconciliation event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Commercial Loan Underwriting & Risk Rating
+    is a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-004
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 40
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 2.2
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-004
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting data quality and reconciliation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Commercial Loan Underwriting
+      & Risk Rating.
+    status: within
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Commercial Loan Underwriting
+    & Risk Rating.
+  action_plan:
+  - action: Close evidence and control gaps for data quality and reconciliation in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-COM
+  risk_id: RISK-CLUW-005
+  risk_description: Regulatory Compliance risk in Commercial Loan Underwriting & Risk Rating may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a regulatory compliance event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Regulatory Compliance is applicable because Commercial Loan Underwriting & Risk Rating is a high
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      compliance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory compliance
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory compliance.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-005
+  exposure_metrics:
+  - metric_name: Regulatory Compliance exposure count
+    metric_value: 47
+    metric_unit: items
+    description: Current-period exposure count for regulatory compliance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Compliance breach rate
+    metric_value: 2.55
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory compliance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-005
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting regulatory compliance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Compliance should remain within documented tolerance for Commercial Loan Underwriting & Risk Rating.
+    status: within
+    category: Regulatory Compliance
+  recommended_action: Close evidence and control gaps for regulatory compliance in Commercial Loan Underwriting & Risk Rating.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory compliance in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate regulatory compliance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-IFR
+  risk_id: RISK-CLUW-006
+  risk_description: Internal Fraud And Override risk in Commercial Loan Underwriting & Risk Rating may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a internal fraud and override event that breaches the
+    documented threshold before remediation is completed.
+  applicability_rationale: Internal Fraud And Override is applicable because Commercial Loan Underwriting & Risk Rating is
+    a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to internal fraud
+      and override.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when internal fraud
+      and override is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for internal fraud and override.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-006
+  exposure_metrics:
+  - metric_name: Internal Fraud And Override exposure count
+    metric_value: 54
+    metric_unit: items
+    description: Current-period exposure count for internal fraud and override.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Internal Fraud And Override breach rate
+    metric_value: 2.9
+    metric_unit: '%'
+    description: Trailing breach rate for internal fraud and override thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-006
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting internal fraud and override assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Internal Fraud And Override should remain within documented tolerance for Commercial Loan Underwriting & Risk
+      Rating.
+    status: within
+    category: Internal Fraud And Override
+  recommended_action: Close evidence and control gaps for internal fraud and override in Commercial Loan Underwriting & Risk
+    Rating.
+  action_plan:
+  - action: Close evidence and control gaps for internal fraud and override in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate internal fraud and override scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-CLUW-007
+  risk_description: Business Process Execution risk in Commercial Loan Underwriting & Risk Rating may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Commercial Lending operating
+    model.
+  risk_event: Commercial Loan Underwriting & Risk Rating experiences a business process execution event that breaches the
+    documented threshold before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Commercial Loan Underwriting & Risk Rating is
+    a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Credit Underwriting Lead
+  - Executive Owner, Commercial Lending
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring commercial loan underwriting & risk rating volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects per credit decision; quarterly portfolio review, current issue history, recurring
+    volume, and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CLUW-007
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 61
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 3.25
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CLUW-007
+    evidence_type: Source artifact
+    description: Commercial Loan Underwriting & Risk Rating evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Commercial Loan Underwriting & Risk
+      Rating.
+    status: within
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Commercial Loan Underwriting & Risk
+    Rating.
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Commercial Loan Underwriting & Risk Rating.
+    owner: Credit Underwriting Lead
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Credit Underwriting Lead
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
 executive_summary:
-  headline: "Commercial Loan Underwriting shows one high residual model risk (rating model recalibration deferred) and emerging override-discipline weakness; documentation and committee controls are operating well."
+  headline: Commercial Loan Underwriting & Risk Rating captures 7 risk records across 6 risk subcategories for Commercial
+    Lending.
   key_messages:
-    - "Risk rating model recalibration deferred without MRM approval — CRO + CCO joint escalation triggered per Model appetite threshold (Low)."
-    - "Independent validation found 12% rating disagreement with 4 of 8 disagreements lacking override rationale — control redesign warranted."
-    - "Committee approval, legal review, and lien perfection controls are operating effectively; covenant checklist completion at 92% with system-enforcement remediation in plan."
+  - Commercial Lending shows differentiated risk capture based on process evidence and source-pack complexity.
+  - 1 high or critical residual records require visible management action.
+  - Ratings are matrix-calculated from impact, likelihood, and control environment evidence.
   top_residual_risks:
-    - "Model Risk (Rating Model Drift): High"
-    - "Business Process Risk (Covenant Checklist Completion): Medium"
-    - "Internal Fraud Risk (Override Discipline): Medium"
+  - RISK-CLUW-001 Model Performance
   recommended_actions:
-    - "Restart Q3 model recalibration with documented MRM approval and add interim conservative override on middle-market borderline ratings."
-    - "Expand independent rating validation sample from 8% to 15% of originations and require documented override rationale."
-    - "System-enforce covenant checklist completion as a precondition to loan booking."
+  - Use the Knowledge Base tab to compare BU source packs and risk-type concentrations.
+  - Validate High and Critical residual records through owner challenge and independent review.
+  - Track due dates through the issue and action-plan fields before executive export.

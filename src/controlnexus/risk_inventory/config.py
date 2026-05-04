@@ -44,6 +44,9 @@ class MatrixConfigLoader:
     def likelihood_scale(self) -> dict[str, Any]:
         return self.load("likelihood_scale.yaml")
 
+    def frequency_scale(self) -> dict[str, Any]:
+        return self.load("frequency_scale.yaml")
+
     def inherent_matrix(self) -> dict[str, Any]:
         return self.load("inherent_risk_matrix.yaml")
 
@@ -62,6 +65,7 @@ class MatrixConfigLoader:
     def config_snapshot(self) -> dict[str, Any]:
         return {
             "impact_scales": self.impact_scales(),
+            "frequency_scale": self.frequency_scale(),
             "likelihood_scale": self.likelihood_scale(),
             "inherent_risk_matrix": self.inherent_matrix(),
             "residual_risk_matrix": self.residual_matrix(),

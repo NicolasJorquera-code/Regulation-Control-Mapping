@@ -13,13 +13,16 @@ from controlnexus.risk_inventory.calculators import (
 from controlnexus.risk_inventory.config import MatrixConfigLoader, read_yaml, resolve_project_root
 from controlnexus.risk_inventory.models import (
     ActionItem,
+    AgentTraceEvent,
     ApprovalStatus,
     BusinessUnit,
+    ControlInventoryEntry,
     ControlDesignEffectivenessAssessment,
     ControlEffectivenessRating,
     ControlMapping,
     ControlOperatingEffectivenessAssessment,
     ControlTaxonomyEntry,
+    EvidenceArtifact,
     EvidenceQuality,
     EvidenceReference,
     ExecutiveSummary,
@@ -34,8 +37,10 @@ from controlnexus.risk_inventory.models import (
     LikelihoodScore,
     MaterializationType,
     OpenIssue,
-    Procedure,
+    IssueRecord,
+    Process,
     ProcessContext,
+    RegulatoryObligation,
     ReviewChallengeRecord,
     ReviewStatus,
     RiskAppetite,
@@ -47,7 +52,7 @@ from controlnexus.risk_inventory.models import (
     RiskTaxonomyLevel1,
     RootCauseTaxonomyEntry,
 )
-from controlnexus.risk_inventory.taxonomy import load_risk_inventory_taxonomy
+from controlnexus.risk_inventory.taxonomy import find_applicable_nodes, load_risk_inventory_taxonomy
 from controlnexus.risk_inventory.validator import RiskInventoryValidator
 
 
@@ -76,7 +81,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
         description=scenario["description"],
         systems=scenario.get("systems", []),
         stakeholders=scenario.get("stakeholders", []),
-        source_documents=["demo fixture: payment_exception_handling.yaml"],
+        source_documents=[f"demo fixture: {fixture_path.name}"],
     )
 
     records: list[RiskInventoryRecord] = []
@@ -156,7 +161,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
                 evidence_id=reference.get("evidence_id", f"EVID-{idx:03d}"),
                 evidence_type=reference.get("evidence_type", "Demo source"),
                 description=reference.get("description", ""),
-                source=reference.get("source", "sample_data/risk_inventory_demo/payment_exception_handling.yaml"),
+                source=reference.get("source", f"sample_data/risk_inventory_demo/{fixture_path.name}"),
             )
             for reference in spec.get("evidence_references", [])
         ] or [
@@ -164,7 +169,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
                 evidence_id=f"EVID-{idx:03d}",
                 evidence_type="Demo source",
                 description=f"Demo process narrative and mapped control evidence for {node.level_2_category}.",
-                source="sample_data/risk_inventory_demo/payment_exception_handling.yaml",
+                source=f"sample_data/risk_inventory_demo/{fixture_path.name}",
             )
         ]
         review = spec.get("review", {})
@@ -251,8 +256,8 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
                         "challenged_fields",
                         ["applicability", "impact_scores", "control_mapping"],
                     ),
-                    ai_original_value=review.get("ai_original_value", ""),
-                    reviewer_adjusted_value=review.get("reviewer_adjusted_value", ""),
+                    ai_original_value=_review_value(review.get("ai_original_value", "")),
+                    reviewer_adjusted_value=_review_value(review.get("reviewer_adjusted_value", "")),
                     reviewer_rationale=review.get("reviewer_rationale", ""),
                     approval_status=approval_status_enum,
                 )
@@ -328,8 +333,16 @@ def _risk_description(node: Any, context: ProcessContext) -> str:
     )
 
 
+def _review_value(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    if value in (None, ""):
+        return ""
+    return str(value)
+
+
 def _with_root_cause_verbiage(description: str, causes: list[str]) -> str:
-    """Keep root-cause context in the statement while the detailed UI is deferred."""
+    """Keep root-cause context visible in the generated risk statement."""
     clean_description = description.strip()
     if not causes:
         return clean_description
@@ -342,17 +355,22 @@ def _with_root_cause_verbiage(description: str, causes: list[str]) -> str:
 def _build_exposure_metrics(spec: dict[str, Any], node: Any, idx: int) -> list[ExposureMetric]:
     metrics = spec.get("exposure_metrics")
     if metrics:
-        return [
-            ExposureMetric(
-                metric_name=metric.get("metric_name", ""),
-                metric_value=str(metric.get("metric_value", "")),
-                metric_unit=metric.get("metric_unit", ""),
-                description=metric.get("description", ""),
-                source=metric.get("source", "Payment Exception Workflow"),
-                supports=metric.get("supports", ["likelihood", "impact"]),
+        metric_models: list[ExposureMetric] = []
+        for metric in metrics:
+            supports = metric.get("supports", ["likelihood", "impact"])
+            if isinstance(supports, str):
+                supports = [supports]
+            metric_models.append(
+                ExposureMetric(
+                    metric_name=metric.get("metric_name", ""),
+                    metric_value=str(metric.get("metric_value", "")),
+                    metric_unit=metric.get("metric_unit", ""),
+                    description=metric.get("description", ""),
+                    source=metric.get("source", "Payment Exception Workflow"),
+                    supports=supports,
+                )
             )
-            for metric in metrics
-        ]
+        return metric_models
 
     return [
         ExposureMetric(
@@ -492,20 +510,106 @@ def default_workspace_fixture_path() -> Path:
     return resolve_project_root() / "sample_data" / "risk_inventory_demo" / "workspace.yaml"
 
 
-def load_demo_workspace(path: Path | str | None = None) -> RiskInventoryWorkspace:
-    """Load the multi-BU demo workspace with knowledge-base and per-procedure runs."""
-    fixture_path = Path(path) if path else default_workspace_fixture_path()
-    payload = read_yaml(fixture_path)
+def load_knowledge_pack(path: Path | str | None = None) -> RiskInventoryWorkspace:
+    """Load a modular Risk Inventory knowledge pack.
 
+    ``path`` can point to a workspace YAML file or to a directory containing
+    ``workspace.yaml`` plus optional modular sidecar files referenced by
+    ``knowledge_pack.files``.
+    """
+    fixture_path = Path(path) if path else default_workspace_fixture_path()
+    if fixture_path.is_dir():
+        fixture_path = fixture_path / "workspace.yaml"
+    payload = _load_workspace_payload(fixture_path)
+    return _build_workspace_from_payload(fixture_path, payload)
+
+
+def load_demo_workspace(path: Path | str | None = None) -> RiskInventoryWorkspace:
+    """Load the multi-BU demo workspace with knowledge-base and process runs."""
+    return load_knowledge_pack(path)
+
+
+def _load_workspace_payload(fixture_path: Path) -> dict[str, Any]:
+    payload = read_yaml(fixture_path)
+    business_unit_filter = payload.get("business_unit_ids")
+    process_filter = payload.get("process_ids")
+    if business_unit_filter is None and _is_identifier_list(payload.get("business_units")):
+        business_unit_filter = list(payload.get("business_units", []))
+    if process_filter is None and _is_identifier_list(payload.get("processes")):
+        process_filter = list(payload.get("processes", []))
+
+    manifest = payload.get("knowledge_pack", {})
+    files = manifest.get("files", {}) if isinstance(manifest, dict) else {}
+    for key, relative_path in files.items():
+        if not relative_path:
+            continue
+        sidecar = read_yaml(fixture_path.parent / relative_path)
+        if key in {"business_units", "processes", "procedures", "run_fixtures", "kri_library"}:
+            payload[key] = sidecar.get(key, sidecar.get("records", []))
+        else:
+            payload[key] = sidecar.get(key, sidecar.get("records", sidecar))
+    if business_unit_filter:
+        payload["_business_unit_filter"] = set(str(item) for item in business_unit_filter)
+    if process_filter:
+        payload["_process_filter"] = set(str(item) for item in process_filter)
+    return payload
+
+
+def _is_identifier_list(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def _build_workspace_from_payload(fixture_path: Path, payload: dict[str, Any]) -> RiskInventoryWorkspace:
     bank = payload.get("bank", {})
+    business_unit_filter = payload.get("_business_unit_filter")
+    process_filter = payload.get("_process_filter")
     bus = [BusinessUnit.model_validate(item) for item in payload.get("business_units", [])]
-    procedures = [Procedure.model_validate(item) for item in payload.get("procedures", [])]
+    if business_unit_filter:
+        bus = [bu for bu in bus if bu.bu_id in business_unit_filter]
+    active_bu_ids = {bu.bu_id for bu in bus}
+    processes = [
+        Process.model_validate(item)
+        for item in payload.get("processes", payload.get("procedures", []))
+    ]
+    if active_bu_ids:
+        processes = [process for process in processes if process.bu_id in active_bu_ids]
+    if process_filter:
+        processes = [process for process in processes if process.process_id in process_filter]
+    active_process_ids = {process.process_id for process in processes}
+    if active_process_ids:
+        bus = [
+            bu.model_copy(
+                update={
+                    "process_ids": [process_id for process_id in bu.process_ids if process_id in active_process_ids],
+                    "procedure_ids": [
+                        process_id for process_id in bu.procedure_ids if process_id in active_process_ids
+                    ],
+                }
+            )
+            for bu in bus
+        ]
     risk_l1 = [RiskTaxonomyLevel1.model_validate(item) for item in payload.get("risk_taxonomy_l1", [])]
     control_tax = [ControlTaxonomyEntry.model_validate(item) for item in payload.get("control_taxonomy", [])]
     root_cause_tax = [RootCauseTaxonomyEntry.model_validate(item) for item in payload.get("root_cause_taxonomy", [])]
+    issues = [
+        IssueRecord.model_validate(_normalize_issue_record(item))
+        for item in payload.get("issues", [])
+        if not active_process_ids or item.get("process_id", "") in active_process_ids
+    ]
+    obligations = [
+        RegulatoryObligation.model_validate(_normalize_obligation_record(item))
+        for item in payload.get("regulatory_obligations", [])
+        if not active_process_ids or active_process_ids.intersection(set(item.get("process_ids", [])))
+    ]
+    evidence_artifacts = [
+        EvidenceArtifact.model_validate(_normalize_evidence_record(item))
+        for item in payload.get("evidence_artifacts", [])
+        if not active_process_ids or item.get("process_id", "") in active_process_ids
+    ]
 
     kris: list[KRIDefinition] = []
     for item in payload.get("kri_library", []):
+        item = _normalize_kri_record(item)
         thresholds = item.get("thresholds", {})
         kris.append(
             KRIDefinition(
@@ -533,8 +637,10 @@ def load_demo_workspace(path: Path | str | None = None) -> RiskInventoryWorkspac
     runs: list[RiskInventoryRun] = []
     aggregated_controls: dict[str, dict[str, Any]] = {}
     for entry in payload.get("run_fixtures", []):
-        run_path = fixture_path.parent / entry["fixture"]
+        run_path = _run_fixture_path(fixture_path.parent, entry)
         run = load_demo_risk_inventory(run_path)
+        if active_process_ids and run.input_context.process_id not in active_process_ids:
+            continue
         runs.append(run)
         # also collect controls for the bank-wide knowledge-base view
         run_payload = read_yaml(run_path)
@@ -543,18 +649,437 @@ def load_demo_workspace(path: Path | str | None = None) -> RiskInventoryWorkspac
 
     # taxonomy L2 nodes (loaded once)
     risk_l2 = load_risk_inventory_taxonomy()
+    if payload.get("auto_generate_missing_runs", True):
+        existing_process_ids = {run.input_context.process_id for run in runs}
+        for process in processes:
+            if process.process_id in existing_process_ids:
+                continue
+            bu_name = next(
+                (bu.bu_name for bu in bus if bu.bu_id == process.bu_id),
+                process.bu_id,
+            )
+            run = _build_synthetic_process_run(process, bu_name, risk_l2)
+            runs.append(run)
+            for record in run.records:
+                for mapping in record.control_mappings:
+                    aggregated_controls.setdefault(
+                        mapping.control_id,
+                        {
+                            "control_id": mapping.control_id,
+                            "control_name": mapping.control_name,
+                            "control_type": mapping.control_type,
+                            "description": mapping.control_description,
+                            "owner": process.owner,
+                            "frequency": _frequency_from_process(process),
+                            "process_ids": [process.process_id],
+                            "taxonomy_node_ids": [record.taxonomy_node.id],
+                            "design_rating": (
+                                mapping.design_effectiveness.rating.value
+                                if mapping.design_effectiveness
+                                else "Satisfactory"
+                            ),
+                            "operating_rating": (
+                                mapping.operating_effectiveness.rating.value
+                                if mapping.operating_effectiveness
+                                else "Satisfactory"
+                            ),
+                        },
+                    )
+
+    sidecar_controls = {
+        control.get("control_id", ""): control
+        for control in payload.get("controls", [])
+        if control.get("control_id")
+    }
+    aggregated_controls.update(sidecar_controls)
+    if active_process_ids:
+        active_taxonomy_ids = {
+            record.taxonomy_node.id
+            for run in runs
+            for record in run.records
+        }
+        kris = [kri for kri in kris if kri.risk_taxonomy_id in active_taxonomy_ids]
+    control_inventory = [
+        ControlInventoryEntry.model_validate(control)
+        for control in aggregated_controls.values()
+    ]
 
     return RiskInventoryWorkspace(
         workspace_id=payload.get("workspace_id", "WS-DEMO"),
-        bank_id=bank.get("bank_id", "DEMO-BANK"),
-        bank_name=bank.get("bank_name", "Demo Bank"),
+        bank_id=bank.get("bank_id", "DEMO-FS"),
+        bank_name=bank.get("bank_name", "Large Global Bank"),
         business_units=bus,
-        procedures=procedures,
+        processes=processes,
         risk_taxonomy_l1=risk_l1,
         risk_taxonomy_l2=risk_l2,
         control_taxonomy=control_tax,
         root_cause_taxonomy=root_cause_tax,
         bank_controls=list(aggregated_controls.values()),
+        control_inventory=control_inventory,
+        issues=issues,
+        regulatory_obligations=obligations,
+        evidence_artifacts=evidence_artifacts,
+        risk_appetite_framework=payload.get("risk_appetite_framework", {}),
         kri_library=kris,
         runs=runs,
+        agent_trace=_workspace_trace(runs),
+        knowledge_pack_manifest={
+            "source": str(fixture_path),
+            "files": payload.get("knowledge_pack", {}).get("files", {}),
+            "auto_generate_missing_runs": payload.get("auto_generate_missing_runs", True),
+            "business_unit_count": len(bus),
+            "process_count": len(processes),
+            "run_count": len(runs),
+            "business_unit_filter": sorted(business_unit_filter or []),
+            "process_filter": sorted(process_filter or []),
+        },
     )
+
+
+def _run_fixture_path(base_path: Path, entry: Any) -> Path:
+    if isinstance(entry, str):
+        relative_path = entry
+    elif isinstance(entry, dict):
+        relative_path = entry.get("fixture") or entry.get("fixture_path") or entry.get("path")
+    else:
+        relative_path = None
+    if not relative_path:
+        raise ValueError(f"Run fixture entry must include fixture or fixture_path: {entry!r}")
+    return base_path / str(relative_path)
+
+
+def _normalize_issue_record(item: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(item)
+    normalized.setdefault("title", normalized.get("description", normalized.get("issue_id", "Issue")))
+    normalized.setdefault("source", normalized.get("identified_by", "Demo source pack"))
+    return normalized
+
+
+def _normalize_obligation_record(item: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(item)
+    normalized.setdefault("name", normalized.get("description", normalized.get("obligation_id", "Obligation")))
+    if "citation" not in normalized and "citation_high_level" in normalized:
+        normalized["citation"] = normalized["citation_high_level"]
+    normalized.setdefault("risk_taxonomy_ids", normalized.get("risk_taxonomy_id", []))
+    normalized.setdefault("control_expectations", normalized.get("control_ids", []))
+    return normalized
+
+
+def _normalize_evidence_record(item: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(item)
+    normalized.setdefault("name", normalized.get("description", normalized.get("evidence_id", "Evidence")))
+    if "artifact_type" not in normalized and "evidence_type" in normalized:
+        normalized["artifact_type"] = normalized["evidence_type"]
+    if "source_system" not in normalized and "source" in normalized:
+        normalized["source_system"] = normalized["source"]
+    normalized.setdefault("owner", "Process Owner")
+    normalized.setdefault("retention", "7 years")
+    normalized.setdefault("sample_period", normalized.get("last_refreshed", "Current period"))
+    return normalized
+
+
+def _normalize_kri_record(item: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(item)
+    normalized.setdefault("metric_definition", normalized.get("description", "Demo KRI definition"))
+    normalized.setdefault("thresholds", {})
+    return normalized
+
+
+def _build_synthetic_process_run(
+    process: Process,
+    bu_name: str,
+    risk_l2: list[Any],
+) -> RiskInventoryRun:
+    """Build a deterministic complete run for configured processes without fixtures."""
+    loader = MatrixConfigLoader()
+    inherent_calc = InherentRiskCalculator(loader.inherent_matrix())
+    env_calc = ControlEnvironmentCalculator()
+    residual_calc = ResidualRiskCalculator(loader.residual_matrix(), loader.management_response_rules())
+
+    context = ProcessContext(
+        process_id=process.process_id,
+        process_name=process.process_name,
+        product=process.description.split(".")[0][:90] if process.description else "Financial services process",
+        business_unit=bu_name,
+        description=process.description,
+        systems=process.related_systems,
+        stakeholders=[process.owner or "Business Process Owner", bu_name, "Operational Risk"],
+        source_documents=[f"synthetic knowledge pack process: {process.process_id}"],
+    )
+    process_text = " ".join(
+        [
+            process.process_name,
+            process.description,
+            " ".join(process.related_systems),
+            " ".join(process.event_triggers),
+            " ".join(process.data_objects),
+        ]
+    )
+    nodes = find_applicable_nodes(process_text, risk_l2, include_all_if_none=True)[:4]
+    records: list[RiskInventoryRecord] = []
+    generated_controls: dict[str, dict[str, Any]] = {}
+
+    for idx, node in enumerate(nodes, start=1):
+        impact_score = ImpactScore.SEVERE if idx == 1 and process.criticality == "Critical" else ImpactScore.SIGNIFICANT
+        likelihood_score = LikelihoodScore.HIGH if "daily" in process.cadence.lower() and idx == 1 else LikelihoodScore.MEDIUM_HIGH
+        dimensions = []
+        likely_dims = {str(dim.value if hasattr(dim, "value") else dim) for dim in node.likely_impact_dimensions}
+        for dimension in ImpactDimension:
+            score = impact_score if dimension.value in likely_dims else ImpactScore.MEANINGFUL
+            dimensions.append(
+                ImpactDimensionAssessment(
+                    dimension=dimension,
+                    score=score,
+                    rationale=(
+                        f"{node.level_2_category} has {score} {dimension.value.replace('_', ' ')} "
+                        f"exposure in {process.process_name} based on process criticality, systems, and event triggers."
+                    ),
+                )
+            )
+        impact = ImpactAssessment(
+            dimensions=dimensions,
+            overall_impact_score=max((item.score for item in dimensions), default=ImpactScore.MEANINGFUL),
+            overall_impact_rationale=(
+                f"{process.process_name} is {process.criticality.lower()} and depends on "
+                f"{', '.join(process.related_systems[:2]) or 'configured systems'}, making the highest "
+                "material impact dimension the conservative inherent-risk input."
+            ),
+        )
+        likelihood = LikelihoodAssessment(
+            likelihood_score=likelihood_score,
+            likelihood_rating=_likelihood_label(int(likelihood_score)),
+            rationale=(
+                f"Likelihood reflects {process.cadence.lower() or 'recurring'} execution, "
+                f"{', '.join(process.event_triggers[:2]) or 'configured triggers'}, and dependency on "
+                f"{', '.join(process.related_systems[:2]) or 'manual workflow'}."
+            ),
+            assumptions=[
+                "Synthetic fixture generated from process metadata.",
+                "Exposure metrics should be replaced with institution-specific production measures.",
+            ],
+        )
+        inherent = inherent_calc.calculate(
+            impact.overall_impact_score,
+            likelihood.likelihood_score,
+            rationale="Calculated from configured inherent risk matrix using synthetic process metadata.",
+        )
+
+        mappings: list[ControlMapping] = []
+        if idx < 4:
+            control_type = node.related_control_types[0] if node.related_control_types else "Risk and Compliance Assessments"
+            control_id = f"CTRL-{process.process_id.replace('PROC-', '').replace('-', '')[:12]}-{idx:03d}"
+            control = {
+                "control_id": control_id,
+                "control_name": f"{process.process_name} {control_type}",
+                "control_type": control_type,
+                "description": (
+                    f"{process.owner or 'Process owner'} performs {control_type.lower()} for "
+                    f"{process.process_name} to address {node.level_2_category.lower()} drivers."
+                ),
+                "design_rating": "Satisfactory" if idx != 2 else "Improvement Needed",
+                "operating_rating": "Satisfactory" if idx != 3 else "Improvement Needed",
+                "coverage_by_risk": {node.id: "partial" if idx in {2, 3} else "strong"},
+                "mapped_root_causes_per_risk": {node.id: node.typical_root_causes[:2]},
+                "open_issues": [
+                    {
+                        "issue_id": f"ISS-{process.process_id.replace('PROC-', '')}-{idx:02d}",
+                        "description": f"Sample issue for {node.level_2_category} evidence calibration.",
+                        "severity": "Medium",
+                        "age_days": 28 + idx * 5,
+                        "owner": process.owner or "Process Owner",
+                    }
+                ]
+                if idx == 3
+                else [],
+                "evidence_quality": {
+                    "rating": "Adequate" if idx != 3 else "Needs Refresh",
+                    "last_tested": "2026-03-31",
+                    "sample_size": 25,
+                    "exceptions_noted": 1 if idx == 3 else 0,
+                    "notes": "Synthetic evidence profile for demo workflow.",
+                },
+            }
+            generated_controls[control_id] = {
+                **control,
+                "owner": process.owner,
+                "frequency": _frequency_from_process(process),
+                "process_ids": [process.process_id],
+                "taxonomy_node_ids": [node.id],
+            }
+            mappings = [_build_control_mapping(control, node)]
+
+        design_rating = _aggregate_design_rating(mappings) if mappings else ControlEffectivenessRating.INADEQUATE
+        operating_rating = _aggregate_operating_rating(mappings) if mappings else ControlEffectivenessRating.INADEQUATE
+        environment = env_calc.calculate(
+            design_rating,
+            operating_rating,
+            rationale=(
+                f"Control environment uses the conservative worse-of design ({design_rating.value}) "
+                f"and operating ({operating_rating.value}) rule."
+            ),
+        )
+        residual = residual_calc.calculate(
+            inherent,
+            environment,
+            rationale=(
+                f"Residual risk is matrix-calculated from {inherent.inherent_label} inherent risk "
+                f"and {environment.control_environment_rating.value} control environment."
+            ),
+            recommended_action=(
+                f"Validate synthetic coverage and collect production evidence for {node.level_2_category}."
+            ),
+        )
+        evidence = [
+            EvidenceReference(
+                evidence_id=f"EVID-{process.process_id}-{idx:02d}",
+                evidence_type="Synthetic knowledge pack",
+                description=f"Process metadata and generated control evidence for {node.level_2_category}.",
+                source=f"sample_data/risk_inventory_demo/workspace.yaml::{process.process_id}",
+            )
+        ]
+        record = RiskInventoryRecord(
+            risk_id=f"RI-{process.process_id.replace('PROC-', '')}-{idx:03d}",
+            process_id=process.process_id,
+            process_name=process.process_name,
+            product=context.product,
+            taxonomy_node=node,
+            applicability=RiskApplicabilityAssessment(
+                materializes=True,
+                materialization_type=MaterializationType.PROCESS_SPECIFIC,
+                rationale=(
+                    f"{node.level_2_category} materializes because {process.process_name} includes "
+                    f"{', '.join(node.applicable_process_patterns[:3]) or 'configured financial-services risk drivers'}."
+                ),
+                confidence=0.78,
+                evidence_refs=evidence,
+            ),
+            risk_statement=RiskStatement(
+                risk_description=_with_root_cause_verbiage(
+                    _risk_description(node, context),
+                    node.typical_root_causes[:3],
+                ),
+                risk_event=node.example_risk_statements[0] if node.example_risk_statements else _risk_description(node, context),
+                causes=node.typical_root_causes[:3],
+                consequences=[
+                    "financial loss, rework, or delayed service delivery",
+                    "regulatory, customer, or executive escalation",
+                ],
+                affected_stakeholders=context.stakeholders,
+            ),
+            exposure_metrics=_build_exposure_metrics({}, node, idx),
+            impact_assessment=impact,
+            likelihood_assessment=likelihood,
+            inherent_risk=inherent,
+            control_mappings=mappings,
+            control_environment=environment,
+            residual_risk=residual,
+            review_challenges=[
+                ReviewChallengeRecord(
+                    review_status=ReviewStatus.PENDING_REVIEW,
+                    reviewer=process.owner or "Business process owner",
+                    challenge_comments=(
+                        f"Confirm applicability, evidence, and residual response for {node.level_2_category}."
+                    ),
+                    challenged_fields=["applicability", "control_mapping", "residual_risk"],
+                    approval_status=ApprovalStatus.DRAFT,
+                )
+            ],
+            evidence_references=evidence,
+            risk_appetite=RiskAppetite(
+                threshold="Medium",
+                statement=f"{node.level_2_category} should remain Medium or below after control validation.",
+                status="outside" if residual.residual_rating.value in {"High", "Critical"} else "within",
+                category=node.level_2_category,
+            ),
+            action_plan=[
+                ActionItem(
+                    action=f"Validate generated coverage for {node.level_2_category}.",
+                    owner=process.owner or "Process Owner",
+                    due_date="2026-06-30",
+                    priority="High" if residual.residual_rating.value in {"High", "Critical"} else "Medium",
+                )
+            ],
+            coverage_gaps=[] if mappings and idx == 1 else [
+                f"Coverage for {node.level_2_category} requires production evidence and root-cause validation."
+            ],
+            demo_record=True,
+        )
+        records.append(record)
+
+    run = RiskInventoryRun(
+        run_id=f"DEMO-RI-{process.process_id.replace('PROC-', '')}-SYN",
+        tenant_id="generic-demo",
+        bank_id="generic-demo",
+        input_context=context,
+        records=records,
+        executive_summary=ExecutiveSummary(
+            headline=(
+                f"{process.process_name} generated {len(records)} risk records with deterministic "
+                "inherent/residual scoring and synthetic control coverage where fixture detail is pending."
+            ),
+            key_messages=[
+                f"{bu_name} risk profile is differentiated through process metadata and taxonomy matching.",
+                "Synthetic controls are flagged for business validation before acceptance.",
+                "Residual risk remains matrix-calculated and review-ready.",
+            ],
+            top_residual_risks=[
+                f"{record.taxonomy_node.level_2_category}: {record.residual_risk.residual_label}"
+                for record in records
+                if record.residual_risk.residual_rating.value in {"Medium", "High", "Critical"}
+            ],
+            recommended_actions=[
+                "Replace synthetic exposure metrics with production measures.",
+                "Validate mapped controls and evidence with process owners.",
+                "Approve or challenge residual ratings in the HITL review phase.",
+            ],
+        ),
+        config_snapshot=loader.config_snapshot(),
+        run_manifest={
+            "fixture": "synthetic knowledge pack generation",
+            "deterministic": True,
+            "llm_required": False,
+            "record_count": len(records),
+            "generated_controls": list(generated_controls),
+        },
+        demo_mode=True,
+        events=[event.model_dump() for event in _run_trace(process.process_name, records)],
+    )
+    findings = RiskInventoryValidator(inherent_calc, residual_calc).validate_run(run, set(generated_controls))
+    return run.model_copy(update={"validation_findings": findings})
+
+
+def _frequency_from_process(process: Process) -> str:
+    cadence = process.cadence.lower()
+    if "daily" in cadence or "continuous" in cadence:
+        return "Daily"
+    if "weekly" in cadence:
+        return "Weekly"
+    if "monthly" in cadence:
+        return "Monthly"
+    if "quarter" in cadence:
+        return "Quarterly"
+    return "Event-driven"
+
+
+def _run_trace(process_name: str, records: list[RiskInventoryRecord]) -> list[AgentTraceEvent]:
+    return [
+        AgentTraceEvent(
+            stage="Synthetic Fixture Generation",
+            agent="DeterministicKnowledgePackAgent",
+            summary=f"Generated {len(records)} review-ready records for {process_name}.",
+            inputs_used=["process metadata", "risk taxonomy", "scoring matrices"],
+            output_refs=[record.risk_id for record in records],
+        )
+    ]
+
+
+def _workspace_trace(runs: list[RiskInventoryRun]) -> list[AgentTraceEvent]:
+    return [
+        AgentTraceEvent(
+            stage="Knowledge Pack Assembly",
+            agent="KnowledgePackLoader",
+            summary=f"Assembled {len(runs)} process risk inventory runs for the flagship demo workspace.",
+            inputs_used=["workspace.yaml", "run fixtures", "risk inventory config"],
+            output_refs=[run.run_id for run in runs],
+        )
+    ]

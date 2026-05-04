@@ -1,456 +1,1111 @@
-version: "1.2.0"
+version: 1.2.0
 risk_appetite_framework:
-  statement: "The bank maintains zero tolerance for material BSA/AML control failures, customer data exposure, or unauthorized account openings. Residual risk above Medium in Compliance, Cyber, or Privacy categories requires CRO escalation within 5 business days."
-  effective_date: "2026-01-01"
-  approver: "Board Risk Committee"
+  statement: Retail Banking & Onboarding maintains documented tolerance thresholds for Retail Customer Onboarding (CIP / KYC);
+    residual High or Critical requires owner action and independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
   category_thresholds:
-    compliance: "Low"
-    cyber: "Low"
-    privacy: "Low"
-    operational: "Medium"
-    third_party: "Medium"
+    operational: Medium
+    cyber: Low
+    regulatory: Low
+    talent: Medium
   escalation_rules:
-    - "Residual at threshold: monthly monitoring by 1LOD with quarterly 2LOD review."
-    - "Residual above threshold: executive-approved remediation plan with quarterly progress review."
-    - "Compliance / Cyber / Privacy residual two or more bands above threshold: Board Risk Committee escalation within 10 business days."
+  - Residual above tolerance requires named action plan.
+  - Critical residual requires executive notification within one business day.
 scenario:
-  run_id: "DEMO-RI-CUSTONB-001"
-  tenant_id: "demo-bank"
-  process_id: "PROC-CUST-ONBOARD"
-  process_name: "Retail Customer Onboarding (CIP / KYC)"
-  product: "Retail deposit and digital banking onboarding"
-  business_unit: "Retail Banking & Onboarding"
-  description: "End-to-end retail customer onboarding workflow covering identity verification, OFAC screening, customer due diligence, account opening, initial funding controls, and ongoing CIP exception remediation. Process serves both branch-originated and digital channels with shared identity, screening, and account-opening systems."
+  run_id: DEMO-RI-CUSTONB-001
+  tenant_id: generic-demo
+  process_id: PROC-CUST-ONBOARD
+  process_name: Retail Customer Onboarding (CIP / KYC)
+  product: New deposit account opening across branch and digital channels
+  business_unit: Retail Banking & Onboarding
+  description: New deposit account opening across branch and digital channels, including identity verification, OFAC screening,
+    CIP completion, CDD/EDD triggering, and account funding controls.
   systems:
-    - "Digital Onboarding Platform"
-    - "Identity Verification Service"
-    - "OFAC Screening Engine"
-    - "Customer Due Diligence Workflow"
-    - "Core Banking Deposit System"
-    - "Document Management Repository"
+  - Digital Onboarding Platform
+  - Identity Verification Service
+  - Sanctions Screening Platform
+  - Due Diligence Workflow
+  - Deposit Core Platform
   stakeholders:
-    - "Retail Compliance Officer"
-    - "BSA Officer"
-    - "Privacy Office"
-    - "Fraud Operations Manager"
-    - "Branch Operations Manager"
-    - "Digital Channel Owner"
-    - "Information Security"
-
-# ---------------------------------------------------------------------------
-# Bank controls supporting the procedure
-# ---------------------------------------------------------------------------
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
 controls:
-  - control_id: "CTRL-ONB-001"
-    control_name: "CIP identity verification at account opening"
-    control_type: "Client Due Diligence and Transaction Monitoring"
-    owner: "Retail Compliance Officer"
-    frequency: "Per account opening"
-    description: "Identity verification using documentary and non-documentary methods at account opening, with required-field completion and 5-business-day resolution window for exceptions."
-    design_rating: "Satisfactory"
-    operating_rating: "Improvement Needed"
-    design_rationale: "Control is designed to enforce CIP requirements with exception workflow, but does not yet block account funding when CIP is incomplete."
-    operating_rationale: "Last quarter showed 2.4% of accounts opened with CIP exception not closed within 5-business-day window."
-    risk_mitigations:
-      RIB-COM: "CIP enforcement is the foundational mitigant for BSA/AML compliance risk; required for account opening regardless of channel."
-      RIB-EFR: "Identity verification reduces synthetic-identity and impersonation fraud risk at the entry point."
-      RIB-PRI: "Documented identity collection scope provides the basis for downstream privacy notices and data minimization."
-    coverage_by_risk:
-      RIB-COM: "strong"
-      RIB-EFR: "partial"
-      RIB-PRI: "partial"
-    open_issues:
-      - issue_id: "IS-ONB-003"
-        description: "Aged CIP exceptions not yet auto-blocked from receiving incoming wires until closed."
-        severity: "High"
-        age_days: 42
-        owner: "Digital Channel Owner"
-        status: "In Remediation"
-    evidence_quality:
-      rating: "Adequate"
-      last_tested: "2026-03-08"
-      sample_size: 50
-      exceptions_noted: 4
-      notes: "QA sample of 50 new accounts; 4 had CIP exception aging past 5 business days."
-
-  - control_id: "CTRL-ONB-002"
-    control_name: "OFAC screening with secondary review"
-    control_type: "Automated Rules"
-    owner: "BSA Officer"
-    frequency: "Per account opening and refreshed weekly"
-    description: "Real-time OFAC screening at onboarding with manual secondary review of potential matches and weekly portfolio rescreening against updated lists."
-    design_rating: "Strong"
-    operating_rating: "Satisfactory"
-    design_rationale: "Real-time and recurring screening with maker-checker on potential matches; full audit trail in screening engine."
-    operating_rationale: "Sampled population shows 100% real-time screening; secondary review SLA met on 96% of potential matches."
-    risk_mitigations:
-      RIB-COM: "Screening is the OFAC-mandated control; secondary review prevents false negatives from automated decisioning."
-    coverage_by_risk:
-      RIB-COM: "strong"
-    evidence_quality:
-      rating: "Strong"
-      last_tested: "2026-02-20"
-      sample_size: 60
-      exceptions_noted: 2
-      notes: "Two secondary reviews completed 1 business day late; no missed true matches."
-
-  - control_id: "CTRL-ONB-003"
-    control_name: "Customer due diligence (CDD) tiered review"
-    control_type: "Client Due Diligence and Transaction Monitoring"
-    owner: "BSA Officer"
-    frequency: "Per account opening; enhanced review per risk tier"
-    description: "Tiered customer due diligence with documented questionnaires, source-of-funds collection for medium/high-risk customers, and enhanced due diligence (EDD) for high-risk."
-    design_rating: "Satisfactory"
-    operating_rating: "Satisfactory"
-    design_rationale: "Tiered approach aligned to FFIEC BSA exam manual; EDD documented with senior compliance review."
-    operating_rationale: "Sample evidence shows tiering applied consistently; 3% of medium-risk accounts missing source-of-funds documentation."
-    risk_mitigations:
-      RIB-COM: "Tiered CDD enables proportionate AML controls and supports suspicious activity monitoring."
-    coverage_by_risk:
-      RIB-COM: "partial"
-    evidence_quality:
-      rating: "Adequate"
-      last_tested: "2026-02-25"
-      sample_size: 45
-      exceptions_noted: 3
-
-  - control_id: "CTRL-ONB-004"
-    control_name: "Synthetic identity model with manual fraud review"
-    control_type: "Surveillance"
-    owner: "Fraud Operations Manager"
-    frequency: "Real-time at application + monthly model performance review"
-    description: "Synthetic-identity detection model flags applications for manual fraud review; model precision and recall monitored monthly."
-    design_rating: "Satisfactory"
-    operating_rating: "Improvement Needed"
-    design_rationale: "Model + human review combination is industry standard; thresholds documented and approved by Model Risk Management."
-    operating_rationale: "Latest model performance shows 18% confirmation rate on flagged applications, below the 35% green threshold; potential model drift."
-    risk_mitigations:
-      RIB-EFR: "Detection-and-review pattern reduces synthetic-identity onboarding losses."
-    coverage_by_risk:
-      RIB-EFR: "partial"
-    open_issues:
-      - issue_id: "IS-ONB-007"
-        description: "Synthetic-identity model precision below 20% in latest monthly review; recalibration not yet scheduled."
-        severity: "Medium"
-        age_days: 22
-        owner: "Fraud Operations Manager"
-        status: "Open"
-    evidence_quality:
-      rating: "Adequate"
-      last_tested: "2026-03-12"
-      sample_size: 80
-      exceptions_noted: 14
-      notes: "80 flagged applications reviewed; 14 confirmed fraud or high-risk."
-
-  - control_id: "CTRL-ONB-005"
-    control_name: "Privacy notice delivery and consent capture"
-    control_type: "Directive"
-    owner: "Chief Privacy Officer"
-    frequency: "Per account opening"
-    description: "Initial privacy notice and required consents delivered and electronically attested at account opening, archived in document repository for regulatory response window."
-    design_rating: "Strong"
-    operating_rating: "Strong"
-    design_rationale: "Notice delivery is system-enforced before account funding; consents captured with timestamps."
-    operating_rationale: "Sample evidence shows 100% of accounts have notice delivery and consent records."
-    risk_mitigations:
-      RIB-PRI: "Notice and consent capture establishes the lawful basis for subsequent data processing and supports DSAR responses."
-    coverage_by_risk:
-      RIB-PRI: "strong"
-    evidence_quality:
-      rating: "Strong"
-      last_tested: "2026-03-01"
-      sample_size: 50
-      exceptions_noted: 0
-
-# ---------------------------------------------------------------------------
-# Risks
-# ---------------------------------------------------------------------------
+- control_id: CTL-CUSTONB-001
+  control_name: Retail Customer Onboarding (CIP / KYC) Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented internal compliance monitoring control for Retail Customer
+    Onboarding (CIP / KYC) to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: partial
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-CUSTONB-001
+    description: Retail Customer Onboarding (CIP / KYC) control evidence requires remediation for regulatory compliance monitoring.
+    severity: High
+    age_days: 20
+    owner: Retail Compliance Officer
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 46
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-002
+  control_name: Retail Customer Onboarding (CIP / KYC) External Fraud Control
+  control_type: Automated Rules
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented automated rules control for Retail Customer Onboarding (CIP
+    / KYC) to identify, evidence, escalate, and resolve external fraud exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the external fraud root causes in the generic knowledge pack and defines
+    owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-EFR: Mitigates external fraud through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-EFR: partial
+  mapped_root_causes_per_risk:
+    RIB-EFR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-CUSTONB-002
+    description: Retail Customer Onboarding (CIP / KYC) control evidence requires remediation for external fraud monitoring.
+    severity: High
+    age_days: 26
+    owner: Retail Compliance Officer
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 47
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-003
+  control_name: Retail Customer Onboarding (CIP / KYC) Privacy And Confidential Data Control
+  control_type: Data Security and Protection
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented data security and protection control for Retail Customer Onboarding
+    (CIP / KYC) to identify, evidence, escalate, and resolve privacy and confidential data exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the privacy and confidential data root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-PRI: Mitigates privacy and confidential data through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-PRI: partial
+  mapped_root_causes_per_risk:
+    RIB-PRI:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-CUSTONB-003
+    description: Retail Customer Onboarding (CIP / KYC) control evidence requires remediation for privacy and confidential
+      data monitoring.
+    severity: High
+    age_days: 32
+    owner: Retail Compliance Officer
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 48
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-004
+  control_name: Retail Customer Onboarding (CIP / KYC) Cybersecurity And Privileged Access Control
+  control_type: System and Application Restrictions
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented system and application restrictions control for Retail Customer
+    Onboarding (CIP / KYC) to identify, evidence, escalate, and resolve cybersecurity and privileged access exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the cybersecurity and privileged access root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-CYB: Mitigates cybersecurity and privileged access through owner review, exception capture, evidence retention, and
+      escalation.
+  coverage_by_risk:
+    RIB-CYB: strong
+  mapped_root_causes_per_risk:
+    RIB-CYB:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 49
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-005
+  control_name: Retail Customer Onboarding (CIP / KYC) Data Quality And Reconciliation Control
+  control_type: Reconciliation
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented reconciliation control for Retail Customer Onboarding (CIP
+    / KYC) to identify, evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Strong
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-DM: strong
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 50
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-006
+  control_name: Retail Customer Onboarding (CIP / KYC) Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented exception reporting control for Retail Customer Onboarding
+    (CIP / KYC) to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Satisfactory
+  operating_rating: Strong
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: strong
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 51
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-007
+  control_name: Retail Customer Onboarding (CIP / KYC) Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented internal compliance monitoring control for Retail Customer
+    Onboarding (CIP / KYC) to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: partial
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-CUSTONB-007
+    description: Retail Customer Onboarding (CIP / KYC) control evidence requires remediation for regulatory compliance monitoring.
+    severity: High
+    age_days: 56
+    owner: Retail Compliance Officer
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 52
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-008
+  control_name: Retail Customer Onboarding (CIP / KYC) Human Capital Capacity Control
+  control_type: Staffing and Resourcing Adequacy
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented staffing and resourcing adequacy control for Retail Customer
+    Onboarding (CIP / KYC) to identify, evidence, escalate, and resolve human capital capacity exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the human capital capacity root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-HCM: Mitigates human capital capacity through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-HCM: strong
+  mapped_root_causes_per_risk:
+    RIB-HCM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 53
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-CUSTONB-009
+  control_name: Retail Customer Onboarding (CIP / KYC) Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Retail Compliance Officer
+  frequency: Daily
+  description: Retail Compliance Officer performs a documented internal compliance monitoring control for Retail Customer
+    Onboarding (CIP / KYC) to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Customer Onboarding (CIP / KYC).
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: strong
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 54
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
 risks:
-  - taxonomy_node_id: "RIB-COM"
-    risk_id: "RI-CONB-001"
-    risk_description: "Customer Identification Program or Customer Due Diligence may be incomplete, inconsistently applied, or remediated outside the regulatory window, creating BSA/AML compliance exposure."
-    risk_event: "An account is opened and funded while the CIP exception remains unresolved past the 5-business-day window, creating a recordable BSA finding."
-    applicability_rationale: "Compliance Risk materializes because the process is governed by BSA/AML, OFAC, and FinCEN CDD obligations with hard regulatory clocks and recordable findings on failure."
-    confidence: 0.92
-    causes:
-      - "manual workflow"
-      - "incomplete documentation"
-      - "weak segregation monitoring"
-      - "delayed access removal"
-    consequences:
-      - "BSA examination findings"
-      - "matters requiring attention (MRA)"
-      - "civil money penalties"
-      - "remediation cost"
-    impact_scores:
-      financial_impact: 3
-      regulatory_impact: 4
-      reputational_impact: 3
-    overall_impact_score: 4
-    overall_impact_rationale: "Overall impact is Severe because regulatory dimension drives the rating: BSA findings are recordable, escalate to enforcement under repeat patterns, and create material reputational exposure."
-    likelihood_score: 3
-    likelihood_rating: "Medium High"
-    likelihood_rationale: "Likelihood is Medium High because the prior-quarter QA sample showed 2.4% CIP late-resolution rate (above the 1.5% green threshold), with no operating control yet enforcing funding-block on aged exceptions."
-    assumptions:
-      - "Daily new-account volumes remain consistent with prior quarter."
-      - "QA sampling methodology remains constant across quarters."
-    exposure_metrics:
-      - metric_name: "CIP late-resolution rate"
-        metric_value: "2.4%"
-        metric_unit: "% of new accounts"
-        description: "Share of new accounts where CIP exception was not resolved within the 5-business-day window."
-        source: "BSA QA monthly sample"
-        supports: ["likelihood"]
-      - metric_name: "aged CIP exceptions"
-        metric_value: "32"
-        metric_unit: "open at month-end"
-        description: "CIP exceptions open beyond the 5-business-day target at month-end."
-        source: "Onboarding platform exception report"
-        supports: ["likelihood", "impact"]
-      - metric_name: "monthly new account volume"
-        metric_value: "4,200"
-        metric_unit: "accounts opened per month"
-        description: "Average monthly retail account opening volume across branch and digital channels."
-        source: "Core Banking Deposit System"
-        supports: ["impact"]
-    mapped_controls: ["CTRL-ONB-001", "CTRL-ONB-002", "CTRL-ONB-003"]
-    recommended_action: "Implement system-enforced funding-block on accounts with aged CIP exceptions and reduce monthly QA threshold from 50 to 100 accounts to validate remediation."
-    coverage_gaps:
-      - "CIP exception aging is not yet enforced as a system block on inbound wires or large transactions."
-      - "EDD reviewers do not have a documented checklist for source-of-funds verification."
-    action_plan:
-      - action: "Implement system-enforced funding-block for accounts with CIP exceptions > 5 business days."
-        owner: "Digital Channel Owner"
-        due_date: "2026-Q2"
-        status: "In Progress"
-        priority: "Critical"
-      - action: "Increase monthly CIP QA sample size from 50 to 100 accounts to confirm remediation effectiveness."
-        owner: "BSA Officer"
-        due_date: "2026-Q2"
-        status: "Planned"
-        priority: "High"
-      - action: "Document EDD source-of-funds verification checklist and incorporate into reviewer training."
-        owner: "Retail Compliance Officer"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "Medium"
-    review:
-      reviewer: "BSA Officer"
-      review_status: "Challenged"
-      approval_status: "Pending"
-      challenge_comments: "Residual rating elevated to High pending implementation of automated funding-block. CRO escalation triggered per appetite framework (Compliance threshold: Low)."
-      challenged_fields: ["likelihood_score", "control_operating_effectiveness", "management_response"]
-      ai_original_value: "Residual rating: Medium-22"
-      reviewer_adjusted_value: "Residual rating: High-32; Management response: Mitigate (active remediation)"
-      reviewer_rationale: "Override raised residual to High based on (1) sustained breach of green threshold over two consecutive quarters, (2) absence of automated enforcement, and (3) regulatory clock that does not tolerate aging. Aligned with appetite framework requiring CRO escalation when Compliance residual is two or more bands above Low threshold."
-    evidence_references:
-      - evidence_id: "CONB-EVID-001"
-        evidence_type: "BSA QA report"
-        description: "Monthly BSA QA sampling results with aged CIP detail."
-        source: "BSA QA reporting workbook"
-
-  - taxonomy_node_id: "RIB-EFR"
-    risk_id: "RI-CONB-002"
-    risk_description: "External actors may submit synthetic-identity or impersonation applications that bypass identity verification and result in fraudulent account openings."
-    risk_event: "A synthetic-identity application receives below-threshold fraud model score, passes manual review without escalation, and is funded before subsequent fraud detection."
-    applicability_rationale: "External Fraud Risk materializes because retail onboarding is the primary fraud-entry vector and current model precision suggests potential under-detection."
-    confidence: 0.86
-    causes:
-      - "social engineering"
-      - "fraudulent instructions"
-      - "weak authentication"
-    consequences:
-      - "fraud loss on funded accounts"
-      - "downstream payment fraud"
-      - "BSA SAR filing obligation"
-    impact_scores:
-      financial_impact: 3
-      regulatory_impact: 2
-      reputational_impact: 3
-    overall_impact_score: 3
-    overall_impact_rationale: "Overall impact is Significant because fraudulent accounts drive direct loss, downstream fraud exposure, and reputational signal in published fraud statistics."
-    likelihood_score: 3
-    likelihood_rating: "Medium High"
-    likelihood_rationale: "Likelihood is Medium High because synthetic-identity model precision dropped to 18% in the latest monthly review, indicating potential drift and elevated false-negative rate."
-    assumptions:
-      - "Model performance reflects underlying fraud population, not random sampling variance."
-      - "Confirmed fraud rate on non-flagged applications is stable."
-    exposure_metrics:
-      - metric_name: "model precision"
-        metric_value: "18%"
-        metric_unit: "% of flagged applications confirmed fraud"
-        description: "Share of synthetic-identity model flags confirmed as fraud in manual review."
-        source: "Fraud operations monthly review"
-        supports: ["likelihood"]
-      - metric_name: "confirmed synthetic identity losses"
-        metric_value: "$185K"
-        metric_unit: "trailing 90-day losses"
-        description: "Confirmed losses attributable to synthetic-identity onboarding in the trailing 90 days."
-        source: "Fraud operations loss ledger"
-        supports: ["impact"]
-      - metric_name: "monthly application volume"
-        metric_value: "5,400"
-        metric_unit: "applications submitted per month"
-        description: "Total retail account applications received across channels."
-        source: "Digital Onboarding Platform"
-        supports: ["impact"]
-    mapped_controls: ["CTRL-ONB-004", "CTRL-ONB-001"]
-    recommended_action: "Recalibrate the synthetic-identity model with the latest 12-month fraud-confirmed sample and add channel-specific velocity rules for digital applications."
-    coverage_gaps:
-      - "No automated velocity control on applications from the same device or IP within a short window."
-      - "Model recalibration cadence not yet documented in MRM standards."
-    action_plan:
-      - action: "Recalibrate synthetic-identity model with current confirmed-fraud sample and validate against MRM standards."
-        owner: "Fraud Operations Manager"
-        due_date: "2026-Q2"
-        status: "In Progress"
-        priority: "High"
-      - action: "Implement velocity rules for applications from the same device, IP, or contact attribute within 24 hours."
-        owner: "Digital Channel Owner"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "Medium"
-    review:
-      reviewer: "Fraud Operations Manager"
-      review_status: "Pending Review"
-      approval_status: "Pending"
-      challenge_comments: "Confirm model recalibration timeline and validate whether 18% precision reflects true drift versus sampling variance. Recommend interim manual review threshold lowering."
-      challenged_fields: ["likelihood_score", "control_design_effectiveness"]
-
-  - taxonomy_node_id: "RIB-PRI"
-    risk_id: "RI-CONB-003"
-    risk_description: "Customer personal data collected during onboarding may be processed, retained, or shared in a manner inconsistent with the privacy notice or applicable privacy law, creating customer harm and regulatory exposure."
-    risk_event: "Data minimization controls are not enforced for non-required identity attributes, leading to data retention beyond the documented purpose and an inability to respond to a deletion request within the regulatory window."
-    applicability_rationale: "Privacy Risk materializes because onboarding is the most sensitive data collection point in the customer lifecycle and the bank operates in jurisdictions with explicit DSAR obligations."
-    confidence: 0.84
-    causes:
-      - "weak data classification"
-      - "manual data entry"
-      - "unclear ownership"
-    consequences:
-      - "DSAR response delays"
-      - "GLBA / state privacy violations"
-      - "customer complaints"
-    impact_scores:
-      financial_impact: 2
-      regulatory_impact: 3
-      reputational_impact: 3
-    overall_impact_score: 3
-    overall_impact_rationale: "Overall impact is Significant because privacy violations carry per-instance regulatory exposure and material reputational impact in retail markets."
-    likelihood_score: 2
-    likelihood_rating: "Medium Low"
-    likelihood_rationale: "Likelihood is Medium Low because privacy notice delivery is strong, but data minimization for non-required attributes is not yet system-enforced and one DSAR response missed window in the prior quarter."
-    assumptions:
-      - "Privacy team capacity remains adequate for current DSAR volume."
-      - "Data classification standards are stable across the measurement period."
-    exposure_metrics:
-      - metric_name: "DSAR volume"
-        metric_value: "47"
-        metric_unit: "requests in prior quarter"
-        description: "Customer data subject access requests received in the prior quarter."
-        source: "Privacy request management system"
-        supports: ["likelihood"]
-      - metric_name: "DSAR late responses"
-        metric_value: "1"
-        metric_unit: "request beyond regulatory window"
-        description: "DSAR responses that exceeded the regulatory window in the prior quarter."
-        source: "Privacy request management system"
-        supports: ["likelihood", "impact"]
-      - metric_name: "non-required attributes collected"
-        metric_value: "12"
-        metric_unit: "attributes per onboarding"
-        description: "Count of non-required identity attributes captured at onboarding beyond the documented minimum set."
-        source: "Onboarding data dictionary review"
-        supports: ["impact"]
-    mapped_controls: ["CTRL-ONB-005", "CTRL-ONB-001"]
-    recommended_action: "Reduce non-required attribute collection at onboarding and implement automated DSAR routing with SLA timer integrated into the privacy request system."
-    coverage_gaps:
-      - "Data minimization not enforced at the form-design layer; relies on training and procedure."
-      - "No automated SLA timer on DSAR records."
-    action_plan:
-      - action: "Conduct data-minimization review of onboarding forms and reduce non-required attribute count."
-        owner: "Chief Privacy Officer"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "Medium"
-      - action: "Integrate DSAR SLA timer with automated escalation in privacy request management system."
-        owner: "Technology Owner"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "Medium"
-    review:
-      reviewer: "Chief Privacy Officer"
-      review_status: "Approved"
-      approval_status: "Approved"
-      challenge_comments: "Approved at current rating with action plan tracking data-minimization remediation."
-      challenged_fields: ["impact_scores", "control_mapping"]
-
-  - taxonomy_node_id: "RIB-DM"
-    risk_id: "RI-CONB-004"
-    risk_description: "Customer information collected at onboarding may be inaccurate, incomplete, or inconsistently propagated across onboarding, core banking, and downstream systems, causing servicing errors and CIP/CDD remediation work."
-    risk_event: "An onboarding system update populates a customer's risk-tier field incorrectly in the core banking system, causing CDD reviewers to apply standard rather than enhanced due diligence."
-    applicability_rationale: "Data Management Risk materializes because onboarding writes customer master data that drives multiple downstream control decisions including CDD tiering, fraud monitoring, and product eligibility."
-    confidence: 0.81
-    causes:
-      - "interface breaks"
-      - "manual data entry"
-      - "missing required fields"
-    consequences:
-      - "incorrect CDD tiering"
-      - "CIP rework"
-      - "downstream servicing errors"
-    impact_scores:
-      financial_impact: 2
-      regulatory_impact: 3
-      reputational_impact: 2
-    overall_impact_score: 3
-    overall_impact_rationale: "Overall impact is Significant because incorrect customer master data can drive incorrect CDD/AML decisions with regulatory consequences."
-    likelihood_score: 2
-    likelihood_rating: "Medium Low"
-    likelihood_rationale: "Likelihood is Medium Low because reconciliation between onboarding and core banking is automated, with 6 breaks identified and remediated in the prior quarter."
-    assumptions:
-      - "Interface monitoring runs daily."
-    exposure_metrics:
-      - metric_name: "onboarding-to-core reconciliation breaks"
-        metric_value: "6"
-        metric_unit: "breaks identified in prior quarter"
-        description: "Customer master data reconciliation breaks between onboarding and core banking."
-        source: "Daily reconciliation log"
-        supports: ["likelihood"]
-      - metric_name: "required-field completeness"
-        metric_value: "97.4%"
-        metric_unit: "% of new accounts"
-        description: "Share of new accounts with all required customer master fields populated."
-        source: "Daily data quality dashboard"
-        supports: ["likelihood"]
-    mapped_controls: ["CTRL-ONB-001", "CTRL-ONB-003"]
-    recommended_action: "Establish weekly review of customer master data reconciliation breaks with root-cause categorization by upstream source."
-    coverage_gaps:
-      - "Risk-tier field changes are not yet alerted in the CDD workflow."
-    action_plan:
-      - action: "Add real-time alerting for risk-tier field changes in the CDD workflow."
-        owner: "Technology Owner"
-        due_date: "2026-Q3"
-        status: "Planned"
-        priority: "Medium"
-    review:
-      reviewer: "Operations Data Steward"
-      review_status: "Approved"
-      approval_status: "Approved"
-      challenge_comments: "Approved at current rating with action plan tracking risk-tier alerting."
-      challenged_fields: []
-
+- taxonomy_node_id: RIB-COM
+  risk_id: RISK-CUSTONB-001
+  risk_description: Regulatory Compliance risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced, or
+    escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a regulatory compliance event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Regulatory Compliance is applicable because Retail Customer Onboarding (CIP / KYC) is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      compliance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory compliance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory compliance.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-001
+  exposure_metrics:
+  - metric_name: Regulatory Compliance exposure count
+    metric_value: 19
+    metric_unit: items
+    description: Current-period exposure count for regulatory compliance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Compliance breach rate
+    metric_value: 1.15
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory compliance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-001
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting regulatory compliance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Compliance should remain within documented tolerance for Retail Customer Onboarding (CIP / KYC).
+    status: outside
+    category: Regulatory Compliance
+  recommended_action: Close evidence and control gaps for regulatory compliance in Retail Customer Onboarding (CIP / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for regulatory compliance in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Regulatory Compliance needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate regulatory compliance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-EFR
+  risk_id: RISK-CUSTONB-002
+  risk_description: External Fraud risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced, or escalated
+    within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding operating
+    model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a external fraud event that breaches the documented threshold
+    before remediation is completed.
+  applicability_rationale: External Fraud is applicable because Retail Customer Onboarding (CIP / KYC) is a critical process
+    with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to external fraud.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when external fraud
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for external fraud.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-002
+  exposure_metrics:
+  - metric_name: External Fraud exposure count
+    metric_value: 26
+    metric_unit: items
+    description: Current-period exposure count for external fraud.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: External Fraud breach rate
+    metric_value: 1.5
+    metric_unit: '%'
+    description: Trailing breach rate for external fraud thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-002
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting external fraud assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: External Fraud should remain within documented tolerance for Retail Customer Onboarding (CIP / KYC).
+    status: outside
+    category: External Fraud
+  recommended_action: Close evidence and control gaps for external fraud in Retail Customer Onboarding (CIP / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for external fraud in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - External Fraud needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate external fraud scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-PRI
+  risk_id: RISK-CUSTONB-003
+  risk_description: Privacy And Confidential Data risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a privacy and confidential data event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Privacy And Confidential Data is applicable because Retail Customer Onboarding (CIP / KYC) is a
+    critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to privacy and
+      confidential data.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when privacy and confidential
+      data is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for privacy and confidential data.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-003
+  exposure_metrics:
+  - metric_name: Privacy And Confidential Data exposure count
+    metric_value: 33
+    metric_unit: items
+    description: Current-period exposure count for privacy and confidential data.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Privacy And Confidential Data breach rate
+    metric_value: 1.85
+    metric_unit: '%'
+    description: Trailing breach rate for privacy and confidential data thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-003
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting privacy and confidential data assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Privacy And Confidential Data should remain within documented tolerance for Retail Customer Onboarding (CIP
+      / KYC).
+    status: outside
+    category: Privacy And Confidential Data
+  recommended_action: Close evidence and control gaps for privacy and confidential data in Retail Customer Onboarding (CIP
+    / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for privacy and confidential data in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Privacy And Confidential Data needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate privacy and confidential data scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-CYB
+  risk_id: RISK-CUSTONB-004
+  risk_description: Cybersecurity And Privileged Access risk in Retail Customer Onboarding (CIP / KYC) may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking
+    & Onboarding operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a cybersecurity and privileged access event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Cybersecurity And Privileged Access is applicable because Retail Customer Onboarding (CIP / KYC)
+    is a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to cybersecurity
+      and privileged access.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when cybersecurity and
+      privileged access is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for cybersecurity and privileged access.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-004
+  exposure_metrics:
+  - metric_name: Cybersecurity And Privileged Access exposure count
+    metric_value: 40
+    metric_unit: items
+    description: Current-period exposure count for cybersecurity and privileged access.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Cybersecurity And Privileged Access breach rate
+    metric_value: 2.2
+    metric_unit: '%'
+    description: Trailing breach rate for cybersecurity and privileged access thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-004
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting cybersecurity and privileged access assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Cybersecurity And Privileged Access should remain within documented tolerance for Retail Customer Onboarding
+      (CIP / KYC).
+    status: within
+    category: Cybersecurity And Privileged Access
+  recommended_action: Close evidence and control gaps for cybersecurity and privileged access in Retail Customer Onboarding
+    (CIP / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for cybersecurity and privileged access in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate cybersecurity and privileged access scoring against source evidence, KRIs, controls, and
+      open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-CUSTONB-005
+  risk_description: Data Quality And Reconciliation risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a data quality and reconciliation event that breaches the
+    documented threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Retail Customer Onboarding (CIP / KYC) is
+    a critical process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-005
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 47
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 2.55
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-005
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting data quality and reconciliation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Retail Customer Onboarding (CIP
+      / KYC).
+    status: within
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Retail Customer Onboarding (CIP
+    / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for data quality and reconciliation in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-CUSTONB-006
+  risk_description: Business Process Execution risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a business process execution event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Retail Customer Onboarding (CIP / KYC) is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-006
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 54
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 2.9
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-006
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Retail Customer Onboarding (CIP /
+      KYC).
+    status: within
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Retail Customer Onboarding (CIP /
+    KYC).
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-COM
+  risk_id: RISK-CUSTONB-007
+  risk_description: Regulatory Compliance risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced, or
+    escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a regulatory compliance event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Regulatory Compliance is applicable because Retail Customer Onboarding (CIP / KYC) is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      compliance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory compliance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory compliance.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-007
+  exposure_metrics:
+  - metric_name: Regulatory Compliance exposure count
+    metric_value: 61
+    metric_unit: items
+    description: Current-period exposure count for regulatory compliance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Compliance breach rate
+    metric_value: 3.25
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory compliance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-007
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting regulatory compliance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Compliance should remain within documented tolerance for Retail Customer Onboarding (CIP / KYC).
+    status: outside
+    category: Regulatory Compliance
+  recommended_action: Close evidence and control gaps for regulatory compliance in Retail Customer Onboarding (CIP / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for regulatory compliance in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Regulatory Compliance needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate regulatory compliance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-HCM
+  risk_id: RISK-CUSTONB-008
+  risk_description: Human Capital Capacity risk in Retail Customer Onboarding (CIP / KYC) may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Customer Onboarding (CIP / KYC) experiences a human capital capacity event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Human Capital Capacity is applicable because Retail Customer Onboarding (CIP / KYC) is a critical
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Compliance Officer
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail customer onboarding (cip / kyc) volume and open remediation items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to human capital
+      capacity.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when human capital capacity
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for human capital capacity.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects continuous; monthly qa sampling, current issue history, recurring volume, and
+    exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-CUSTONB-008
+  exposure_metrics:
+  - metric_name: Human Capital Capacity exposure count
+    metric_value: 68
+    metric_unit: items
+    description: Current-period exposure count for human capital capacity.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Human Capital Capacity breach rate
+    metric_value: 3.6
+    metric_unit: '%'
+    description: Trailing breach rate for human capital capacity thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-CUSTONB-008
+    evidence_type: Source artifact
+    description: Retail Customer Onboarding (CIP / KYC) evidence supporting human capital capacity assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Human Capital Capacity should remain within documented tolerance for Retail Customer Onboarding (CIP / KYC).
+    status: within
+    category: Human Capital Capacity
+  recommended_action: Close evidence and control gaps for human capital capacity in Retail Customer Onboarding (CIP / KYC).
+  action_plan:
+  - action: Close evidence and control gaps for human capital capacity in Retail Customer Onboarding (CIP / KYC).
+    owner: Retail Compliance Officer
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Compliance Officer
+    challenge_comments: Validate human capital capacity scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
 executive_summary:
-  headline: "Retail Customer Onboarding shows one high residual compliance risk (CIP enforcement) and elevated external-fraud exposure tied to model drift; privacy and data-management residuals are within appetite."
+  headline: Retail Customer Onboarding (CIP / KYC) captures 8 risk records across 7 risk subcategories for Retail Banking
+    & Onboarding.
   key_messages:
-    - "CIP exception aging is the dominant residual concern, with CRO escalation triggered per the Compliance appetite threshold (Low)."
-    - "External fraud residual is elevated by suspected synthetic-identity model drift; recalibration is in progress and interim review thresholds should be tightened."
-    - "Privacy controls are operating, but data-minimization improvements are required to keep DSAR-response within the regulatory window."
+  - Retail Banking & Onboarding shows differentiated risk capture based on process evidence and source-pack complexity.
+  - 4 high or critical residual records require visible management action.
+  - Ratings are matrix-calculated from impact, likelihood, and control environment evidence.
   top_residual_risks:
-    - "Compliance Risk (CIP / CDD): High"
-    - "External Fraud Risk (Synthetic Identity): Medium-High"
-    - "Privacy Risk (Data Minimization & DSAR): Medium"
+  - RISK-CUSTONB-001 Regulatory Compliance
+  - RISK-CUSTONB-002 External Fraud
+  - RISK-CUSTONB-003 Privacy And Confidential Data
+  - RISK-CUSTONB-007 Regulatory Compliance
   recommended_actions:
-    - "Implement system-enforced funding-block for aged CIP exceptions before Q3 BSA exam window."
-    - "Recalibrate synthetic-identity model and add device/IP velocity rules at the digital onboarding channel."
-    - "Reduce non-required attribute collection and integrate DSAR SLA timer with automated escalation."
+  - Use the Knowledge Base tab to compare BU source packs and risk-type concentrations.
+  - Validate High and Critical residual records through owner challenge and independent review.
+  - Track due dates through the issue and action-plan fields before executive export.

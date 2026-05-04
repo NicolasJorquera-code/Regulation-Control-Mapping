@@ -1,0 +1,1048 @@
+version: 1.2.0
+evidence_artifacts:
+- evidence_id: EV-PAYEXC-001
+  name: Payment Exception Handling Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-002
+  name: Payment Exception Handling Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-003
+  name: Payment Exception Handling Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-004
+  name: Payment Exception Handling Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-005
+  name: Payment Exception Handling Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-006
+  name: Payment Exception Handling Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-007
+  name: Payment Exception Handling Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-008
+  name: Payment Exception Handling Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-009
+  name: Payment Exception Handling Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-009
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYEXC-010
+  name: Payment Exception Handling Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-001
+  name: End-of-Day Wire Reconciliation Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-002
+  name: End-of-Day Wire Reconciliation Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-003
+  name: End-of-Day Wire Reconciliation Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-004
+  name: End-of-Day Wire Reconciliation Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-005
+  name: End-of-Day Wire Reconciliation Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-006
+  name: End-of-Day Wire Reconciliation Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-007
+  name: End-of-Day Wire Reconciliation Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-008
+  name: End-of-Day Wire Reconciliation Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-009
+  name: End-of-Day Wire Reconciliation Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-009
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-PAYREC-010
+  name: End-of-Day Wire Reconciliation Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting End-of-Day Wire Reconciliation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Treasury Operations Lead
+  process_id: PROC-PAY-RECON
+  control_id: CTL-PAYREC-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-001
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-002
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-003
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-004
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-005
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-006
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-007
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-008
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-009
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-009
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CUSTONB-010
+  name: Retail Customer Onboarding (CIP / KYC) Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Retail Customer Onboarding (CIP / KYC) risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Compliance Officer
+  process_id: PROC-CUST-ONBOARD
+  control_id: CTL-CUSTONB-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-001
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-002
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-003
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-004
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-005
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-006
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-007
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-008
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-009
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-DISP-010
+  name: Retail Deposit Dispute Intake and Resolution Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Retail Deposit Dispute Intake and Resolution risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Retail Service Recovery Manager
+  process_id: PROC-RETAIL-DISPUTES
+  control_id: CTL-DISP-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-001
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-002
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-003
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-004
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-005
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-006
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-007
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-008
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-009
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-CLUW-010
+  name: Commercial Loan Underwriting & Risk Rating Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Commercial Loan Underwriting & Risk Rating risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Credit Underwriting Lead
+  process_id: PROC-CL-UNDERWRITE
+  control_id: CTL-CLUW-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-001
+  name: Commercial Covenant Monitoring Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-002
+  name: Commercial Covenant Monitoring Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-003
+  name: Commercial Covenant Monitoring Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-004
+  name: Commercial Covenant Monitoring Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-005
+  name: Commercial Covenant Monitoring Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-006
+  name: Commercial Covenant Monitoring Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-007
+  name: Commercial Covenant Monitoring Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-008
+  name: Commercial Covenant Monitoring Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-009
+  name: Commercial Covenant Monitoring Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-COVMON-010
+  name: Commercial Covenant Monitoring Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Commercial Covenant Monitoring risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Credit Administration Manager
+  process_id: PROC-COVENANT-MONITOR
+  control_id: CTL-COVMON-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-001
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-002
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-003
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-004
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-005
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-006
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-007
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-008
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-009
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-009
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-LIQ-010
+  name: Liquidity Stress Monitoring and Escalation Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Liquidity Stress Monitoring and Escalation risk capture, control operation,
+    or owner review.
+  source_system: Generic evidence repository
+  owner: Liquidity Risk Manager
+  process_id: PROC-LIQUIDITY-STRESS
+  control_id: CTL-LIQ-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-001
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-002
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-003
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-004
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-005
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-006
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-007
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-008
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-009
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-SECSET-010
+  name: Securities Trade Settlement and Collateral Operations Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Securities Trade Settlement and Collateral Operations risk capture, control
+    operation, or owner review.
+  source_system: Generic evidence repository
+  owner: Securities Operations Lead
+  process_id: PROC-SECURITIES-SETTLE
+  control_id: CTL-SECSET-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-001
+  name: Privileged Access Recertification Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-002
+  name: Privileged Access Recertification Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-003
+  name: Privileged Access Recertification Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-004
+  name: Privileged Access Recertification Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-005
+  name: Privileged Access Recertification Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-006
+  name: Privileged Access Recertification Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-006
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-007
+  name: Privileged Access Recertification Evidence Artifact 07
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-007
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-008
+  name: Privileged Access Recertification Evidence Artifact 08
+  artifact_type: QA sample
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-008
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-009
+  name: Privileged Access Recertification Evidence Artifact 09
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-ACCESS-010
+  name: Privileged Access Recertification Evidence Artifact 10
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Identity Governance Manager
+  process_id: PROC-ACCESS-RECERT
+  control_id: CTL-ACCESS-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-VULN-001
+  name: Critical Vulnerability Remediation Evidence Artifact 01
+  artifact_type: Approval log
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-001
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-VULN-002
+  name: Critical Vulnerability Remediation Evidence Artifact 02
+  artifact_type: Dashboard
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-002
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-VULN-003
+  name: Critical Vulnerability Remediation Evidence Artifact 03
+  artifact_type: QA sample
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-003
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-VULN-004
+  name: Critical Vulnerability Remediation Evidence Artifact 04
+  artifact_type: Committee minutes
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-004
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-VULN-005
+  name: Critical Vulnerability Remediation Evidence Artifact 05
+  artifact_type: Workflow extract
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-005
+  retention: 7 years
+  sample_period: Current quarter
+- evidence_id: EV-VULN-006
+  name: Critical Vulnerability Remediation Evidence Artifact 06
+  artifact_type: Approval log
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
+    review.
+  source_system: Generic evidence repository
+  owner: Cyber Vulnerability Manager
+  process_id: PROC-VULN-REMEDIATION
+  control_id: CTL-VULN-006
+  retention: 7 years
+  sample_period: Current quarter

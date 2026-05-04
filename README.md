@@ -56,7 +56,7 @@ streamlit run src/controlnexus/ui/app.py
 ```
 
 Opens at `http://localhost:8501` with five tabs:
-- **Risk Inventory Builder** -- Build risk inventories, use Demo Mode, review residual risk, and export Excel
+- **Risk Inventory Builder** -- Build an executive risk inventory workbench with modular knowledge packs, deterministic scoring, control gaps, review, and Excel export
 - **Control Builder** -- Create DomainConfig profiles
 - **ControlForge Modular** -- Browse config profiles and run control generation
 - **Analysis** -- Upload Excel, run gap analysis, view gap dashboard
@@ -113,9 +113,15 @@ tests/                      Unit + integration + e2e coverage
 
 ## Risk Inventory Demo Mode
 
-The Risk Inventory Builder tab includes a top-right **Demo Mode** toggle. Turning it on loads deterministic Payment Exception Handling sample data for high-value payment processing. The demo requires no LLM credentials and populates risk records, inherent scores, linked controls, control effectiveness, residual risk, review comments, executive summary, validation findings, and Excel export.
+The Risk Inventory Builder tab includes a top-right **Demo Mode** toggle. Turning it on loads the deterministic `Large Global Bank` generic workspace with 5 business units, 10 processes, 10 risk inventory runs, mapped controls, KRIs, obligations, issues, evidence, source trace, validation findings, and executive Excel export.
 
-The Input / Upload view also supports local ingestion of PDF, TXT, and Markdown policy/procedure documents. Uploaded documents are parsed into process context, risk-category cues, control cues, exposure signals, obligations, systems, and stakeholders before the deterministic graph runs.
+The demo UI is a consolidated executive workbench: select a process, choose a risk from the left queue, and review the full command-view profile, including impact, frequency, inherent risk, residual risk, controls, gaps, synthetic controls, KRIs, evidence, mitigation, validation owner, and review/challenge fields. With no process focus, the Risk Inventory tab shows BU risk breakdown differences, a portfolio heatmap, and divergence drivers.
+
+The Excel export is a full-workspace demo artifact with a cover tab, BU heatmap, process risk inventory, control gaps, synthetic control recommendations, KRI dashboard, reviewer decision log, source trace, and config snapshot.
+
+The Input / Upload view also supports local ingestion of PDF, TXT, and Markdown policy or process documents. Uploaded documents are parsed into process context, risk-category cues, control cues, exposure signals, obligations, systems, and stakeholders before the deterministic graph runs.
+
+APQC crosswalk metadata is optional and used only for process normalization and source trace. It does not generate risk statements, controls, or ratings.
 
 See [docs/RISK_INVENTORY_BUILDER.md](docs/RISK_INVENTORY_BUILDER.md) for details.
 

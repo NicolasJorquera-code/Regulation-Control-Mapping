@@ -1,0 +1,978 @@
+version: 1.2.0
+risk_appetite_framework:
+  statement: Retail Banking & Onboarding maintains documented tolerance thresholds for Retail Deposit Dispute Intake and Resolution;
+    residual High or Critical requires owner action and independent challenge.
+  effective_date: '2026-04-30'
+  approver: Risk Governance Committee
+  category_thresholds:
+    operational: Medium
+    cyber: Low
+    regulatory: Low
+    talent: Medium
+  escalation_rules:
+  - Residual above tolerance requires named action plan.
+  - Critical residual requires executive notification within one business day.
+scenario:
+  run_id: DEMO-RI-DISP-001
+  tenant_id: generic-demo
+  process_id: PROC-RETAIL-DISPUTES
+  process_name: Retail Deposit Dispute Intake and Resolution
+  product: Consumer deposit dispute intake
+  business_unit: Retail Banking & Onboarding
+  description: Consumer deposit dispute intake, investigation, provisional credit decisioning, customer communication, and
+    closure evidence retention.
+  systems:
+  - Dispute Case Platform
+  - Card Processor Portal
+  - ACH Operations Queue
+  - Deposit Core Platform
+  stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+controls:
+- control_id: CTL-DISP-001
+  control_name: Retail Deposit Dispute Intake and Resolution Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented internal compliance monitoring control for Retail Deposit
+    Dispute Intake and Resolution to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: partial
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-DISP-001
+    description: Retail Deposit Dispute Intake and Resolution control evidence requires remediation for regulatory compliance
+      monitoring.
+    severity: High
+    age_days: 20
+    owner: Retail Service Recovery Manager
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 46
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-002
+  control_name: Retail Deposit Dispute Intake and Resolution Business Process Execution Control
+  control_type: Exception Reporting
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented exception reporting control for Retail Deposit Dispute
+    Intake and Resolution to identify, evidence, escalate, and resolve business process execution exposure.
+  design_rating: Improvement Needed
+  operating_rating: Improvement Needed
+  design_rationale: The control design is aligned to the business process execution root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-BPR: Mitigates business process execution through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-BPR: partial
+  mapped_root_causes_per_risk:
+    RIB-BPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues:
+  - issue_id: ISS-DISP-002
+    description: Retail Deposit Dispute Intake and Resolution control evidence requires remediation for business process execution
+      monitoring.
+    severity: High
+    age_days: 26
+    owner: Retail Service Recovery Manager
+    status: In Remediation
+  evidence_quality:
+    rating: Needs Refresh
+    last_tested: '2026-04-30'
+    sample_size: 47
+    exceptions_noted: 2
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-003
+  control_name: Retail Deposit Dispute Intake and Resolution Litigation And Dispute Control
+  control_type: Documentation, Data, and Activity Completeness and Appropriateness Checks
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented documentation, data, and activity completeness and appropriateness
+    checks control for Retail Deposit Dispute Intake and Resolution to identify, evidence, escalate, and resolve litigation
+    and dispute exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the litigation and dispute root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-LIT: Mitigates litigation and dispute through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-LIT: strong
+  mapped_root_causes_per_risk:
+    RIB-LIT:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 48
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-004
+  control_name: Retail Deposit Dispute Intake and Resolution Regulatory Reporting And Escalation Control
+  control_type: Risk Escalation Processes
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented risk escalation processes control for Retail Deposit
+    Dispute Intake and Resolution to identify, evidence, escalate, and resolve regulatory reporting and escalation exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the regulatory reporting and escalation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-RR: Mitigates regulatory reporting and escalation through owner review, exception capture, evidence retention, and
+      escalation.
+  coverage_by_risk:
+    RIB-RR: strong
+  mapped_root_causes_per_risk:
+    RIB-RR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 49
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-005
+  control_name: Retail Deposit Dispute Intake and Resolution Data Quality And Reconciliation Control
+  control_type: Reconciliation
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented reconciliation control for Retail Deposit Dispute Intake
+    and Resolution to identify, evidence, escalate, and resolve data quality and reconciliation exposure.
+  design_rating: Strong
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the data quality and reconciliation root causes in the generic knowledge
+    pack and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-DM: Mitigates data quality and reconciliation through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-DM: strong
+  mapped_root_causes_per_risk:
+    RIB-DM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 50
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-006
+  control_name: Retail Deposit Dispute Intake and Resolution Third-Party Performance Control
+  control_type: Third Party Due Diligence
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented third party due diligence control for Retail Deposit
+    Dispute Intake and Resolution to identify, evidence, escalate, and resolve third-party performance exposure.
+  design_rating: Satisfactory
+  operating_rating: Strong
+  design_rationale: The control design is aligned to the third-party performance root causes in the generic knowledge pack
+    and defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-TPR: Mitigates third-party performance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-TPR: strong
+  mapped_root_causes_per_risk:
+    RIB-TPR:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 51
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-007
+  control_name: Retail Deposit Dispute Intake and Resolution Employment Practices Control
+  control_type: Training and Awareness Programs
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented training and awareness programs control for Retail Deposit
+    Dispute Intake and Resolution to identify, evidence, escalate, and resolve employment practices exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the employment practices root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-EMP: Mitigates employment practices through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-EMP: strong
+  mapped_root_causes_per_risk:
+    RIB-EMP:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 52
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+- control_id: CTL-DISP-008
+  control_name: Retail Deposit Dispute Intake and Resolution Regulatory Compliance Control
+  control_type: Internal Compliance Monitoring
+  owner: Retail Service Recovery Manager
+  frequency: Daily
+  description: Retail Service Recovery Manager performs a documented internal compliance monitoring control for Retail Deposit
+    Dispute Intake and Resolution to identify, evidence, escalate, and resolve regulatory compliance exposure.
+  design_rating: Satisfactory
+  operating_rating: Satisfactory
+  design_rationale: The control design is aligned to the regulatory compliance root causes in the generic knowledge pack and
+    defines owner, threshold, evidence, and escalation requirements.
+  operating_rationale: Operating assessment uses current-period sample evidence, issue aging, and KRI movement for Retail
+    Deposit Dispute Intake and Resolution.
+  risk_mitigations:
+    RIB-COM: Mitigates regulatory compliance through owner review, exception capture, evidence retention, and escalation.
+  coverage_by_risk:
+    RIB-COM: strong
+  mapped_root_causes_per_risk:
+    RIB-COM:
+    - Process - documented threshold or evidence gap
+    - Technology - system dependency or workflow constraint
+  open_issues: []
+  evidence_quality:
+    rating: Adequate
+    last_tested: '2026-04-30'
+    sample_size: 53
+    exceptions_noted: 0
+    notes: Generic demo evidence profile calibrated for executive walkthrough.
+risks:
+- taxonomy_node_id: RIB-COM
+  risk_id: RISK-DISP-001
+  risk_description: Regulatory Compliance risk in Retail Deposit Dispute Intake and Resolution may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a regulatory compliance event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Regulatory Compliance is applicable because Retail Deposit Dispute Intake and Resolution is a high
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 3
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      compliance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory compliance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory compliance.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-001
+  exposure_metrics:
+  - metric_name: Regulatory Compliance exposure count
+    metric_value: 19
+    metric_unit: items
+    description: Current-period exposure count for regulatory compliance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Compliance breach rate
+    metric_value: 1.15
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory compliance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-001
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting regulatory compliance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Compliance should remain within documented tolerance for Retail Deposit Dispute Intake and Resolution.
+    status: outside
+    category: Regulatory Compliance
+  recommended_action: Close evidence and control gaps for regulatory compliance in Retail Deposit Dispute Intake and Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory compliance in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Regulatory Compliance needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate regulatory compliance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-BPR
+  risk_id: RISK-DISP-002
+  risk_description: Business Process Execution risk in Retail Deposit Dispute Intake and Resolution may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a business process execution event that breaches the
+    documented threshold before remediation is completed.
+  applicability_rationale: Business Process Execution is applicable because Retail Deposit Dispute Intake and Resolution is
+    a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to business process
+      execution.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when business process
+      execution is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for business process execution.
+  likelihood_score: 4
+  likelihood_rating: High
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-002
+  exposure_metrics:
+  - metric_name: Business Process Execution exposure count
+    metric_value: 26
+    metric_unit: items
+    description: Current-period exposure count for business process execution.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Business Process Execution breach rate
+    metric_value: 1.5
+    metric_unit: '%'
+    description: Trailing breach rate for business process execution thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 2
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-002
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting business process execution assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Business Process Execution should remain within documented tolerance for Retail Deposit Dispute Intake and
+      Resolution.
+    status: outside
+    category: Business Process Execution
+  recommended_action: Close evidence and control gaps for business process execution in Retail Deposit Dispute Intake and
+    Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for business process execution in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-07-31'
+    status: In Progress
+    priority: High
+  coverage_gaps:
+  - Business Process Execution needs stronger evidence, threshold automation, or owner challenge before residual risk approval.
+  review:
+    review_status: Reviewed and adjusted
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate business process execution scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 3
+    reviewer_adjusted_value:
+      likelihood_score: 4
+    reviewer_rationale: Reviewer adjustment reflects current issue aging and recurring process exposure.
+    approval_status: Approved
+- taxonomy_node_id: RIB-LIT
+  risk_id: RISK-DISP-003
+  risk_description: Litigation And Dispute risk in Retail Deposit Dispute Intake and Resolution may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a litigation and dispute event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Litigation And Dispute is applicable because Retail Deposit Dispute Intake and Resolution is a
+    high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to litigation
+      and dispute.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when litigation and
+      dispute is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for litigation and dispute.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-003
+  exposure_metrics:
+  - metric_name: Litigation And Dispute exposure count
+    metric_value: 33
+    metric_unit: items
+    description: Current-period exposure count for litigation and dispute.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Litigation And Dispute breach rate
+    metric_value: 1.85
+    metric_unit: '%'
+    description: Trailing breach rate for litigation and dispute thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-003
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting litigation and dispute assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Litigation And Dispute should remain within documented tolerance for Retail Deposit Dispute Intake and Resolution.
+    status: within
+    category: Litigation And Dispute
+  recommended_action: Close evidence and control gaps for litigation and dispute in Retail Deposit Dispute Intake and Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for litigation and dispute in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate litigation and dispute scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-RR
+  risk_id: RISK-DISP-004
+  risk_description: Regulatory Reporting And Escalation risk in Retail Deposit Dispute Intake and Resolution may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking
+    & Onboarding operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a regulatory reporting and escalation event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Regulatory Reporting And Escalation is applicable because Retail Deposit Dispute Intake and Resolution
+    is a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to regulatory
+      reporting and escalation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when regulatory reporting
+      and escalation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for regulatory reporting and escalation.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-004
+  exposure_metrics:
+  - metric_name: Regulatory Reporting And Escalation exposure count
+    metric_value: 40
+    metric_unit: items
+    description: Current-period exposure count for regulatory reporting and escalation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Regulatory Reporting And Escalation breach rate
+    metric_value: 2.2
+    metric_unit: '%'
+    description: Trailing breach rate for regulatory reporting and escalation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-004
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting regulatory reporting and escalation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Regulatory Reporting And Escalation should remain within documented tolerance for Retail Deposit Dispute Intake
+      and Resolution.
+    status: within
+    category: Regulatory Reporting And Escalation
+  recommended_action: Close evidence and control gaps for regulatory reporting and escalation in Retail Deposit Dispute Intake
+    and Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for regulatory reporting and escalation in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate regulatory reporting and escalation scoring against source evidence, KRIs, controls, and
+      open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-DM
+  risk_id: RISK-DISP-005
+  risk_description: Data Quality And Reconciliation risk in Retail Deposit Dispute Intake and Resolution may not be captured,
+    evidenced, or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking
+    & Onboarding operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a data quality and reconciliation event that breaches
+    the documented threshold before remediation is completed.
+  applicability_rationale: Data Quality And Reconciliation is applicable because Retail Deposit Dispute Intake and Resolution
+    is a high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to data quality
+      and reconciliation.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when data quality and
+      reconciliation is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for data quality and reconciliation.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-005
+  exposure_metrics:
+  - metric_name: Data Quality And Reconciliation exposure count
+    metric_value: 47
+    metric_unit: items
+    description: Current-period exposure count for data quality and reconciliation.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Data Quality And Reconciliation breach rate
+    metric_value: 2.55
+    metric_unit: '%'
+    description: Trailing breach rate for data quality and reconciliation thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-005
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting data quality and reconciliation assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Data Quality And Reconciliation should remain within documented tolerance for Retail Deposit Dispute Intake
+      and Resolution.
+    status: within
+    category: Data Quality And Reconciliation
+  recommended_action: Close evidence and control gaps for data quality and reconciliation in Retail Deposit Dispute Intake
+    and Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for data quality and reconciliation in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate data quality and reconciliation scoring against source evidence, KRIs, controls, and open
+      issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-TPR
+  risk_id: RISK-DISP-006
+  risk_description: Third-Party Performance risk in Retail Deposit Dispute Intake and Resolution may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a third-party performance event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Third-Party Performance is applicable because Retail Deposit Dispute Intake and Resolution is a
+    high process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 3
+    regulatory_impact: 2
+    reputational_impact: 3
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to third-party
+      performance.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when third-party performance
+      is outside tolerance.
+  overall_impact_score: 3
+  overall_impact_rationale: Overall impact is set at 3 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for third-party performance.
+  likelihood_score: 3
+  likelihood_rating: Medium High
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-006
+  exposure_metrics:
+  - metric_name: Third-Party Performance exposure count
+    metric_value: 54
+    metric_unit: items
+    description: Current-period exposure count for third-party performance.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Third-Party Performance breach rate
+    metric_value: 2.9
+    metric_unit: '%'
+    description: Trailing breach rate for third-party performance thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-006
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting third-party performance assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Third-Party Performance should remain within documented tolerance for Retail Deposit Dispute Intake and Resolution.
+    status: within
+    category: Third-Party Performance
+  recommended_action: Close evidence and control gaps for third-party performance in Retail Deposit Dispute Intake and Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for third-party performance in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate third-party performance scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 2
+    reviewer_adjusted_value:
+      likelihood_score: 3
+    reviewer_rationale: ''
+    approval_status: Approved
+- taxonomy_node_id: RIB-EMP
+  risk_id: RISK-DISP-007
+  risk_description: Employment Practices risk in Retail Deposit Dispute Intake and Resolution may not be captured, evidenced,
+    or escalated within tolerance, creating financial, regulatory, or reputational exposure for the Retail Banking & Onboarding
+    operating model.
+  risk_event: Retail Deposit Dispute Intake and Resolution experiences a employment practices event that breaches the documented
+    threshold before remediation is completed.
+  applicability_rationale: Employment Practices is applicable because Retail Deposit Dispute Intake and Resolution is a high
+    process with recurring frequency, measurable exposure, system dependencies, and owner-reviewed evidence.
+  confidence: 0.86
+  causes:
+  - Process - threshold, queue, or evidence dependency
+  - Technology - workflow, interface, or access dependency
+  - People - owner review or capacity constraint
+  consequences:
+  - Financial loss or rework
+  - Regulatory, customer, or executive escalation
+  - Reputational impact if unresolved
+  affected_stakeholders:
+  - Retail Service Recovery Manager
+  - Executive Owner, Retail Banking
+  - Second Line Risk Partner
+  - Internal Audit
+  impact_scores:
+    financial_impact: 2
+    regulatory_impact: 2
+    reputational_impact: 2
+  impact_rationales:
+    financial_impact: Exposure is tied to recurring retail deposit dispute intake and resolution volume and open remediation
+      items.
+    regulatory_impact: Regulatory impact reflects obligations, issue aging, and governance reporting linked to employment
+      practices.
+    reputational_impact: Reputational impact reflects customer, counterparty, or executive visibility when employment practices
+      is outside tolerance.
+  overall_impact_score: 2
+  overall_impact_rationale: Overall impact is set at 2 because the process has recurring exposure, documented evidence requirements,
+    and management visibility for employment practices.
+  likelihood_score: 2
+  likelihood_rating: Medium Low
+  likelihood_rationale: Likelihood reflects daily case intake with weekly aging review, current issue history, recurring volume,
+    and exposure drivers in the generic source pack.
+  assumptions:
+  - Metrics are fictional and calibrated for demo use.
+  - Owners and systems are role-based placeholders.
+  mapped_controls:
+  - CTL-DISP-007
+  exposure_metrics:
+  - metric_name: Employment Practices exposure count
+    metric_value: 61
+    metric_unit: items
+    description: Current-period exposure count for employment practices.
+    source: Process evidence pack
+    supports: likelihood
+  - metric_name: Employment Practices breach rate
+    metric_value: 3.25
+    metric_unit: '%'
+    description: Trailing breach rate for employment practices thresholds.
+    source: KRI dashboard
+    supports: likelihood
+  - metric_name: Open remediation actions
+    metric_value: 1
+    metric_unit: actions
+    description: Open actions tied to control or evidence improvement.
+    source: Issue register
+    supports: impact
+  evidence_references:
+  - evidence_id: EV-DISP-007
+    evidence_type: Source artifact
+    description: Retail Deposit Dispute Intake and Resolution evidence supporting employment practices assessment.
+    source: Generic source pack
+  risk_appetite:
+    threshold: Medium or below
+    statement: Employment Practices should remain within documented tolerance for Retail Deposit Dispute Intake and Resolution.
+    status: within
+    category: Employment Practices
+  recommended_action: Close evidence and control gaps for employment practices in Retail Deposit Dispute Intake and Resolution.
+  action_plan:
+  - action: Close evidence and control gaps for employment practices in Retail Deposit Dispute Intake and Resolution.
+    owner: Retail Service Recovery Manager
+    due_date: '2026-09-30'
+    status: Planned
+    priority: Medium
+  coverage_gaps: []
+  review:
+    review_status: Pending Review
+    reviewer: Retail Service Recovery Manager
+    challenge_comments: Validate employment practices scoring against source evidence, KRIs, controls, and open issues.
+    challenged_fields:
+    - likelihood_score
+    - control_mapping
+    - residual_risk
+    ai_original_value:
+      likelihood_score: 1
+    reviewer_adjusted_value:
+      likelihood_score: 2
+    reviewer_rationale: ''
+    approval_status: Approved
+executive_summary:
+  headline: Retail Deposit Dispute Intake and Resolution captures 7 risk records across 7 risk subcategories for Retail Banking
+    & Onboarding.
+  key_messages:
+  - Retail Banking & Onboarding shows differentiated risk capture based on process evidence and source-pack complexity.
+  - 2 high or critical residual records require visible management action.
+  - Ratings are matrix-calculated from impact, likelihood, and control environment evidence.
+  top_residual_risks:
+  - RISK-DISP-001 Regulatory Compliance
+  - RISK-DISP-002 Business Process Execution
+  recommended_actions:
+  - Use the Knowledge Base tab to compare BU source packs and risk-type concentrations.
+  - Validate High and Critical residual records through owner challenge and independent review.
+  - Track due dates through the issue and action-plan fields before executive export.
