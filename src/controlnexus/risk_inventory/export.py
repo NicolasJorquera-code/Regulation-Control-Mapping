@@ -83,7 +83,7 @@ def risk_inventory_workspace_excel_bytes(
     workspace: RiskInventoryWorkspace,
     review_decisions: list[ReviewDecision] | None = None,
 ) -> bytes:
-    """Return a full-workspace executive demo artifact as XLSX bytes."""
+    """Return a workspace executive demo artifact as XLSX bytes."""
     buffer = BytesIO()
     build_risk_inventory_workspace_workbook(workspace, review_decisions).save(buffer)
     return buffer.getvalue()
@@ -127,7 +127,7 @@ def build_risk_inventory_workspace_workbook(
     workspace: RiskInventoryWorkspace,
     review_decisions: list[ReviewDecision] | None = None,
 ) -> openpyxl.Workbook:
-    """Build the polished full-workspace demo artifact."""
+    """Build the polished workspace demo artifact."""
     review_decisions = review_decisions or []
     wb = openpyxl.Workbook()
     cover = wb.active
@@ -207,14 +207,22 @@ def _validation_for_record(workspace: RiskInventoryWorkspace, record: RiskInvent
 def _write_cover_sheet(ws: Worksheet, workspace: RiskInventoryWorkspace) -> None:
     records = _workspace_records(workspace)
     high_plus = sum(record.residual_risk.residual_rating.value in {"High", "Critical"} for record in records)
-    controls = sum(len(record.control_mappings) for record in records)
+    controls = len(
+        {
+            mapping.control_id
+            for record in records
+            for mapping in record.control_mappings
+            if mapping.control_id
+        }
+    )
+    control_links = sum(len(record.control_mappings) for record in records)
     gaps = sum(len(build_control_gaps(record)) for record in records)
     ws["A1"] = "Risk Inventory Builder"
     ws["A2"] = "Executive Demo Artifact"
     ws["A4"] = "Institution"
     ws["B4"] = workspace.bank_name
     ws["A5"] = "Scope"
-    ws["B5"] = "Full multi-business-unit workspace"
+    ws["B5"] = "Focused payment exception workspace"
     ws["A6"] = "Generated"
     ws["B6"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     ws["A8"] = "Business Units"
@@ -225,11 +233,13 @@ def _write_cover_sheet(ws: Worksheet, workspace: RiskInventoryWorkspace) -> None
     ws["F8"] = len(records)
     ws["A9"] = "Mapped Controls"
     ws["B9"] = controls
-    ws["C9"] = "High+ Residual"
-    ws["D9"] = high_plus
-    ws["E9"] = "Control Gaps"
+    ws["C9"] = "Risk-Control Links"
+    ws["D9"] = control_links
+    ws["E9"] = "Open Control Gaps"
     ws["F9"] = gaps
-    ws["A11"] = "Demo Narrative"
+    ws["A10"] = "High+ Residual"
+    ws["B10"] = high_plus
+    ws["A11"] = "Narrative"
     ws["B11"] = (
         "This workbook mirrors the Streamlit executive workbench: portfolio risk differences, "
         "process-by-process inventory, control gaps, KRI thresholds, review decisions, source trace, "
@@ -890,6 +900,7 @@ def _workspace_source_trace_rows(workspace: RiskInventoryWorkspace) -> list[dict
                     "Detail": "Document/source used for risk inventory generation.",
                 }
             )
+        rows.extend(_scenario_basis_trace_rows(run, run.input_context.business_unit, run.input_context.process_name))
         for event in run.events:
             rows.append(
                 {
@@ -922,6 +933,15 @@ def _workspace_config_rows(workspace: RiskInventoryWorkspace) -> list[dict[str, 
 
 def build_risk_inventory_workbook(run: RiskInventoryRun) -> openpyxl.Workbook:
     """Build the required multi-sheet workbook from a RiskInventoryRun."""
+    mapped_controls = len(
+        {
+            mapping.control_id
+            for record in run.records
+            for mapping in record.control_mappings
+            if mapping.control_id
+        }
+    )
+    risk_control_links = sum(len(record.control_mappings) for record in run.records)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Executive Summary"
@@ -933,7 +953,8 @@ def build_risk_inventory_workbook(run: RiskInventoryRun) -> openpyxl.Workbook:
             {"Field": "Product", "Value": run.input_context.product},
             {"Field": "Business Unit", "Value": run.input_context.business_unit},
             {"Field": "Risk Records", "Value": len(run.records)},
-            {"Field": "Mapped Controls", "Value": sum(len(record.control_mappings) for record in run.records)},
+            {"Field": "Mapped Controls", "Value": mapped_controls},
+            {"Field": "Risk-Control Links", "Value": risk_control_links},
             {
                 "Field": "High+ Residual Risks",
                 "Value": sum(record.residual_risk.residual_rating.value in {"High", "Critical"} for record in run.records),
@@ -1259,6 +1280,15 @@ def _source_trace_rows(run: RiskInventoryRun) -> list[dict[str, Any]]:
     ]
     rows.extend(
         {
+            "Trace Type": "Scenario Basis",
+            "Name": row["Reference"],
+            "Stage": "Public Source Trace",
+            "Detail": row["Detail"],
+        }
+        for row in _scenario_basis_trace_rows(run, "", "")
+    )
+    rows.extend(
+        {
             "Trace Type": "Agent Event",
             "Name": event.get("agent", ""),
             "Stage": event.get("stage", ""),
@@ -1284,6 +1314,30 @@ def _source_trace_rows(run: RiskInventoryRun) -> list[dict[str, Any]]:
         }
         for row in _config_rows(run.config_snapshot)
     )
+    return rows
+
+
+def _scenario_basis_trace_rows(
+    run: RiskInventoryRun,
+    business_unit: str,
+    process: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for source in run.run_manifest.get("scenario_basis", []):
+        if not isinstance(source, dict):
+            continue
+        title = str(source.get("title", "")).strip()
+        url = str(source.get("url", "")).strip()
+        relevance = str(source.get("relevance", "")).strip()
+        rows.append(
+            {
+                "Trace Type": "Scenario Basis",
+                "Business Unit": business_unit,
+                "Process": process,
+                "Reference": title or url,
+                "Detail": f"{url} | {relevance}".strip(" |"),
+            }
+        )
     return rows
 
 

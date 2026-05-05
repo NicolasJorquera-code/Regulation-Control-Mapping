@@ -1,105 +1,109 @@
 version: 1.2.0
 evidence_artifacts:
 - evidence_id: EV-PAYEXC-001
-  name: Payment Exception Handling Evidence Artifact 01
-  artifact_type: Approval log
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
+  name: High-Value Repair Approval QA Sample
+  artifact_type: QA sample
+  description: Sample testing package showing payment notice, wire-file amount, approver evidence, and exception results.
+  source_system: QA testing workbook
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
   control_id: CTL-PAYEXC-001
   retention: 7 years
-  sample_period: Current quarter
+  sample_period: Q2 2026
 - evidence_id: EV-PAYEXC-002
-  name: Payment Exception Handling Evidence Artifact 02
-  artifact_type: Dashboard
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
-  owner: Payment Operations Manager
-  process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-002
-  retention: 7 years
-  sample_period: Current quarter
-- evidence_id: EV-PAYEXC-003
-  name: Payment Exception Handling Evidence Artifact 03
-  artifact_type: QA sample
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
-  owner: Payment Operations Manager
-  process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-003
-  retention: 7 years
-  sample_period: Current quarter
-- evidence_id: EV-PAYEXC-004
-  name: Payment Exception Handling Evidence Artifact 04
-  artifact_type: Committee minutes
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
-  owner: Payment Operations Manager
-  process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-004
-  retention: 7 years
-  sample_period: Current quarter
-- evidence_id: EV-PAYEXC-005
-  name: Payment Exception Handling Evidence Artifact 05
-  artifact_type: Workflow extract
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
-  owner: Payment Operations Manager
-  process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-005
-  retention: 7 years
-  sample_period: Current quarter
-- evidence_id: EV-PAYEXC-006
-  name: Payment Exception Handling Evidence Artifact 06
-  artifact_type: Approval log
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
-  owner: Payment Operations Manager
-  process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-006
-  retention: 7 years
-  sample_period: Current quarter
-- evidence_id: EV-PAYEXC-007
-  name: Payment Exception Handling Evidence Artifact 07
-  artifact_type: Dashboard
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
+  name: Payment Notice to Wire File Reconciliation Package
+  artifact_type: Reconciliation package
+  description: Reconciliation of approved payment notice, generated wire file, beneficiaries, principal and interest components.
+  source_system: Loan Agency QA workbook
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
   control_id: CTL-PAYEXC-007
   retention: 7 years
-  sample_period: Current quarter
+  sample_period: Q2 2026
+- evidence_id: EV-PAYEXC-003
+  name: Privileged Payment Setup Access Review
+  artifact_type: Access review
+  description: Monthly recertification of users who can modify payment routing, release queues, internal accounts, or override
+    parameters.
+  source_system: Identity Governance Platform
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-003
+  retention: 7 years
+  sample_period: Q2 2026
+- evidence_id: EV-PAYEXC-004
+  name: Intraday Exception Queue Aging Dashboard
+  artifact_type: Dashboard
+  description: Dashboard tracking aged high-value exceptions, recall activity, release holds, and same-day escalation.
+  source_system: Payment Exception Workflow
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-004
+  retention: 7 years
+  sample_period: Q2 2026
+- evidence_id: EV-PAYEXC-005
+  name: Payment Recall Simulation and Contact Inventory
+  artifact_type: Tabletop record
+  description: Quarterly simulation evidence for recall notices, correspondent outreach, legal escalation, and counterparty
+    contact maintenance.
+  source_system: Incident Management Repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-005
+  retention: 7 years
+  sample_period: Q2 2026
+- evidence_id: EV-PAYEXC-006
+  name: Material Payment Incident Classification Tabletop
+  artifact_type: Committee minutes
+  description: Cross-functional tabletop notes covering materiality, executive notification, Legal/Compliance handoffs,
+    and reporting timing.
+  source_system: Operational Risk Governance Repository
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-006
+  retention: 7 years
+  sample_period: Q2 2026
+- evidence_id: EV-PAYEXC-007
+  name: High-Value Release Approval Log
+  artifact_type: Approval log
+  description: Maker/checker release approval log with reviewer notes and source evidence links for sampled high-value wires.
+  source_system: Payment Exception Workflow
+  owner: Payment Operations Manager
+  process_id: PROC-PAY-EXCEPTION
+  control_id: CTL-PAYEXC-002
+  retention: 7 years
+  sample_period: Q2 2026
 - evidence_id: EV-PAYEXC-008
-  name: Payment Exception Handling Evidence Artifact 08
-  artifact_type: QA sample
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
+  name: Daily GL and Nostro Break Close Package
+  artifact_type: Close package
+  description: Daily close package for wire outflows, suspense/wash accounts, nostro confirmations, and unresolved recall
+    cases.
+  source_system: General Ledger Reconciliation Platform
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
   control_id: CTL-PAYEXC-008
   retention: 7 years
-  sample_period: Current quarter
+  sample_period: Q2 2026
 - evidence_id: EV-PAYEXC-009
-  name: Payment Exception Handling Evidence Artifact 09
-  artifact_type: Committee minutes
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
+  name: Payment Workflow Change Release Evidence
+  artifact_type: Change record
+  description: Business signoff, test evidence, and rollback approval for payment workflow routing and release-screen changes.
+  source_system: Change Management Repository
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
   control_id: CTL-PAYEXC-009
   retention: 7 years
-  sample_period: Current quarter
+  sample_period: Q2 2026
 - evidence_id: EV-PAYEXC-010
-  name: Payment Exception Handling Evidence Artifact 10
+  name: Recall Workflow Recovery Tracker
   artifact_type: Workflow extract
-  description: Generic source artifact supporting Payment Exception Handling risk capture, control operation, or owner review.
-  source_system: Generic evidence repository
+  description: Payment recall case extract showing status, counterparty response, recovery amount, and GL break linkage.
+  source_system: Payment Exception Workflow
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-001
+  control_id: CTL-PAYEXC-008
   retention: 7 years
-  sample_period: Current quarter
+  sample_period: Q2 2026
 - evidence_id: EV-PAYREC-001
   name: End-of-Day Wire Reconciliation Evidence Artifact 01
   artifact_type: Approval log
@@ -873,8 +877,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-001
   name: Privileged Access Recertification Evidence Artifact 01
   artifact_type: Approval log
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -884,8 +888,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-002
   name: Privileged Access Recertification Evidence Artifact 02
   artifact_type: Dashboard
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -895,8 +899,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-003
   name: Privileged Access Recertification Evidence Artifact 03
   artifact_type: QA sample
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -906,8 +910,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-004
   name: Privileged Access Recertification Evidence Artifact 04
   artifact_type: Committee minutes
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -917,8 +921,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-005
   name: Privileged Access Recertification Evidence Artifact 05
   artifact_type: Workflow extract
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -928,8 +932,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-006
   name: Privileged Access Recertification Evidence Artifact 06
   artifact_type: Approval log
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -939,8 +943,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-007
   name: Privileged Access Recertification Evidence Artifact 07
   artifact_type: Dashboard
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -950,8 +954,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-008
   name: Privileged Access Recertification Evidence Artifact 08
   artifact_type: QA sample
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -961,8 +965,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-009
   name: Privileged Access Recertification Evidence Artifact 09
   artifact_type: Committee minutes
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -972,8 +976,8 @@ evidence_artifacts:
 - evidence_id: EV-ACCESS-010
   name: Privileged Access Recertification Evidence Artifact 10
   artifact_type: Workflow extract
-  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Privileged Access Recertification risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Identity Governance Manager
   process_id: PROC-ACCESS-RECERT
@@ -983,8 +987,8 @@ evidence_artifacts:
 - evidence_id: EV-VULN-001
   name: Critical Vulnerability Remediation Evidence Artifact 01
   artifact_type: Approval log
-  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Cyber Vulnerability Manager
   process_id: PROC-VULN-REMEDIATION
@@ -994,8 +998,8 @@ evidence_artifacts:
 - evidence_id: EV-VULN-002
   name: Critical Vulnerability Remediation Evidence Artifact 02
   artifact_type: Dashboard
-  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Cyber Vulnerability Manager
   process_id: PROC-VULN-REMEDIATION
@@ -1005,8 +1009,8 @@ evidence_artifacts:
 - evidence_id: EV-VULN-003
   name: Critical Vulnerability Remediation Evidence Artifact 03
   artifact_type: QA sample
-  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Cyber Vulnerability Manager
   process_id: PROC-VULN-REMEDIATION
@@ -1016,8 +1020,8 @@ evidence_artifacts:
 - evidence_id: EV-VULN-004
   name: Critical Vulnerability Remediation Evidence Artifact 04
   artifact_type: Committee minutes
-  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Cyber Vulnerability Manager
   process_id: PROC-VULN-REMEDIATION
@@ -1027,8 +1031,8 @@ evidence_artifacts:
 - evidence_id: EV-VULN-005
   name: Critical Vulnerability Remediation Evidence Artifact 05
   artifact_type: Workflow extract
-  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Cyber Vulnerability Manager
   process_id: PROC-VULN-REMEDIATION
@@ -1038,8 +1042,8 @@ evidence_artifacts:
 - evidence_id: EV-VULN-006
   name: Critical Vulnerability Remediation Evidence Artifact 06
   artifact_type: Approval log
-  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or owner
-    review.
+  description: Generic source artifact supporting Critical Vulnerability Remediation risk capture, control operation, or
+    owner review.
   source_system: Generic evidence repository
   owner: Cyber Vulnerability Manager
   process_id: PROC-VULN-REMEDIATION

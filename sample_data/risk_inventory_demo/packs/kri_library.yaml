@@ -1,64 +1,66 @@
 version: 1.2.0
 kri_library:
-- kri_id: KRI-GEN-001
-  kri_name: Business Process Execution Threshold Indicator 01
+- kri_id: KRI-PAYEXC-BPR-001
+  kri_name: High-Value Repair Validation Exception Rate
   risk_taxonomy_id: RIB-BPR
-  metric_definition: Measures current-period movement in business process execution exposure against the generic profile threshold.
-  formula: current exceptions / in-scope population * 100
+  metric_definition: Percentage of sampled high-value repaired wires with missing payment-intent or amount-validation evidence.
+  formula: validation exceptions / sampled high-value repairs * 100
   unit: '%'
-  measurement_frequency: Daily
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  measurement_frequency: Weekly
+  data_source: QA testing workbook
+  owner: Payment Operations Manager
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for business process execution in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: <2%
+    amber: 2% to 5%
+    red: '>5%'
+  rationale: Directly monitors the control weakness most likely to cause unintended payment release.
+  escalation_path: Payment Operations Manager -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
-- kri_id: KRI-GEN-002
-  kri_name: Data Quality And Reconciliation Threshold Indicator 02
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
+- kri_id: KRI-PAYEXC-DM-001
+  kri_name: Payment Notice to Wire File Mismatch Count
   risk_taxonomy_id: RIB-DM
-  metric_definition: Measures current-period movement in data quality and reconciliation exposure against the generic profile
-    threshold.
-  formula: current exceptions / in-scope population * 100
-  unit: '%'
+  metric_definition: Count of payment notice, beneficiary, principal/interest, or wire-file mismatches identified before
+    or after release.
+  formula: mismatches identified in period
+  unit: count
   measurement_frequency: Daily
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  data_source: Loan Agency QA dashboard
+  owner: Loan Agency Operations Lead
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for data quality and reconciliation in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: '0'
+    amber: 1 to 2
+    red: '>2'
+  rationale: Monitors the key data-quality driver for erroneous release and post-release reconciliation breaks.
+  escalation_path: Loan Agency Operations Lead -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
-- kri_id: KRI-GEN-003
-  kri_name: Cybersecurity And Privileged Access Threshold Indicator 03
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
+- kri_id: KRI-PAYEXC-CYB-001
+  kri_name: Overdue Privileged Payment Setup Access
   risk_taxonomy_id: RIB-CYB
-  metric_definition: Measures current-period movement in cybersecurity and privileged access exposure against the generic
-    profile threshold.
-  formula: current exceptions / in-scope population * 100
-  unit: '%'
-  measurement_frequency: Daily
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  metric_definition: Number of payment setup or emergency access entitlements past recertification or closure target.
+  formula: overdue privileged entitlements
+  unit: count
+  measurement_frequency: Weekly
+  data_source: Identity governance dashboard
+  owner: Payment Platform Owner
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for cybersecurity and privileged access in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: '0'
+    amber: '1'
+    red: '>1'
+  rationale: Sensitive access can change payment release behavior and should remain low tolerance.
+  escalation_path: Payment Platform Owner -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
 - kri_id: KRI-GEN-004
   kri_name: Regulatory Compliance Threshold Indicator 04
   risk_taxonomy_id: RIB-COM
@@ -78,44 +80,47 @@ kri_library:
   - BU scorecard
   - Executive risk pack
   placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
-- kri_id: KRI-GEN-005
-  kri_name: Operational Resiliency Threshold Indicator 05
+- kri_id: KRI-PAYEXC-ORS-001
+  kri_name: Aged Recall or High-Value Exception Cases
   risk_taxonomy_id: RIB-ORS
-  metric_definition: Measures current-period movement in operational resiliency exposure against the generic profile threshold.
-  formula: current exceptions / in-scope population * 100
-  unit: '%'
-  measurement_frequency: Monthly
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  metric_definition: Count of recall or high-value exception cases open beyond the same-day escalation target.
+  formula: cases over target age
+  unit: count
+  measurement_frequency: Daily
+  data_source: Payment Exception Workflow
+  owner: Payment Operations Manager
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for operational resiliency in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: '0'
+    amber: 1 to 2
+    red: '>2'
+  rationale: Tracks operational resilience of the recall and exception response process.
+  escalation_path: Payment Operations Manager -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
-- kri_id: KRI-GEN-006
-  kri_name: Third-Party Performance Threshold Indicator 06
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
+- kri_id: KRI-PAYEXC-TPR-001
+  kri_name: Counterparty Recall Response SLA Misses
   risk_taxonomy_id: RIB-TPR
-  metric_definition: Measures current-period movement in third-party performance exposure against the generic profile threshold.
-  formula: current exceptions / in-scope population * 100
-  unit: '%'
-  measurement_frequency: Monthly
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  metric_definition: Number of recall simulations or live cases where correspondent, custodian, or recipient response missed
+    the target.
+  formula: SLA misses in period
+  unit: count
+  measurement_frequency: Quarterly
+  data_source: Recall playbook tracker
+  owner: Treasury Operations Controller
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for third-party performance in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: '0'
+    amber: '1'
+    red: '>1'
+  rationale: Measures third-party response reliability after funds leave the bank.
+  escalation_path: Treasury Operations Controller -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
 - kri_id: KRI-GEN-007
   kri_name: Technology Operations Threshold Indicator 07
   risk_taxonomy_id: RIB-IT
@@ -135,26 +140,27 @@ kri_library:
   - BU scorecard
   - Executive risk pack
   placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
-- kri_id: KRI-GEN-008
-  kri_name: Regulatory Reporting And Escalation Threshold Indicator 08
+- kri_id: KRI-PAYEXC-RR-001
+  kri_name: Material Payment Incident Escalation Gaps
   risk_taxonomy_id: RIB-RR
-  metric_definition: Measures current-period movement in regulatory reporting and escalation exposure against the generic
-    profile threshold.
-  formula: current exceptions / in-scope population * 100
-  unit: '%'
+  metric_definition: Open findings or tabletop gaps tied to materiality, executive notification, or regulatory reporting
+    timing.
+  formula: open escalation gaps
+  unit: count
   measurement_frequency: Monthly
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  data_source: Operational risk governance tracker
+  owner: Legal and Regulatory Response Lead
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for regulatory reporting and escalation in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: '0'
+    amber: '1'
+    red: '>1'
+  rationale: Monitors unresolved governance gaps that could delay reporting or executive escalation.
+  escalation_path: Legal and Regulatory Response Lead -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
 - kri_id: KRI-GEN-009
   kri_name: Model Performance Threshold Indicator 09
   risk_taxonomy_id: RIB-MDL
@@ -236,7 +242,8 @@ kri_library:
 - kri_id: KRI-GEN-013
   kri_name: Contract And Documentation Threshold Indicator 13
   risk_taxonomy_id: RIB-CON
-  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile threshold.
+  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile
+    threshold.
   formula: current exceptions / in-scope population * 100
   unit: '%'
   measurement_frequency: Monthly
@@ -271,26 +278,26 @@ kri_library:
   - BU scorecard
   - Executive risk pack
   placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
-- kri_id: KRI-GEN-015
-  kri_name: Internal Fraud And Override Threshold Indicator 15
+- kri_id: KRI-PAYEXC-IFR-001
+  kri_name: High-Value Release Approval Evidence Gaps
   risk_taxonomy_id: RIB-IFR
-  metric_definition: Measures current-period movement in internal fraud and override exposure against the generic profile
-    threshold.
-  formula: current exceptions / in-scope population * 100
+  metric_definition: Sampled high-value releases lacking reviewer note, source evidence link, or independent approver evidence.
+  formula: evidence gaps / sampled releases * 100
   unit: '%'
   measurement_frequency: Monthly
-  data_source: KRI dashboard source pack
-  owner: Business Unit Risk Owner
+  data_source: Payment Exception Workflow QA
+  owner: Loan Agency Operations Lead
   thresholds:
-    green: <2
-    amber: 2 to 5
-    red: '>5'
-  rationale: Provides a leading indicator for internal fraud and override in the selected knowledge-base archetype.
-  escalation_path: Process Owner -> BU Risk Owner -> Second Line Risk Partner -> Risk Governance Committee
+    green: <2%
+    amber: 2% to 5%
+    red: '>5%'
+  rationale: Tracks maker/checker evidence quality and override susceptibility.
+  escalation_path: Loan Agency Operations Lead -> Second Line Operational Risk Partner -> Risk Governance Committee
   use_cases:
-  - BU scorecard
+  - Selected risk monitoring
+  - Payment operations scorecard
   - Executive risk pack
-  placement_guidance: Use in the Knowledge Base profile matrix and selected risk detail drawer.
+  placement_guidance: Use for the single-process Payment Exception Handling demo and selected risk detail cards.
 - kri_id: KRI-GEN-016
   kri_name: Litigation And Dispute Threshold Indicator 16
   risk_taxonomy_id: RIB-LIT
@@ -332,7 +339,8 @@ kri_library:
 - kri_id: KRI-GEN-018
   kri_name: Business Process Execution Threshold Indicator 18
   risk_taxonomy_id: RIB-BPR
-  metric_definition: Measures current-period movement in business process execution exposure against the generic profile threshold.
+  metric_definition: Measures current-period movement in business process execution exposure against the generic profile
+    threshold.
   formula: current exceptions / in-scope population * 100
   unit: '%'
   measurement_frequency: Daily
@@ -565,7 +573,8 @@ kri_library:
 - kri_id: KRI-GEN-030
   kri_name: Contract And Documentation Threshold Indicator 30
   risk_taxonomy_id: RIB-CON
-  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile threshold.
+  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile
+    threshold.
   formula: current exceptions / in-scope population * 100
   unit: '%'
   measurement_frequency: Monthly
@@ -661,7 +670,8 @@ kri_library:
 - kri_id: KRI-GEN-035
   kri_name: Business Process Execution Threshold Indicator 35
   risk_taxonomy_id: RIB-BPR
-  metric_definition: Measures current-period movement in business process execution exposure against the generic profile threshold.
+  metric_definition: Measures current-period movement in business process execution exposure against the generic profile
+    threshold.
   formula: current exceptions / in-scope population * 100
   unit: '%'
   measurement_frequency: Daily
@@ -894,7 +904,8 @@ kri_library:
 - kri_id: KRI-GEN-047
   kri_name: Contract And Documentation Threshold Indicator 47
   risk_taxonomy_id: RIB-CON
-  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile threshold.
+  metric_definition: Measures current-period movement in contract and documentation exposure against the generic profile
+    threshold.
   formula: current exceptions / in-scope population * 100
   unit: '%'
   measurement_frequency: Monthly

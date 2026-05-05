@@ -1,6 +1,6 @@
 # Risk Inventory Builder
 
-Risk Inventory Builder extends ControlNexus from control generation and gap analysis into an executive risk inventory workbench. It is designed for a financial-services demo audience, but the code and YAML knowledge packs remain institution-agnostic and use only fictional sample data.
+Risk Inventory Builder extends ControlNexus from control generation and gap analysis into an executive risk inventory workbench. It is designed for a financial-services demo audience, and the code and YAML knowledge packs remain institution-agnostic reference data.
 
 The core product question is:
 
@@ -56,39 +56,37 @@ LLM agents may recommend rationale, mappings, statements, KRIs, and synthetic co
 
 ## Demo Mode
 
-The Risk Inventory Builder includes a `Demo Mode` toggle. When enabled, it loads the generic `Large Global Bank` workspace:
+The Risk Inventory Builder includes a `Demo Mode` toggle. When enabled, it loads one realistic payment-operations workspace:
 
-- 5 business units
-- 10 processes
-- 10 deterministic risk inventory runs
-- 84 controls across the reusable fixture pack
-- KRIs, issues, evidence, obligations, root causes, appetite, trace events, and workbook export data
+- 1 business unit: `Payment Operations`
+- 1 process: `PROC-PAY-EXCEPTION`
+- 1 deterministic risk inventory run: `payment_exception_handling.yaml`
+- payment exception controls, KRIs, issues, evidence, obligations, root causes, appetite, trace events, and workbook export data
+- public scenario-basis traceability for the high-value wire exception scenario
 
-The top-level demo tabs are intentionally reduced:
+The top-level demo tabs are intentionally focused:
 
 - `Knowledge Base`
 - `Risk Inventory`
 - `Control Mapping`
 - `Gap Analysis`
-- `Review & Challenge`
-- `Executive Report`
 
-The former `Process Map`, `Residual Risk`, `KRI Program`, and `Agent Run Trace` tabs are consolidated into the workbench and export story. Selecting a process opens an executive command view with a left risk queue, central risk dossier, right decision stack, controls, gaps, KRIs, evidence, mitigation, review, and an impact-by-frequency heatmap. With no process focus selected, the view shows portfolio BU risk differences, a business-unit-by-risk-category heatmap, divergence drivers, and aggregated inventory.
+The former `Process Map`, `Residual Risk`, `KRI Program`, `Agent Run Trace`, `Review & Challenge`, and `Executive Report` tabs are consolidated into the workbench and export story. Demo Mode opens the payment exception process automatically, with a left risk queue, central risk dossier, right decision stack, controls, gaps, KRIs, evidence, mitigation, review, and an impact-by-frequency heatmap.
 
 ## Knowledge Packs
 
-Demo data is loaded from:
+The default demo is loaded from:
 
 ```text
-sample_data/risk_inventory_demo/workspace.yaml
+sample_data/risk_inventory_demo/payment_exception_handling.yaml
 sample_data/risk_inventory_demo/packs/
 ```
 
-The `Knowledge Base` tab focuses on the modular source packs: profile archetype, business units, processes, taxonomies, controls, obligations, and KRI library. It also surfaces the business-unit risk capture matrix so the demo makes clear how different BUs capture different risk types without adding a new tab.
+The broader `workspace.yaml`, local-regional, and digital-payments fixtures remain available for explicit loader calls and regression coverage, but they are not presented by the Demo Mode toggle. The `Knowledge Base` tab focuses on the payment exception source packs: business unit, process, taxonomies, controls, obligations, KRI library, evidence, issues, and scenario-basis traceability.
 
 ## Executive Workbook
 
-Demo Mode exports a full-workspace Excel artifact by default. It includes a cover page, executive summary, BU heatmap, BU risk breakdown, process inventory, risk dossiers, control gaps, synthetic control recommendations, KRI dashboard, reviewer workflow, source trace, and configuration snapshot. Reviewer decisions captured in Streamlit session state are merged into the workbook.
+Demo Mode exports a focused Excel artifact by default. It includes a cover page, executive summary, risk dossiers, control gaps, synthetic control recommendations, KRI dashboard, reviewer workflow, source trace, and configuration snapshot. Reviewer decisions captured in Streamlit session state are merged into the workbook.
 
 APQC is optional process-normalization metadata only. A process can include:
 
@@ -125,7 +123,7 @@ This is not treated as final truth. Business users can edit extracted context be
 streamlit run src/controlnexus/ui/app.py
 ```
 
-Open `Risk Inventory Builder` and enable `Demo Mode` to inspect the full `Large Global Bank` workspace immediately.
+Open `Risk Inventory Builder` and enable `Demo Mode` to inspect the `Payment Exception Handling` process immediately.
 
 ## Testing
 

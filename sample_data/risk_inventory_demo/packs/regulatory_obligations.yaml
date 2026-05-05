@@ -1,25 +1,26 @@
 version: 1.2.0
 regulatory_obligations:
-- obligation_id: OBL-GEN-001
-  name: Business Process Execution Obligation 01
-  framework: BSA/AML
-  citation: Generic requirement 01
-  description: Generic obligation requiring Payment Exception Handling to evidence, monitor, escalate, and remediate business
-    process execution exposure.
+- obligation_id: OBL-PAYEXC-001
+  name: Payment-system internal controls and exception processing
+  framework: OCC Payment Systems Comptroller Handbook
+  citation: Payment systems risk management and exception review expectations
+  description: Payment exception procedures should define internal controls, exception review, escalation, and independent
+    review expectations.
   process_ids:
   - PROC-PAY-EXCEPTION
   risk_taxonomy_ids:
   - RIB-BPR
+  - RIB-DM
   control_expectations:
-  - Owner review retained
-  - Exceptions aged and escalated
-  - Evidence retained for independent review
+  - High-value release approval evidence retained
+  - Exception aging and escalation monitored
+  - Independent risk-based review performed
 - obligation_id: OBL-GEN-002
   name: Data Quality And Reconciliation Obligation 02
   framework: Consumer Compliance
   citation: Generic requirement 02
-  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate data
-    quality and reconciliation exposure.
+  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate
+    data quality and reconciliation exposure.
   process_ids:
   - PROC-PAY-RECON
   risk_taxonomy_ids:
@@ -46,8 +47,8 @@ regulatory_obligations:
   name: Regulatory Compliance Obligation 04
   framework: Technology Risk
   citation: Generic requirement 04
-  description: Generic obligation requiring Retail Deposit Dispute Intake and Resolution to evidence, monitor, escalate, and
-    remediate regulatory compliance exposure.
+  description: Generic obligation requiring Retail Deposit Dispute Intake and Resolution to evidence, monitor, escalate,
+    and remediate regulatory compliance exposure.
   process_ids:
   - PROC-RETAIL-DISPUTES
   risk_taxonomy_ids:
@@ -74,8 +75,8 @@ regulatory_obligations:
   name: Third-Party Performance Obligation 06
   framework: Model Risk
   citation: Generic requirement 06
-  description: Generic obligation requiring Commercial Covenant Monitoring to evidence, monitor, escalate, and remediate third-party
-    performance exposure.
+  description: Generic obligation requiring Commercial Covenant Monitoring to evidence, monitor, escalate, and remediate
+    third-party performance exposure.
   process_ids:
   - PROC-COVENANT-MONITOR
   risk_taxonomy_ids:
@@ -102,8 +103,8 @@ regulatory_obligations:
   name: Regulatory Reporting And Escalation Obligation 08
   framework: Internal Policy
   citation: Generic requirement 08
-  description: Generic obligation requiring Securities Trade Settlement and Collateral Operations to evidence, monitor, escalate,
-    and remediate regulatory reporting and escalation exposure.
+  description: Generic obligation requiring Securities Trade Settlement and Collateral Operations to evidence, monitor,
+    escalate, and remediate regulatory reporting and escalation exposure.
   process_ids:
   - PROC-SECURITIES-SETTLE
   risk_taxonomy_ids:
@@ -140,26 +141,27 @@ regulatory_obligations:
   - Owner review retained
   - Exceptions aged and escalated
   - Evidence retained for independent review
-- obligation_id: OBL-GEN-011
-  name: Privacy And Confidential Data Obligation 11
-  framework: Operational Resilience
-  citation: Generic requirement 11
-  description: Generic obligation requiring Payment Exception Handling to evidence, monitor, escalate, and remediate privacy
-    and confidential data exposure.
+- obligation_id: OBL-PAYEXC-002
+  name: Erroneous payment recall and legal escalation readiness
+  framework: Public erroneous wire-transfer case lessons
+  citation: Citibank/Revlon public wire-transfer opinions
+  description: Recall procedures should preserve notice, counterparty outreach, legal escalation, and recovery tracking
+    evidence for suspected erroneous payments.
   process_ids:
   - PROC-PAY-EXCEPTION
   risk_taxonomy_ids:
-  - RIB-PRI
+  - RIB-ORS
+  - RIB-TPR
   control_expectations:
-  - Owner review retained
-  - Exceptions aged and escalated
-  - Evidence retained for independent review
+  - Recall notices retained
+  - Counterparty response tracked
+  - Legal escalation timing documented
 - obligation_id: OBL-GEN-012
   name: Project And Change Management Obligation 12
   framework: Technology Risk
   citation: Generic requirement 12
-  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate project
-    and change management exposure.
+  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate
+    project and change management exposure.
   process_ids:
   - PROC-PAY-RECON
   risk_taxonomy_ids:
@@ -186,8 +188,8 @@ regulatory_obligations:
   name: Human Capital Capacity Obligation 14
   framework: Model Risk
   citation: Generic requirement 14
-  description: Generic obligation requiring Retail Deposit Dispute Intake and Resolution to evidence, monitor, escalate, and
-    remediate human capital capacity exposure.
+  description: Generic obligation requiring Retail Deposit Dispute Intake and Resolution to evidence, monitor, escalate,
+    and remediate human capital capacity exposure.
   process_ids:
   - PROC-RETAIL-DISPUTES
   risk_taxonomy_ids:
@@ -214,8 +216,8 @@ regulatory_obligations:
   name: Litigation And Dispute Obligation 16
   framework: Internal Policy
   citation: Generic requirement 16
-  description: Generic obligation requiring Commercial Covenant Monitoring to evidence, monitor, escalate, and remediate litigation
-    and dispute exposure.
+  description: Generic obligation requiring Commercial Covenant Monitoring to evidence, monitor, escalate, and remediate
+    litigation and dispute exposure.
   process_ids:
   - PROC-COVENANT-MONITOR
   risk_taxonomy_ids:
@@ -242,8 +244,8 @@ regulatory_obligations:
   name: Business Process Execution Obligation 18
   framework: Consumer Compliance
   citation: Generic requirement 18
-  description: Generic obligation requiring Securities Trade Settlement and Collateral Operations to evidence, monitor, escalate,
-    and remediate business process execution exposure.
+  description: Generic obligation requiring Securities Trade Settlement and Collateral Operations to evidence, monitor,
+    escalate, and remediate business process execution exposure.
   process_ids:
   - PROC-SECURITIES-SETTLE
   risk_taxonomy_ids:
@@ -280,26 +282,27 @@ regulatory_obligations:
   - Owner review retained
   - Exceptions aged and escalated
   - Evidence retained for independent review
-- obligation_id: OBL-GEN-021
-  name: Regulatory Compliance Obligation 21
-  framework: Third Party Risk
-  citation: Generic requirement 21
-  description: Generic obligation requiring Payment Exception Handling to evidence, monitor, escalate, and remediate regulatory
-    compliance exposure.
+- obligation_id: OBL-PAYEXC-003
+  name: Payment incident governance and internal-control remediation
+  framework: OCC and Federal Reserve internal-control enforcement context
+  citation: 2020 public internal-control enforcement releases
+  description: Material payment-control issues should be escalated through governance with remediation plans, ownership,
+    and evidence of timely corrective action.
   process_ids:
   - PROC-PAY-EXCEPTION
   risk_taxonomy_ids:
-  - RIB-COM
+  - RIB-RR
+  - RIB-BPR
   control_expectations:
-  - Owner review retained
-  - Exceptions aged and escalated
-  - Evidence retained for independent review
+  - Materiality thresholds approved
+  - Operational loss event considered
+  - 2LOD challenge retained
 - obligation_id: OBL-GEN-022
   name: Operational Resiliency Obligation 22
   framework: Model Risk
   citation: Generic requirement 22
-  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate operational
-    resiliency exposure.
+  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate
+    operational resiliency exposure.
   process_ids:
   - PROC-PAY-RECON
   risk_taxonomy_ids:
@@ -326,8 +329,8 @@ regulatory_obligations:
   name: Technology Operations Obligation 24
   framework: Internal Policy
   citation: Generic requirement 24
-  description: Generic obligation requiring Retail Deposit Dispute Intake and Resolution to evidence, monitor, escalate, and
-    remediate technology operations exposure.
+  description: Generic obligation requiring Retail Deposit Dispute Intake and Resolution to evidence, monitor, escalate,
+    and remediate technology operations exposure.
   process_ids:
   - PROC-RETAIL-DISPUTES
   risk_taxonomy_ids:
@@ -354,8 +357,8 @@ regulatory_obligations:
   name: Model Performance Obligation 26
   framework: Consumer Compliance
   citation: Generic requirement 26
-  description: Generic obligation requiring Commercial Covenant Monitoring to evidence, monitor, escalate, and remediate model
-    performance exposure.
+  description: Generic obligation requiring Commercial Covenant Monitoring to evidence, monitor, escalate, and remediate
+    model performance exposure.
   process_ids:
   - PROC-COVENANT-MONITOR
   risk_taxonomy_ids:
@@ -382,8 +385,8 @@ regulatory_obligations:
   name: Privacy And Confidential Data Obligation 28
   framework: Technology Risk
   citation: Generic requirement 28
-  description: Generic obligation requiring Securities Trade Settlement and Collateral Operations to evidence, monitor, escalate,
-    and remediate privacy and confidential data exposure.
+  description: Generic obligation requiring Securities Trade Settlement and Collateral Operations to evidence, monitor,
+    escalate, and remediate privacy and confidential data exposure.
   process_ids:
   - PROC-SECURITIES-SETTLE
   risk_taxonomy_ids:
@@ -420,26 +423,27 @@ regulatory_obligations:
   - Owner review retained
   - Exceptions aged and escalated
   - Evidence retained for independent review
-- obligation_id: OBL-GEN-031
-  name: Human Capital Capacity Obligation 31
-  framework: Liquidity Risk
-  citation: Generic requirement 31
-  description: Generic obligation requiring Payment Exception Handling to evidence, monitor, escalate, and remediate human
-    capital capacity exposure.
+- obligation_id: OBL-PAYEXC-004
+  name: Privileged access over payment setup and release functions
+  framework: Internal technology and access policy
+  citation: Payment system access governance standard
+  description: Sensitive payment-routing, internal account, and release-override access must be reviewed, approved, and
+    closed timely when emergency access is used.
   process_ids:
   - PROC-PAY-EXCEPTION
   risk_taxonomy_ids:
-  - RIB-HCM
+  - RIB-CYB
+  - RIB-IFR
   control_expectations:
-  - Owner review retained
-  - Exceptions aged and escalated
-  - Evidence retained for independent review
+  - Privileged roles recertified
+  - Emergency access closed timely
+  - Sensitive configuration changes approved
 - obligation_id: OBL-GEN-032
   name: Internal Fraud And Override Obligation 32
   framework: Internal Policy
   citation: Generic requirement 32
-  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate internal
-    fraud and override exposure.
+  description: Generic obligation requiring End-of-Day Wire Reconciliation to evidence, monitor, escalate, and remediate
+    internal fraud and override exposure.
   process_ids:
   - PROC-PAY-RECON
   risk_taxonomy_ids:

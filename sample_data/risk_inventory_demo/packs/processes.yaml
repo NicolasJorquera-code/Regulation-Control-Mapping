@@ -3,44 +3,49 @@ processes:
 - process_id: PROC-PAY-EXCEPTION
   process_name: Payment Exception Handling
   bu_id: BU-PAYOPS
-  description: Investigation and resolution of failed, returned, held, duplicate, or amended payment instructions across wire
-    and ACH channels.
+  description: High-value wire exception repair, payment-intent validation, release approval, recall handling, and daily
+    GL/nostro reconciliation for failed, amended, duplicate, or disputed payment instructions.
   owner: Payment Operations Manager
   last_reviewed: '2026-04-30'
-  cadence: Daily operational, monthly governance review
+  cadence: Intraday release monitoring with daily close certification and monthly governance review
   criticality: Critical
   related_systems:
-  - Payment Workflow Platform
+  - Payment Exception Workflow
   - Wire Transfer Gateway
-  - ACH Operations Platform
-  - Sanctions Screening Platform
+  - Loan Agency Payment Module
+  - Payment Intent Validation Service
+  - SWIFT Messaging Gateway
   - General Ledger Reconciliation Platform
   upstream_dependencies:
+  - Loan agency payment notice
   - Payment intake queue
-  - Sanctions screening feed
-  - Customer service escalation queue
+  - Sanctions screening disposition
+  - Customer or counterparty amendment request
   downstream_dependencies:
-  - Ledger posting
-  - Customer notification
-  - Incident escalation
+  - Wire release gateway
+  - Recall and return workflow
+  - General ledger close
+  - Operational loss event reporting
   event_triggers:
-  - Daily exception queue close
-  - High-value payment over SLA
-  - Potential customer impact
+  - High-value repaired wire ready for release
+  - Payment notice and wire-file mismatch
+  - Recall or hold request received
+  - Unreconciled GL or nostro break
   data_objects:
-  - Payment instruction
-  - Exception reason code
+  - Payment notice
+  - Wire file
+  - Beneficiary instruction
   - Approval log
-  - Ledger entry
-  - Customer notice
+  - Recall notice
+  - GL/suspense break
   apqc_crosswalk:
     framework: APQC Banking PCF
     version: 7.2.2
-    process_id: banking-payment-operations
-    process_name: Manage payment operations exceptions
-    confidence: 0.78
-    rationale: Optional process-normalization metadata; risk conclusions come from generic source packs, controls, issues,
-      obligations, evidence, and scoring matrices.
+    process_id: banking-payment-operations-exceptions
+    process_name: Manage high-value payment exceptions and recalls
+    confidence: 0.81
+    rationale: Optional normalization metadata; risk conclusions are driven by payment workflow evidence, controls, issues,
+      KRIs, and scoring matrices.
 - process_id: PROC-PAY-RECON
   process_name: End-of-Day Wire Reconciliation
   bu_id: BU-PAYOPS
@@ -148,8 +153,8 @@ processes:
 - process_id: PROC-CL-UNDERWRITE
   process_name: Commercial Loan Underwriting & Risk Rating
   bu_id: BU-COMMLEND
-  description: Commercial loan underwriting, financial spreading, borrower risk-rating assignment, covenant design, and credit
-    committee approval.
+  description: Commercial loan underwriting, financial spreading, borrower risk-rating assignment, covenant design, and
+    credit committee approval.
   owner: Credit Underwriting Lead
   last_reviewed: '2026-04-30'
   cadence: Per credit decision; quarterly portfolio review
@@ -180,8 +185,8 @@ processes:
 - process_id: PROC-COVENANT-MONITOR
   process_name: Commercial Covenant Monitoring
   bu_id: BU-COMMLEND
-  description: Borrower compliance certificate intake, covenant calculation, exception escalation, waiver approval, and portfolio
-    trend reporting.
+  description: Borrower compliance certificate intake, covenant calculation, exception escalation, waiver approval, and
+    portfolio trend reporting.
   owner: Credit Administration Manager
   last_reviewed: '2026-04-30'
   cadence: Monthly and quarterly, based on covenant schedule
@@ -244,8 +249,8 @@ processes:
 - process_id: PROC-SECURITIES-SETTLE
   process_name: Securities Trade Settlement and Collateral Operations
   bu_id: BU-TREASURY
-  description: Trade capture validation, settlement matching, collateral movement approval, fail management, margin call handling,
-    and post-settlement reconciliation.
+  description: Trade capture validation, settlement matching, collateral movement approval, fail management, margin call
+    handling, and post-settlement reconciliation.
   owner: Securities Operations Lead
   last_reviewed: '2026-04-30'
   cadence: Daily market close and settlement cycle

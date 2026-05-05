@@ -1,57 +1,56 @@
 version: 1.2.0
 issues:
 - issue_id: ISS-PAYEXC-001
-  title: Payment Exception Handling Business Process Execution Issue 01
-  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
-    automation.
-  severity: Medium
+  title: High-value repair approval evidence incomplete
+  description: High-value repair approval checklist does not require retained comparison of payment notice, principal/interest
+    split, and generated wire-file totals.
+  severity: High
   status: In Remediation
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
   control_id: CTL-PAYEXC-001
   risk_id: RISK-PAYEXC-001
-  age_days: 10
-  source: Generic issue register
+  age_days: 46
+  source: Operational risk issue register
 - issue_id: ISS-PAYEXC-002
-  title: Payment Exception Handling Data Quality And Reconciliation Issue 02
-  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
-    automation.
-  severity: High
+  title: Payment data evidence package not integrated
+  description: Payment notice, wire-file, GL break, and recall status evidence are retained in separate locations, slowing
+    owner review and challenge.
+  severity: Medium
   status: Open
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-002
+  control_id: CTL-PAYEXC-007
   risk_id: RISK-PAYEXC-002
-  age_days: 13
-  source: Generic issue register
+  age_days: 29
+  source: Operational risk issue register
 - issue_id: ISS-PAYEXC-003
-  title: Payment Exception Handling Cybersecurity And Privileged Access Issue 03
-  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
-    automation.
-  severity: Medium
+  title: Privileged payment setup recertification gap
+  description: Sensitive payment-routing default and emergency access privileges require refreshed owner recertification.
+  severity: High
   status: In Remediation
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
   control_id: CTL-PAYEXC-003
   risk_id: RISK-PAYEXC-003
-  age_days: 16
-  source: Generic issue register
+  age_days: 38
+  source: Operational risk issue register
 - issue_id: ISS-PAYEXC-004
-  title: Payment Exception Handling Operational Resiliency Issue 04
-  description: Generic open finding for Payment Exception Handling requiring owner remediation, evidence refresh, or threshold
-    automation.
-  severity: Low
-  status: Closed
+  title: Material payment incident escalation standard pending approval
+  description: Legal, Compliance, Operations, and 2LOD have not approved one standard for material erroneous-payment classification
+    and reporting timing.
+  severity: High
+  status: Open
   owner: Payment Operations Manager
   process_id: PROC-PAY-EXCEPTION
-  control_id: CTL-PAYEXC-004
-  risk_id: RISK-PAYEXC-004
-  age_days: 19
-  source: Generic issue register
+  control_id: CTL-PAYEXC-006
+  risk_id: RISK-PAYEXC-006
+  age_days: 55
+  source: Operational risk issue register
 - issue_id: ISS-PAYREC-001
   title: End-of-Day Wire Reconciliation Data Quality And Reconciliation Issue 01
-  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: High
   status: Open
   owner: Treasury Operations Lead
@@ -62,8 +61,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-PAYREC-002
   title: End-of-Day Wire Reconciliation Business Process Execution Issue 02
-  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: Medium
   status: Closed
   owner: Treasury Operations Lead
@@ -74,8 +73,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-PAYREC-003
   title: End-of-Day Wire Reconciliation Internal Fraud And Override Issue 03
-  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: Low
   status: In Remediation
   owner: Treasury Operations Lead
@@ -86,8 +85,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-PAYREC-004
   title: End-of-Day Wire Reconciliation Regulatory Reporting And Escalation Issue 04
-  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for End-of-Day Wire Reconciliation requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: Medium
   status: Closed
   owner: Treasury Operations Lead
@@ -194,8 +193,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-CLUW-001
   title: Commercial Loan Underwriting & Risk Rating Model Performance Issue 01
-  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: Low
   status: In Remediation
   owner: Credit Underwriting Lead
@@ -206,8 +205,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-CLUW-002
   title: Commercial Loan Underwriting & Risk Rating Business Process Execution Issue 02
-  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: Medium
   status: Closed
   owner: Credit Underwriting Lead
@@ -218,8 +217,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-CLUW-003
   title: Commercial Loan Underwriting & Risk Rating Contract And Documentation Issue 03
-  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: High
   status: Open
   owner: Credit Underwriting Lead
@@ -230,8 +229,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-CLUW-004
   title: Commercial Loan Underwriting & Risk Rating Data Quality And Reconciliation Issue 04
-  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Commercial Loan Underwriting & Risk Rating requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: Medium
   status: Closed
   owner: Credit Underwriting Lead
@@ -242,8 +241,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-COVMON-001
   title: Commercial Covenant Monitoring Business Process Execution Issue 01
-  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: Medium
   status: In Remediation
   owner: Credit Administration Manager
@@ -254,8 +253,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-COVMON-002
   title: Commercial Covenant Monitoring Data Quality And Reconciliation Issue 02
-  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: High
   status: Open
   owner: Credit Administration Manager
@@ -266,8 +265,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-COVMON-003
   title: Commercial Covenant Monitoring Regulatory Compliance Issue 03
-  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: Medium
   status: In Remediation
   owner: Credit Administration Manager
@@ -278,8 +277,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-COVMON-004
   title: Commercial Covenant Monitoring Regulatory Reporting And Escalation Issue 04
-  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or threshold
-    automation.
+  description: Generic open finding for Commercial Covenant Monitoring requiring owner remediation, evidence refresh, or
+    threshold automation.
   severity: Low
   status: Closed
   owner: Credit Administration Manager
@@ -290,8 +289,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-LIQ-001
   title: Liquidity Stress Monitoring and Escalation Operational Resiliency Issue 01
-  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: High
   status: Open
   owner: Liquidity Risk Manager
@@ -302,8 +301,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-LIQ-002
   title: Liquidity Stress Monitoring and Escalation Data Quality And Reconciliation Issue 02
-  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: Medium
   status: Closed
   owner: Liquidity Risk Manager
@@ -314,8 +313,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-LIQ-003
   title: Liquidity Stress Monitoring and Escalation Regulatory Reporting And Escalation Issue 03
-  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: Low
   status: In Remediation
   owner: Liquidity Risk Manager
@@ -326,8 +325,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-LIQ-004
   title: Liquidity Stress Monitoring and Escalation Business Process Execution Issue 04
-  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence refresh,
-    or threshold automation.
+  description: Generic open finding for Liquidity Stress Monitoring and Escalation requiring owner remediation, evidence
+    refresh, or threshold automation.
   severity: Medium
   status: Closed
   owner: Liquidity Risk Manager
@@ -386,8 +385,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-ACCESS-001
   title: Privileged Access Recertification Cybersecurity And Privileged Access Issue 01
-  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh, or
-    threshold automation.
+  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh,
+    or threshold automation.
   severity: Medium
   status: In Remediation
   owner: Identity Governance Manager
@@ -398,8 +397,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-ACCESS-002
   title: Privileged Access Recertification Technology Operations Issue 02
-  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh, or
-    threshold automation.
+  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh,
+    or threshold automation.
   severity: Low
   status: Closed
   owner: Identity Governance Manager
@@ -410,8 +409,8 @@ issues:
   source: Generic issue register
 - issue_id: ISS-ACCESS-003
   title: Privileged Access Recertification Project And Change Management Issue 03
-  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh, or
-    threshold automation.
+  description: Generic open finding for Privileged Access Recertification requiring owner remediation, evidence refresh,
+    or threshold automation.
   severity: High
   status: Open
   owner: Identity Governance Manager

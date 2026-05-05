@@ -56,6 +56,10 @@ from controlnexus.risk_inventory.taxonomy import find_applicable_nodes, load_ris
 from controlnexus.risk_inventory.validator import RiskInventoryValidator
 
 
+DEFAULT_DEMO_BUSINESS_UNIT_ID = "BU-PAYOPS"
+DEFAULT_DEMO_PROCESS_ID = "PROC-PAY-EXCEPTION"
+
+
 def default_demo_fixture_path() -> Path:
     return resolve_project_root() / "sample_data" / "risk_inventory_demo" / "payment_exception_handling.yaml"
 
@@ -73,6 +77,8 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
     env_calc = ControlEnvironmentCalculator()
     residual_calc = ResidualRiskCalculator(loader.residual_matrix(), loader.management_response_rules())
 
+    source_documents = [f"risk inventory fixture: {fixture_path.name}"]
+    source_documents.extend(_scenario_source_documents(payload))
     context = ProcessContext(
         process_id=scenario["process_id"],
         process_name=scenario["process_name"],
@@ -81,7 +87,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
         description=scenario["description"],
         systems=scenario.get("systems", []),
         stakeholders=scenario.get("stakeholders", []),
-        source_documents=[f"demo fixture: {fixture_path.name}"],
+        source_documents=source_documents,
     )
 
     records: list[RiskInventoryRecord] = []
@@ -142,17 +148,15 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
         environment = env_calc.calculate(
             design_rating,
             operating_rating,
-            rationale=(
-                f"Derived as the worse of aggregate design ({design_rating.value}) and operating "
-                f"({operating_rating.value}) effectiveness for mapped controls."
-            ),
+            rationale=_control_environment_rationale(mappings, design_rating, operating_rating),
         )
         residual = residual_calc.calculate(
             inherent,
             environment,
-            rationale=(
-                f"Residual risk is matrix-calculated from {inherent.inherent_label} inherent risk "
-                f"and {environment.control_environment_rating.value} control environment."
+            rationale=_residual_rationale(
+                inherent.inherent_label,
+                environment.control_environment_rating.value,
+                spec.get("recommended_action", ""),
             ),
             recommended_action=spec.get("recommended_action", ""),
         )
@@ -225,10 +229,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
                 evidence_refs=evidence_references,
             ),
             risk_statement=RiskStatement(
-                risk_description=_with_root_cause_verbiage(
-                    spec.get("risk_description") or _risk_description(node, context),
-                    spec.get("causes") or node.typical_root_causes[:3],
-                ),
+                risk_description=(spec.get("risk_description") or _risk_description(node, context)).strip(),
                 risk_event=spec.get("risk_event")
                 or (node.example_risk_statements[0] if node.example_risk_statements else _risk_description(node, context)),
                 causes=spec.get("causes") or node.typical_root_causes[:3],
@@ -319,6 +320,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
             "llm_required": False,
             "record_count": len(records),
             "evidence_metric_count": sum(len(record.exposure_metrics) for record in records),
+            "scenario_basis": payload.get("scenario_basis", []),
         },
         demo_mode=True,
     )
@@ -341,15 +343,100 @@ def _review_value(value: Any) -> str:
     return str(value)
 
 
-def _with_root_cause_verbiage(description: str, causes: list[str]) -> str:
-    """Keep root-cause context visible in the generated risk statement."""
-    clean_description = description.strip()
-    if not causes:
-        return clean_description
-    cause_text = "; ".join(causes[:3])
-    if cause_text.lower() in clean_description.lower():
-        return clean_description
-    return f"{clean_description} Root-cause lens: {cause_text}."
+def _scenario_source_documents(payload: dict[str, Any]) -> list[str]:
+    documents: list[str] = []
+    for source in payload.get("scenario_basis", []):
+        if not isinstance(source, dict):
+            continue
+        title = str(source.get("title", "")).strip()
+        url = str(source.get("url", "")).strip()
+        if title and url:
+            documents.append(f"{title}: {url}")
+        elif title:
+            documents.append(title)
+        elif url:
+            documents.append(url)
+    return documents
+
+
+def _control_environment_rationale(
+    mappings: list[ControlMapping],
+    design_rating: ControlEffectivenessRating,
+    operating_rating: ControlEffectivenessRating,
+) -> str:
+    """Summarize the control environment in reviewer-ready language."""
+    partial_controls = [
+        mapping.control_name
+        for mapping in mappings
+        if mapping.coverage_assessment.lower() not in {"full", "strong"}
+    ]
+    issue_count = sum(len(mapping.open_issues) for mapping in mappings)
+    evidence_exceptions = sum(
+        int(mapping.evidence_quality.exceptions_noted)
+        for mapping in mappings
+        if mapping.evidence_quality
+    )
+    binding_limit = (
+        f" Binding limitations remain in {', '.join(partial_controls[:2])}."
+        if partial_controls
+        else ""
+    )
+    issue_parts = []
+    if issue_count:
+        issue_parts.append(_count_phrase(issue_count, "open issue"))
+    if evidence_exceptions:
+        issue_parts.append(_count_phrase(evidence_exceptions, "testing exception"))
+    issue_note = (
+        f" Current-period evidence includes {_join_phrase(issue_parts)}."
+        if issue_parts
+        else " Current-period evidence does not show open control issues for the mapped controls."
+    )
+    return (
+        f"The control environment is {_worse_control_rating(design_rating, operating_rating).value}. "
+        f"Design is {design_rating.value} and operating evidence is {operating_rating.value}."
+        f"{binding_limit}{issue_note}"
+    )
+
+
+def _residual_rationale(
+    inherent_label: str,
+    control_environment: str,
+    recommended_action: str,
+) -> str:
+    action = recommended_action.strip().rstrip(".")
+    action_note = f" Priority remediation is to {action[0].lower() + action[1:]}." if action else ""
+    article = "an" if control_environment[:1].lower() in {"a", "e", "i", "o", "u"} else "a"
+    return (
+        f"Residual exposure remains after applying {article} {control_environment} control environment to {inherent_label} "
+        f"inherent risk.{action_note}"
+    )
+
+
+def _worse_control_rating(
+    first: ControlEffectivenessRating,
+    second: ControlEffectivenessRating,
+) -> ControlEffectivenessRating:
+    return max([first, second], key=_control_rating_rank)
+
+
+def _control_rating_rank(rating: ControlEffectivenessRating) -> int:
+    return {
+        ControlEffectivenessRating.STRONG: 1,
+        ControlEffectivenessRating.SATISFACTORY: 2,
+        ControlEffectivenessRating.IMPROVEMENT_NEEDED: 3,
+        ControlEffectivenessRating.INADEQUATE: 4,
+    }[rating]
+
+
+def _count_phrase(count: int, noun: str) -> str:
+    suffix = "" if count == 1 else "s"
+    return f"{count} {noun}{suffix}"
+
+
+def _join_phrase(parts: list[str]) -> str:
+    if len(parts) <= 1:
+        return "".join(parts)
+    return ", ".join(parts[:-1]) + f" and {parts[-1]}"
 
 
 def _build_exposure_metrics(spec: dict[str, Any], node: Any, idx: int) -> list[ExposureMetric]:
@@ -502,7 +589,7 @@ def _demo_metric_value(metric: str, idx: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Workspace loader (multi-BU, multi-procedure demo)
+# Workspace loader (single-process default demo, broader fixtures explicit)
 # ---------------------------------------------------------------------------
 
 
@@ -521,12 +608,41 @@ def load_knowledge_pack(path: Path | str | None = None) -> RiskInventoryWorkspac
     if fixture_path.is_dir():
         fixture_path = fixture_path / "workspace.yaml"
     payload = _load_workspace_payload(fixture_path)
+    if path is None:
+        payload = _default_single_process_demo_payload(payload)
     return _build_workspace_from_payload(fixture_path, payload)
 
 
 def load_demo_workspace(path: Path | str | None = None) -> RiskInventoryWorkspace:
-    """Load the multi-BU demo workspace with knowledge-base and process runs."""
+    """Load the default single-process demo workspace, or an explicit workspace fixture."""
     return load_knowledge_pack(path)
+
+
+def _default_single_process_demo_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Narrow the broad source pack to the default one-process executive demo."""
+    narrowed = dict(payload)
+    bank = dict(narrowed.get("bank", {}))
+    bank.update(
+        {
+            "bank_id": "FS-PAYMENT-EXCEPTION-2026Q2",
+            "bank_name": "Enterprise Payment Operations",
+            "description": (
+                "Single-process payment-operations inventory based on public erroneous "
+                "wire-transfer lessons and payment-system supervisory guidance."
+            ),
+        }
+    )
+    narrowed["bank"] = bank
+    narrowed["workspace_id"] = "WS-PAYMENT-EXCEPTION-2026Q2"
+    narrowed["business_unit_ids"] = [DEFAULT_DEMO_BUSINESS_UNIT_ID]
+    narrowed["process_ids"] = [DEFAULT_DEMO_PROCESS_ID]
+    narrowed["_business_unit_filter"] = {DEFAULT_DEMO_BUSINESS_UNIT_ID}
+    narrowed["_process_filter"] = {DEFAULT_DEMO_PROCESS_ID}
+    narrowed["auto_generate_missing_runs"] = False
+    manifest = dict(narrowed.get("knowledge_pack", {}))
+    manifest["description"] = "Single-process payment exception risk inventory."
+    narrowed["knowledge_pack"] = manifest
+    return narrowed
 
 
 def _load_workspace_payload(fixture_path: Path) -> dict[str, Any]:
@@ -1008,8 +1124,8 @@ def _build_synthetic_process_run(
 
     run = RiskInventoryRun(
         run_id=f"DEMO-RI-{process.process_id.replace('PROC-', '')}-SYN",
-        tenant_id="generic-demo",
-        bank_id="generic-demo",
+        tenant_id="reference-pack",
+        bank_id="reference-pack",
         input_context=context,
         records=records,
         executive_summary=ExecutiveSummary(

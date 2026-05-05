@@ -113,11 +113,11 @@ tests/                      Unit + integration + e2e coverage
 
 ## Risk Inventory Demo Mode
 
-The Risk Inventory Builder tab includes a top-right **Demo Mode** toggle. Turning it on loads the deterministic `Large Global Bank` generic workspace with 5 business units, 10 processes, 10 risk inventory runs, mapped controls, KRIs, obligations, issues, evidence, source trace, validation findings, and executive Excel export.
+The Risk Inventory Builder tab includes a top-right **Demo Mode** toggle. Turning it on loads one deterministic process workspace: `Payment Exception Handling` in `Payment Operations`, with mapped controls, KRIs, obligations, issues, evidence, public-source trace, validation findings, and executive Excel export.
 
-The demo UI is a consolidated executive workbench: select a process, choose a risk from the left queue, and review the full command-view profile, including impact, frequency, inherent risk, residual risk, controls, gaps, synthetic controls, KRIs, evidence, mitigation, validation owner, and review/challenge fields. With no process focus, the Risk Inventory tab shows BU risk breakdown differences, a portfolio heatmap, and divergence drivers.
+The demo UI opens directly into the selected process workbench: choose a risk from the left queue and review the full command-view profile, including impact, frequency, inherent risk, residual risk, controls, gaps, synthetic controls, KRIs, evidence, mitigation, validation owner, and review/challenge fields.
 
-The Excel export is a full-workspace demo artifact with a cover tab, BU heatmap, process risk inventory, control gaps, synthetic control recommendations, KRI dashboard, reviewer decision log, source trace, and config snapshot.
+The Excel export is a focused scenario artifact with a cover tab, process risk inventory, control gaps, synthetic control recommendations, KRI dashboard, reviewer decision log, source trace, and config snapshot.
 
 The Input / Upload view also supports local ingestion of PDF, TXT, and Markdown policy or process documents. Uploaded documents are parsed into process context, risk-category cues, control cues, exposure signals, obligations, systems, and stakeholders before the deterministic graph runs.
 

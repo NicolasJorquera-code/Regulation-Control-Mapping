@@ -2,12 +2,12 @@ version: 1.2.0
 business_units:
 - bu_id: BU-PAYOPS
   bu_name: Payment Operations
-  description: End-to-end processing for high-value wires, ACH exceptions, returns, repairs, sanctions holds, and daily payment
-    reconciliation.
+  description: End-to-end high-value wire exception handling, payment repair, recall coordination, return tracking, and
+    daily payment reconciliation.
   head: Executive Owner, Payment Operations
   employee_count: 312
-  risk_profile_summary: 'Operational-heavy risk capture: exception aging, reconciliation data quality, duplicate payment rules,
-    correspondent service dependencies, and payment release access.'
+  risk_profile_summary: 'Operational-heavy risk capture: payment-intent mismatch, maker/checker quality, privileged payment
+    setup, recall readiness, counterparty response, and GL/nostro break linkage.'
   process_ids:
   - PROC-PAY-EXCEPTION
   - PROC-PAY-RECON
@@ -46,8 +46,8 @@ business_units:
   - PROC-SECURITIES-SETTLE
 - bu_id: BU-TECHCYBER
   bu_name: Technology & Cyber Operations
-  description: Identity governance, privileged access, vulnerability remediation, secure change, cyber incident support, and
-    production evidence retention.
+  description: Identity governance, privileged access, vulnerability remediation, secure change, cyber incident support,
+    and production evidence retention.
   head: Executive Owner, Technology & Cyber Operations
   employee_count: 538
   risk_profile_summary: 'Cyber-heavy risk capture: privileged access drift, emergency access aging, vulnerability SLA breaches,

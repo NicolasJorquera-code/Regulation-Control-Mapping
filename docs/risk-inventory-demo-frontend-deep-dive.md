@@ -1642,9 +1642,9 @@ Per-risk details now live in the `Risk Inventory` workbench and reuse one select
 
 Review status and challenge comments widgets do not currently update `RiskInventoryRun`.
 
-### 21.6 Every Demo Process Should Keep A Run Fixture
+### 21.6 Demo Process Should Keep A Run Fixture
 
-The demo target is 5 business units, 2 deep processes each, and 10 run fixtures. Any new process added to the workspace should include a corresponding run fixture before demo use.
+The default demo target is one process, `PROC-PAY-EXCEPTION`, backed by `payment_exception_handling.yaml`. Broader workspace fixtures can remain available for explicit regression coverage, but the Demo Mode toggle should continue to open only the focused payment exception process.
 
 ### 21.7 Root-Cause Taxonomy UI Is Deferred
 

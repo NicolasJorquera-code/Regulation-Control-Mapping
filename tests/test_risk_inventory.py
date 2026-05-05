@@ -236,14 +236,16 @@ class TestRiskInventoryDemoAndGraph:
 
     def test_demo_loader_uses_specific_fixture_evidence(self):
         run = load_demo_risk_inventory()
-        cyber = next(record for record in run.records if record.taxonomy_node.id == "RIB-CYB")
+        release = next(record for record in run.records if record.risk_id == "RISK-PAYEXC-001")
 
-        assert "generic source pack" in cyber.likelihood_assessment.rationale
-        assert cyber.residual_risk.management_response.recommended_action.startswith("Close evidence")
-        assert any(metric.metric_name == "Cybersecurity And Privileged Access exposure count" for metric in cyber.exposure_metrics)
-        assert any(reference.evidence_id == "EV-PAYEXC-003" for reference in cyber.evidence_references)
+        assert "public payment case materials" in release.applicability.rationale
+        assert release.residual_risk.management_response.recommended_action.startswith("Embed mandatory pre-release")
+        assert any(metric.metric_name == "High-value repaired wires reviewed" for metric in release.exposure_metrics)
+        assert any(reference.evidence_id == "EV-PAYEXC-001" for reference in release.evidence_references)
         assert run.run_manifest["evidence_metric_count"] >= 20
-        assert "Payment Exception Handling captures 8 risk records" in run.executive_summary.headline
+        assert run.run_manifest["scenario_basis"]
+        assert "high-value erroneous wire-release scenario" in run.executive_summary.headline
+        assert "Root-cause lens" not in release.risk_statement.risk_description
 
     def test_demo_requires_no_llm_and_validates(self):
         run = load_demo_risk_inventory()
@@ -251,24 +253,37 @@ class TestRiskInventoryDemoAndGraph:
         findings = RiskInventoryValidator().validate_run(run)
         assert all(finding.severity.value != "error" for finding in findings)
 
-    def test_demo_workspace_has_flagship_process_breadth(self):
+    def test_payment_demo_fixture_has_realistic_public_source_trace(self):
+        body = Path("sample_data/risk_inventory_demo/payment_exception_handling.yaml").read_text(encoding="utf-8")
+        run = load_demo_risk_inventory()
+
+        assert "Generic demo evidence profile calibrated for executive walkthrough." not in body
+        assert "Generic source pack" not in body
+        assert "fictional" not in body.lower()
+        assert "fictitious" not in body.lower()
+        assert "Second Circuit Citibank/Revlon" in body
+        assert any("occ.gov" in source for source in run.input_context.source_documents)
+        assert any("law.justia.com" in source for source in run.input_context.source_documents)
+
+    def test_demo_workspace_is_single_payment_exception_process(self):
         workspace = load_demo_workspace()
-        assert workspace.bank_name == "Large Global Bank"
-        assert len(workspace.business_units) == 5
-        assert len(workspace.processes) == 10
-        assert len(workspace.runs) == 10
-        assert len(workspace.bank_controls) == 84
-        assert sum(len(run.records) for run in workspace.runs) == 74
+        assert workspace.bank_name == "Enterprise Payment Operations"
+        assert len(workspace.business_units) == 1
+        assert len(workspace.processes) == 1
+        assert len(workspace.runs) == 1
+        assert len(workspace.bank_controls) == 9
+        assert sum(len(run.records) for run in workspace.runs) == 8
+        assert workspace.processes[0].process_id == "PROC-PAY-EXCEPTION"
         assert workspace.knowledge_pack_manifest["auto_generate_missing_runs"] is False
         assert not validate_knowledge_pack(workspace)
         assert all(workspace.run_for_process(process.process_id) for process in workspace.processes)
         assert all(run.records for run in workspace.runs)
-        assert any(process.apqc_crosswalk for process in workspace.processes)
+        assert workspace.processes[0].apqc_crosswalk
 
     def test_knowledge_pack_loader_alias(self):
         workspace = load_knowledge_pack()
-        assert workspace.workspace_id == "WS-LARGE-GLOBAL-BANK"
-        assert workspace.knowledge_pack_manifest["process_count"] == 10
+        assert workspace.workspace_id == "WS-PAYMENT-EXCEPTION-2026Q2"
+        assert workspace.knowledge_pack_manifest["process_count"] == 1
 
     def test_loader_accepts_fixture_path_entries(self):
         workspace = load_knowledge_pack("sample_data/risk_inventory_demo/workspace.yaml")
@@ -279,7 +294,7 @@ class TestRiskInventoryDemoAndGraph:
 
     def test_demo_loader_source_documents_use_fixture_name(self):
         run = load_demo_risk_inventory("sample_data/risk_inventory_demo/customer_onboarding.yaml")
-        assert run.input_context.source_documents == ["demo fixture: customer_onboarding.yaml"]
+        assert run.input_context.source_documents == ["risk inventory fixture: customer_onboarding.yaml"]
 
     def test_graph_deterministic_path(self):
         graph = build_risk_inventory_graph().compile()
@@ -317,10 +332,10 @@ class TestRiskInventoryDemoAndGraph:
         workspace = load_demo_workspace()
         run = run_risk_inventory_workflow(
             workspace,
-            {"process_id": "PROC-PAY-RECON"},
+            {"process_id": "PROC-PAY-EXCEPTION"},
             llm_enabled=False,
         )
-        assert run.input_context.process_id == "PROC-PAY-RECON"
+        assert run.input_context.process_id == "PROC-PAY-EXCEPTION"
         assert run.events
         assert all(event["mode"] in {"deterministic_fallback", "skipped"} for event in run.events)
 
@@ -347,11 +362,11 @@ class TestRiskInventoryDemoAndGraph:
 
         process_result = execute(
             "knowledge_base_lookup",
-            {"entity_type": "process", "entity_id": "PROC-ACCESS-RECERT"},
+            {"entity_type": "process", "entity_id": "PROC-PAY-EXCEPTION"},
         )
         matrix_result = execute("scoring_matrix_lookup", {"matrix": "residual"})
 
-        assert process_result["records"][0]["process_name"] == "Privileged Access Recertification"
+        assert process_result["records"][0]["process_name"] == "Payment Exception Handling"
         assert "matrix" in matrix_result
 
 
@@ -364,14 +379,23 @@ class TestRiskInventoryControlMappingUiHelpers:
             "Risk Inventory",
             "Control Mapping",
             "Gap Analysis",
-            "Review & Challenge",
-            "Executive Report",
+        ]
+        assert risk_inventory_tab.USER_RISK_INVENTORY_TABS == [
+            "Overview",
+            "Input / Upload",
+            "Risk Inventory",
+            "Control Mapping",
+            "Gap Analysis",
         ]
         assert "Control Gap Lab" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
         assert "Process Map" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
         assert "Residual Risk" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
         assert "KRI Program" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
         assert "Agent Run Trace" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
+        assert "Review & Challenge" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
+        assert "Review & Challenge" not in risk_inventory_tab.USER_RISK_INVENTORY_TABS
+        assert "Executive Report" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
+        assert "Executive Report" not in risk_inventory_tab.USER_RISK_INVENTORY_TABS
 
     def test_knowledge_base_tabs_remove_readiness_evidence_and_issues(self):
         from controlnexus.ui import risk_inventory_tab
@@ -379,19 +403,16 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert "Knowledge Pack Readiness" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
         assert "Evidence" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
         assert "Issues" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
+        assert "Obligations" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
 
-    def test_knowledge_base_profile_options_are_generic(self):
+    def test_knowledge_base_profile_options_are_single_process(self):
         from controlnexus.ui import risk_inventory_tab
 
-        assert risk_inventory_tab.knowledge_base_profile_options() == [
-            "Large Global Bank",
-            "Local Regional Bank",
-            "Digital Payments Institution",
-        ]
+        assert risk_inventory_tab.knowledge_base_profile_options() == ["Payment Exception Handling"]
         assert "MOCK_" + "INSTITUTION_PROFILES" not in vars(risk_inventory_tab)
 
     def test_profile_workspace_variants_filter_source_pack(self):
-        large = load_demo_workspace()
+        large = load_knowledge_pack("sample_data/risk_inventory_demo/workspace.yaml")
         local = load_demo_workspace("sample_data/risk_inventory_demo/workspace_local_regional_bank.yaml")
         payments = load_demo_workspace("sample_data/risk_inventory_demo/workspace_digital_payments_institution.yaml")
 
@@ -403,10 +424,23 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert all(local.run_for_process(process.process_id) for process in local.processes)
         assert all(payments.run_for_process(process.process_id) for process in payments.processes)
 
+    def test_demo_ui_keeps_scope_selector_with_payment_exception_default(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        demo_source = source.split("def _render_demo_workspace", 1)[1].split(
+            "# ---------------------------------------------------------------------------\n# User workflow", 1
+        )[0]
+        assert "_render_demo_scope_selector(workspace)" in demo_source
+        assert '"Business Unit"' in demo_source
+        assert '"Process"' in demo_source
+        assert "Workspace Dashboard (no process focus)" in demo_source
+        assert "_render_workspace_aggregated_inventory(workspace, selected_bu_id)" in demo_source
+        assert "selected_run = workspace.runs[0]" not in demo_source
+
     def test_bu_risk_capture_rows_show_differentiation(self):
         from controlnexus.ui import risk_inventory_tab
 
-        workspace = load_demo_workspace()
+        workspace = load_knowledge_pack("sample_data/risk_inventory_demo/workspace.yaml")
         rows = risk_inventory_tab.bu_risk_capture_rows(workspace)
 
         assert len(rows) == len(workspace.business_units)
@@ -417,7 +451,7 @@ class TestRiskInventoryControlMappingUiHelpers:
     def test_bu_divergence_rows_show_level_2_drivers(self):
         from controlnexus.ui import risk_inventory_tab
 
-        workspace = load_demo_workspace()
+        workspace = load_knowledge_pack("sample_data/risk_inventory_demo/workspace.yaml")
         rows = risk_inventory_tab.bu_risk_divergence_rows(workspace)
 
         assert rows
@@ -458,8 +492,19 @@ class TestRiskInventoryControlMappingUiHelpers:
 
         assert len(rows) == len(run.records)
         assert {row["Risk Record ID"] for row in rows} == {record.risk_id for record in run.records}
+        assert list(rows[0])[:8] == [
+            "Risk Record ID",
+            "Business Unit",
+            "Process",
+            "Risk Subcategory",
+            "Enterprise Risk Category",
+            "Impact",
+            "Frequency",
+            "Inherent Risk",
+        ]
         assert all("Frequency" in row for row in rows)
-        assert all("Residual Risk" in row for row in rows)
+        assert all("Inherent Risk" in row for row in rows)
+        assert all("Residual Risk" not in row for row in rows)
         assert all(isinstance(row["Gaps"], int) for row in rows)
         assert all(row["Validation Level"] for row in rows)
         assert all(row["Required Reviewer"] for row in rows)
@@ -545,15 +590,43 @@ class TestRiskInventoryControlMappingUiHelpers:
         rows = risk_inventory_tab.workspace_aggregated_inventory_rows(workspace)
 
         assert len(rows) == sum(len(run.records) for run in workspace.runs)
-        assert list(rows[0])[:4] == [
+        assert list(rows[0])[:5] == [
             "Risk Record ID",
-            "Risk Subcategory",
-            "Residual Risk Rating",
             "Business Unit",
+            "Process",
+            "Enterprise Risk Category",
+            "Risk Subcategory",
         ]
         assert all(row["Risk Subcategory"] for row in rows)
-        assert all(row["High+ Residual"] in {"Yes", "No"} for row in rows)
-        assert all(isinstance(row["Control Gaps"], int) for row in rows)
+        assert all(row["Business Unit"] for row in rows)
+        assert all(row["Process"] for row in rows)
+        assert all(row["Enterprise Risk Category"] for row in rows)
+
+    def test_synthetic_control_inventory_rows_use_generated_recommendations(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        rows = risk_inventory_tab.synthetic_control_inventory_rows(workspace)
+
+        assert rows
+        assert list(rows[0]) == [
+            "Recommendation ID",
+            "Risk Record ID",
+            "Business Unit",
+            "Process",
+            "Risk Subcategory",
+            "Control",
+            "Control Type",
+            "Priority",
+            "Owner",
+            "Frequency",
+            "Control Statement",
+            "Rationale",
+            "Expected Evidence",
+        ]
+        assert all(row["Recommendation ID"].startswith("SYN-") for row in rows)
+        assert all(row["Rationale"] for row in rows)
+        assert all(row["Expected Evidence"] for row in rows)
 
     def test_workspace_risk_inventory_render_does_not_render_divergence_table(self, monkeypatch):
         from controlnexus.ui import risk_inventory_tab
@@ -565,7 +638,11 @@ class TestRiskInventoryControlMappingUiHelpers:
         monkeypatch.setattr(risk_inventory_tab, "_render_workspace_inventory_summary", lambda *args, **kwargs: None)
         monkeypatch.setattr(risk_inventory_tab, "_render_prominent_table", lambda rows: calls.append(("inventory", len(rows))))
         monkeypatch.setattr(risk_inventory_tab, "_render_portfolio_heatmap", lambda rows: calls.append(("heatmap", len(rows))))
-        monkeypatch.setattr(risk_inventory_tab, "_render_bu_difference_cards", lambda *args, **kwargs: calls.append(("breakdown", 1)))
+        monkeypatch.setattr(
+            risk_inventory_tab,
+            "_render_bu_difference_cards",
+            lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("BU breakdown should not render")),
+        )
         monkeypatch.setattr(
             risk_inventory_tab,
             "bu_risk_divergence_rows",
@@ -575,7 +652,117 @@ class TestRiskInventoryControlMappingUiHelpers:
         risk_inventory_tab._render_workspace_aggregated_inventory(workspace, None)
 
         assert calls[0][0] == "inventory"
-        assert ("breakdown", 1) in calls
+        assert all(call[0] != "breakdown" for call in calls)
+
+    def test_process_risk_inventory_moves_residual_and_source_confidence_out(self):
+        center_source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert '"Residual": row["Residual Risk"]' not in center_source
+        assert "Source confidence" not in center_source
+        assert "Decision Stack" not in center_source
+        assert '"Inherent Risk": row["Inherent Risk"]' in center_source
+        assert "Why this matters" not in center_source
+        assert "st.columns([1.52, 0.82]" not in center_source
+        assert "_render_inherent_risk_summary(record)" in center_source
+        assert "_render_compact_kri_panel" not in center_source
+        assert "compact_kri_rows" not in center_source
+        assert "_render_selected_risk_kri_cards(selected_record, workspace)" not in center_source
+        assert "Linked KRI Program" not in center_source
+
+    def test_selected_risk_kri_rows_are_full_width_card_ready(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        run = workspace.run_for_process("PROC-PAY-EXCEPTION")
+        assert run is not None
+        record = run.records[0]
+
+        rows = risk_inventory_tab.selected_risk_kri_rows(record, workspace)
+
+        assert rows
+        assert list(rows[0]) == [
+            "KRI ID",
+            "KRI",
+            "Definition",
+            "Formula",
+            "Unit",
+            "Owner",
+            "Frequency",
+            "Source",
+            "Green",
+            "Amber",
+            "Red",
+            "Rationale",
+            "Escalation Path",
+        ]
+        assert all(row["KRI ID"] for row in rows)
+        assert all(row["KRI"] for row in rows)
+        assert all(row["Rationale"] for row in rows)
+        assert all(row["Escalation Path"] for row in rows)
+
+    def test_selected_risk_kri_cards_use_compact_grid_without_formula_block(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert 'st.columns(2, gap="medium")' in source
+        assert "Linked KRI Program" not in source
+        assert "ri-selected-kri-threshold-line" in source
+        assert "ri-selected-kri-formula" not in source
+        assert "ri-selected-kri-thresholds" not in source
+        assert "ri-selected-kri-grid" not in source
+
+    def test_selected_risk_scoring_rationale_is_concise_and_metric_backed(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        run = workspace.run_for_process("PROC-PAY-EXCEPTION")
+        assert run is not None
+        record = run.records[0]
+
+        impact = risk_inventory_tab.scoring_rationale_text(record, "impact")
+        frequency = risk_inventory_tab.scoring_rationale_text(record, "frequency")
+
+        for text in (impact, frequency):
+            sentences = risk_inventory_tab._split_sentences(text)
+            assert 2 <= len(sentences) <= 3
+            assert "Current-period indicator:" in text
+        assert any(metric.metric_name in impact for metric in record.exposure_metrics)
+        assert any(metric.metric_name in frequency for metric in record.exposure_metrics)
+
+    def test_selected_risk_inherent_panel_contains_rationale_grid(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert "ri-inherent-rationale-grid" in source
+        assert 'scoring_rationale_text(record, "impact")' in source
+        assert 'scoring_rationale_text(record, "frequency")' in source
+        assert "Inherent Risk Matrix" not in source
+        assert 'st.markdown("**Impact x Frequency**")' not in source
+
+    def test_gap_analysis_exposes_residual_calculation_components(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        run = workspace.run_for_process("PROC-PAY-EXCEPTION")
+        assert run is not None
+        record = run.records[0]
+
+        row = risk_inventory_tab.residual_calculation_row(record)
+
+        assert list(row) == ["Inherent Risk", "Control Score", "Residual Risk Score", "Rationale"]
+        assert row["Inherent Risk"] == record.inherent_risk.inherent_rating.value
+        assert row["Control Score"] == record.residual_risk.control_environment_score
+        assert row["Residual Risk Score"] == risk_inventory_tab.risk_rating_scale_score(
+            record.residual_risk.residual_rating.value
+        )
+        assert row["Rationale"]
+        assert record.residual_risk.residual_label not in row["Rationale"]
+        assert "Deterministic" not in row["Rationale"]
+
+    def test_gap_analysis_ui_does_not_show_combined_residual_labels(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert "residual_label" not in source
+        assert "Deterministic rationale" not in source
+        assert "ri-residual-calc-strip" in source
 
     def test_risk_inventory_tab_does_not_include_redundant_detail_expanders(self):
         source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
@@ -594,6 +781,14 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert risk_inventory_tab._display_column_label("existing_control_ids") == "Existing Control IDs"
         assert risk_inventory_tab._display_column_label("kri_id") == "KRI ID"
         assert risk_inventory_tab._display_column_label("Risk Record ID") == "Risk Record ID"
+
+    def test_existing_knowledge_base_business_units_omits_1lod_lead(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+        existing_tables_source = source.split("def _render_user_existing_knowledge_tables", 1)[1].split(
+            "def _render_source_pack_tiles", 1
+        )[0]
+
+        assert '"1LOD Lead"' not in existing_tables_source
 
     def test_process_header_facts_are_limited_to_business_unit_and_process(self, monkeypatch):
         from controlnexus.ui import risk_inventory_tab
@@ -682,7 +877,7 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert dossier["scoring_rationale"]
         assert "synthetic_controls" in dossier
         assert dossier["level_2_category"] == record.taxonomy_node.level_2_category
-        assert "deterministic" in dossier["bank_context_alignment"].lower()
+        assert "configured" in dossier["bank_context_alignment"].lower()
 
     def test_neutral_callout_helper_uses_grey_callout_class(self, monkeypatch):
         from controlnexus.ui import risk_inventory_tab
@@ -703,7 +898,7 @@ class TestRiskInventoryControlMappingUiHelpers:
     def test_workspace_control_mapping_rows_filter_by_business_unit(self):
         from controlnexus.ui import risk_inventory_tab
 
-        workspace = load_demo_workspace()
+        workspace = load_knowledge_pack("sample_data/risk_inventory_demo/workspace.yaml")
         all_rows = risk_inventory_tab._workspace_control_mapping_rows(workspace)
         payment_ops = next(bu for bu in workspace.business_units if bu.bu_name == "Payment Operations")
         payment_rows = risk_inventory_tab._workspace_control_mapping_rows(workspace, payment_ops.bu_id)
@@ -729,7 +924,78 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert any(row["Enterprise Risk Category"] == "Operational" for row in category_rows)
         assert sum(row["Risk Records"] for row in category_rows) == len(rows)
 
-    def test_run_control_mapping_rows_include_coverage_depth(self):
+    def test_control_score_row_uses_existing_control_environment_score(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        run = load_demo_risk_inventory()
+        record = run.records[0]
+
+        row = risk_inventory_tab.control_score_row(record)
+        configured_scores = MatrixConfigLoader().residual_matrix()["control_environment_scores"]
+
+        assert row["Control Score"] == configured_scores[record.control_environment.control_environment_rating.value]
+        assert row["Control Score"] == record.residual_risk.control_environment_score
+        assert row["Control Strength"] == record.control_environment.control_environment_rating.value
+        assert row["Mapped Controls"] == len(record.control_mappings)
+        assert row["Coverage Status"] == risk_inventory_tab._record_coverage_status(record)
+        assert row["Rationale"] == record.control_environment.rationale
+
+    def test_control_mapping_process_summary_strip_is_removed(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+        control_mapping_source = source.split("def _render_control_mapping", 1)[1].split(
+            "def control_statement_detail", 1
+        )[0]
+
+        assert "_render_control_mapping_run_summary" not in source
+        assert "Process Control Mapping Summary" not in source
+        assert "Risk-Control Links" not in control_mapping_source
+        assert "Open Gaps" not in control_mapping_source
+
+    def test_selected_control_mapping_renderer_restores_process_controls_table(self, monkeypatch):
+        from controlnexus.ui import risk_inventory_tab
+
+        run = load_demo_risk_inventory()
+        rendered = []
+        table_calls = []
+
+        monkeypatch.setattr(risk_inventory_tab, "_risk_selector", lambda *_: run.records[0])
+        monkeypatch.setattr(risk_inventory_tab, "_render_risk_header", lambda *_: None)
+        monkeypatch.setattr(risk_inventory_tab, "_render_table", lambda rows, *_args, **_kwargs: table_calls.append(rows))
+        monkeypatch.setattr(
+            risk_inventory_tab.st,
+            "markdown",
+            lambda body, **kwargs: rendered.append(str(body)),
+        )
+        monkeypatch.setattr(risk_inventory_tab.st, "caption", lambda *_args, **_kwargs: None)
+
+        risk_inventory_tab._render_control_mapping(run)
+        body = "\n".join(rendered)
+
+        assert table_calls
+        assert len(table_calls[0]) == sum(len(record.control_mappings) for record in run.records)
+        assert "All Mapped Controls In This Process" in body
+        assert body.rfind("All Mapped Controls In This Process") > body.rfind("Selected Risk Control Coverage")
+        assert "ri-control-score-panel" in body
+        assert "ri-score-" in body
+        assert "Control Score" in body
+        assert "Rationale" in body
+        assert "ri-control-coverage-panel" in body
+        assert "ri-control-card" not in body
+        assert "Optimal full-coverage control statement" in body
+        assert "Evidence to prove full coverage." in body
+        assert "ri-control-assessment-grid" in body
+        assert "payment" in body.lower()
+        assert "validation" in body.lower()
+        assert "Control statements translate mapped controls" not in body
+        assert "Last Tested" not in body
+        assert "Sample" not in body
+        assert "Exceptions" not in body
+        assert "Open Issues" not in body
+        assert "Open issue context" not in body
+        assert "Design and operating rationale" not in body
+        assert "Generic demo evidence profile calibrated for executive walkthrough." not in body
+
+    def test_run_control_mapping_rows_include_control_score_context(self):
         from controlnexus.ui import risk_inventory_tab
 
         run = load_demo_risk_inventory()
@@ -739,9 +1005,74 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert all(row["Control Objective"] for row in rows)
         assert all(row["Risk Coverage Rationale"] for row in rows)
         assert all("Mapped Root Causes" in row for row in rows)
-        assert all("Evidence Quality" in row for row in rows)
-        assert all("Design Rationale" in row for row in rows)
-        assert all("Operating Rationale" in row for row in rows)
+        assert all("Control Score" in row for row in rows)
+        assert all("Control Strength" in row for row in rows)
+        assert all("Coverage Status" in row for row in rows)
+        assert all("Control Statement" not in row for row in rows)
+        assert all("Expected Evidence" not in row for row in rows)
+        assert all("Residual Risk Rating" not in row for row in rows)
+        assert all("Evidence Quality" not in row for row in rows)
+        assert all("Last Tested" not in row for row in rows)
+        assert all("Sample Size" not in row for row in rows)
+        assert all("Exceptions Noted" not in row for row in rows)
+        assert all("Evidence Notes" not in row for row in rows)
+        assert all("Design Rationale" not in row for row in rows)
+        assert all("Operating Rationale" not in row for row in rows)
+
+    def test_control_mapping_statement_detail_uses_statement_format(self):
+        from controlnexus.ui import risk_inventory_tab
+
+        workspace = load_demo_workspace()
+        run = workspace.run_for_process("PROC-PAY-EXCEPTION")
+        assert run is not None
+        record = run.records[0]
+        detail = risk_inventory_tab.control_statement_detail(
+            record,
+            record.control_mappings[0],
+            workspace,
+        )
+        recommendation = build_synthetic_control_recommendations(record, workspace)[0]
+
+        assert detail["owner"] == recommendation.suggested_owner
+        assert detail["frequency"] == recommendation.frequency
+        assert detail["control_type"] == recommendation.control_type
+        assert detail["coverage_label"] == "Full coverage target"
+        assert detail["control_statement"] == recommendation.control_statement
+        assert "expected evidence" not in detail["control_statement"].lower()
+        assert detail["expected_evidence"] == recommendation.expected_evidence
+
+    def test_control_mapping_renders_process_wide_table(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert "All Mapped Controls In This Process" in source
+        assert "_render_process_linked_controls_table(run)" in source
+        assert "Control statements translate mapped controls" not in source
+
+    def test_selected_risk_control_coverage_uses_neutral_panel_without_teal_left_rail(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert "ri-control-coverage-panel" in source
+        assert "ri-control-card { border-left: 4px solid #009d9a; }" not in source
+        assert '<div class="ri-control-card">' not in source
+
+    def test_gap_analysis_selected_risk_gap_table_removed(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+
+        assert "Selected Risk Gap Analysis" not in source
+        assert "Selected Control Statement" in source
+
+    def test_gap_analysis_metric_strip_removed(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+        gap_lab_source = source.split("def _render_control_gap_lab", 1)[1].split(
+            "def _render_gap_analysis_export", 1
+        )[0]
+
+        assert '"Risks Reviewed"' not in gap_lab_source
+        assert '"Control Gaps"' not in gap_lab_source
+        assert '"Synthetic Controls"' not in gap_lab_source
+        assert '"No-Control Risks"' not in gap_lab_source
+        assert '"Scoped Risks"' not in gap_lab_source
+        assert '"Suggested Controls"' not in gap_lab_source
 
 
 class TestRiskInventoryExcelExport:
@@ -802,8 +1133,8 @@ class TestRiskInventoryExcelExport:
             for row in wb["Executive Summary"].iter_rows(min_row=2, values_only=True)
             if row and row[0]
         }
-        assert len(process_ids) == 10
-        assert len(business_units) == 5
+        assert process_ids == {"PROC-PAY-EXCEPTION"}
+        assert business_units == {"Payment Operations"}
 
     def test_workspace_export_has_formatting_validations_and_trace(self):
         workspace = load_demo_workspace()
@@ -825,6 +1156,12 @@ class TestRiskInventoryExcelExport:
         assert wb["KRI Dashboard"].max_row > 1
         assert wb["Source Trace"].max_row > 1
         assert wb["Config Snapshot"].max_row > 1
+        trace_types = {
+            row[0]
+            for row in wb["Source Trace"].iter_rows(min_row=2, values_only=True)
+            if row and row[0]
+        }
+        assert "Scenario Basis" in trace_types
         heat_values = [
             cell.fill.fgColor.rgb
             for row in wb["BU Risk Heatmap"].iter_rows(min_row=2)
@@ -912,10 +1249,10 @@ class TestRiskInventoryExcelExport:
         monkeypatch.setattr(risk_inventory_tab.st, "download_button", fake_download_button)
 
         risk_inventory_tab._download_export(run, "overview")
-        risk_inventory_tab._download_export(run, "executive")
+        risk_inventory_tab._download_export(run, "gap_analysis")
 
         keys = [call["key"] for call in calls]
-        assert keys == [f"ri_xlsx_overview_{run.run_id}", f"ri_xlsx_executive_{run.run_id}"]
+        assert keys == [f"ri_xlsx_overview_{run.run_id}", f"ri_xlsx_gap_analysis_{run.run_id}"]
         assert len(set(keys)) == 2
 
     def test_review_tab_download_uses_hitl_workbook(self, monkeypatch):
