@@ -24,7 +24,7 @@ import tempfile
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import streamlit as st
 import yaml  # type: ignore[import-untyped]
@@ -134,32 +134,13 @@ def _profile_workspace_path(profile_name: str) -> Path:
 def render_risk_inventory_tab() -> None:
     """Render the full Risk Inventory Builder experience."""
     _inject_risk_inventory_css()
-    header_left, header_right = st.columns([5, 1.35])
-    with header_left:
-        st.markdown(
-            """
-            <section class="ri-hero">
-                <div class="ri-eyebrow">Risk Inventory Builder</div>
-                <h1>Convert process evidence into a risk inventory</h1>
-                <p>
-                    Browse the bank's knowledge base, drill into business unit risk profiles,
-                    or ingest a process document to generate a fresh inventory aligned to
-                    the bank's two-tier enterprise risk taxonomy.
-                </p>
-            </section>
-            """,
-            unsafe_allow_html=True,
-        )
-    with header_right:
-        st.markdown('<div class="ri-toggle-panel">', unsafe_allow_html=True)
+    _, toggle_col = st.columns([6, 1])
+    with toggle_col:
         demo_enabled = st.toggle(
-            "Demo Mode",
+            "Demo",
             value=bool(st.session_state.get("demo_mode", False)),
             key="demo_mode",
-            help="Load the fictional financial-services workspace with five business units, ten processes, and a CRO-authored KRI library.",
         )
-        st.caption("No LLM credentials required.")
-        st.markdown("</div>", unsafe_allow_html=True)
 
     if demo_enabled:
         _render_demo_workspace()
@@ -173,10 +154,7 @@ def render_risk_inventory_tab() -> None:
 
 
 def _render_demo_workspace() -> None:
-    profile_name = str(st.session_state.get("ri_demo_knowledge_base_profile", DEFAULT_KNOWLEDGE_BASE_PROFILE))
-    if profile_name not in KNOWLEDGE_BASE_PROFILES:
-        profile_name = DEFAULT_KNOWLEDGE_BASE_PROFILE
-        st.session_state["ri_demo_knowledge_base_profile"] = profile_name
+    profile_name = "Local Regional Bank"
 
     if (
         "risk_inventory_workspace" not in st.session_state
@@ -353,18 +331,17 @@ def workspace_aggregated_inventory_rows(
                 {
                     "Risk Record ID": rec.risk_id,
                     "Risk Subcategory": rec.taxonomy_node.level_2_category,
-                    "Residual Risk Rating": rec.residual_risk.residual_rating.value,
                     "Business Unit": next(
                         (bu.bu_name for bu in workspace.business_units if bu.bu_id == proc.bu_id),
                         proc.bu_id,
                     ),
                     "Process": proc.procedure_name,
                     "Enterprise Risk Category": rec.taxonomy_node.level_1_category,
+                    "Risk Statement": rec.risk_statement.risk_description,
+                    "Impact Score": int(rec.impact_assessment.overall_impact_score),
+                    "Frequency Score": int(rec.likelihood_assessment.likelihood_score),
                     "Inherent Risk Rating": rec.inherent_risk.inherent_rating.value,
-                    "High+ Residual": "Yes" if rec.residual_risk.residual_rating.value in {"High", "Critical"} else "No",
-                    "Control Gaps": len(build_control_gaps(rec)),
-                    "Mapped Controls": len(rec.control_mappings),
-                    "Management Response": rec.residual_risk.management_response.response_type.value.title(),
+                    "Residual Risk Rating": rec.residual_risk.residual_rating.value,
                 }
             )
     return rows
@@ -377,13 +354,14 @@ def _render_workspace_inventory_summary(
 ) -> None:
     process_count = len(workspace.processes_for_bu(selected_bu_id)) if selected_bu_id else len(workspace.processes)
     business_unit_count = 1 if selected_bu_id else len({str(row["Business Unit"]) for row in rows})
+    high_plus = sum(row["Residual Risk Rating"] in {"High", "Critical"} for row in rows)
     summary = {
         "Risks": str(len(rows)),
         "Business Units": str(business_unit_count),
         "Processes": str(process_count),
-        "High+ Residual": str(sum(row["High+ Residual"] == "Yes" for row in rows)),
-        "Mapped Controls": str(sum(int(row["Mapped Controls"]) for row in rows)),
-        "Control Gaps": str(sum(int(row["Control Gaps"]) for row in rows)),
+        "High+ Residual": str(high_plus),
+        "Avg Impact": f"{sum(int(row.get('Impact Score', 0)) for row in rows) / max(len(rows), 1):.1f}",
+        "Avg Frequency": f"{sum(int(row.get('Frequency Score', 0)) for row in rows) / max(len(rows), 1):.1f}",
     }
     cells = "".join(
         f"<div><span>{html.escape(label)}</span><b>{html.escape(value)}</b></div>"
@@ -569,11 +547,10 @@ def _render_process_map(
         st.info("No process map rows are available for the selected scope.")
         return
     high_plus = sum(row["Residual Risk Rating"] in {"High", "Critical"} for row in rows)
-    gap_count = sum(int(row["Control Gaps"]) for row in rows)
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(_metric_card("Map Rows", str(len(rows)), "blue"), unsafe_allow_html=True)
     c2.markdown(_metric_card("High+ Residual", str(high_plus), "red" if high_plus else "green"), unsafe_allow_html=True)
-    c3.markdown(_metric_card("Control Gaps", str(gap_count), "red" if gap_count else "green"), unsafe_allow_html=True)
+    c3.markdown(_metric_card("Avg Impact", f"{sum(int(row.get('Impact Score', 0)) for row in rows) / max(len(rows), 1):.1f}", "teal"), unsafe_allow_html=True)
     c4.markdown(_metric_card("KRI Links", str(sum(int(row["Mapped KRIs"]) for row in rows)), "teal"), unsafe_allow_html=True)
     _render_table(rows)
 
@@ -603,9 +580,9 @@ def _process_map_rows(
                     "Process": process.process_name,
                     "Risk Record ID": record.risk_id,
                     "Risk Subcategory": record.taxonomy_node.level_2_category,
-                    "Root Causes": "; ".join((record.risk_statement.causes or record.taxonomy_node.typical_root_causes)[:3]),
-                    "Mapped Controls": len(record.control_mappings),
-                    "Control Gaps": len(build_control_gaps(record)),
+                    "Risk Statement": record.risk_statement.risk_description,
+                    "Impact Score": int(record.impact_assessment.overall_impact_score),
+                    "Frequency Score": int(record.likelihood_assessment.likelihood_score),
                     "Mapped KRIs": len(kris),
                     "Residual Risk Rating": record.residual_risk.residual_rating.value,
                 }
@@ -733,14 +710,17 @@ def bu_risk_capture_rows(workspace: RiskInventoryWorkspace) -> list[dict[str, An
             "Issues" if issue_count else "",
             "Obligations" if obligation_count else "",
         ]
+        avg_impact = sum(int(record.impact_assessment.overall_impact_score) for record in records) / max(len(records), 1)
+        avg_frequency = sum(int(record.likelihood_assessment.likelihood_score) for record in records) / max(len(records), 1)
         rows.append(
             {
                 "Business Unit": bu.bu_name,
                 "Processes": len(processes),
                 "Risk Records": len(records),
                 "Dominant Captured Risk Types": dominant_categories,
+                "Avg Impact": f"{avg_impact:.1f}",
+                "Avg Frequency": f"{avg_frequency:.1f}",
                 "High+ Residual": high_plus,
-                "Mapped Controls": control_count,
                 "Key Source Packs": ", ".join(item for item in source_packs if item),
                 "Capture Rationale": bu.risk_profile_summary,
             }
@@ -749,32 +729,6 @@ def bu_risk_capture_rows(workspace: RiskInventoryWorkspace) -> list[dict[str, An
 
 
 def _render_knowledge_base(workspace: RiskInventoryWorkspace, profile_name: str | None = None) -> None:
-    st.markdown('<div class="ri-section-title">Knowledge Base Selector</div>', unsafe_allow_html=True)
-    current_profile = profile_name or DEFAULT_KNOWLEDGE_BASE_PROFILE
-    if current_profile not in KNOWLEDGE_BASE_PROFILES:
-        current_profile = DEFAULT_KNOWLEDGE_BASE_PROFILE
-    selected_profile = st.selectbox(
-        "Knowledge Base Profile",
-        knowledge_base_profile_options(),
-        index=knowledge_base_profile_options().index(current_profile),
-        key="ri_demo_knowledge_base_profile_picker",
-        help="Switch between generic demo archetypes to show how the same modular source packs adapt by complexity and operating model.",
-    )
-    if selected_profile != current_profile:
-        st.session_state["ri_demo_knowledge_base_profile"] = selected_profile
-        st.session_state.pop("risk_inventory_workspace", None)
-        st.session_state.pop("risk_inventory_workspace_profile", None)
-        for key in ("ri_demo_bu_choice", "ri_demo_proc_choice", "ri_selected_risk_id"):
-            st.session_state.pop(key, None)
-        st.rerun()
-
-    _render_profile_complexity_cards(workspace, selected_profile)
-    st.markdown('<div class="ri-section-title">Business Unit Risk Capture Matrix</div>', unsafe_allow_html=True)
-    st.caption(
-        "Each row shows how a different business unit captures risk through its own process evidence, controls, KRIs, obligations, issues, and source artifacts."
-    )
-    _render_table(bu_risk_capture_rows(workspace))
-
     st.markdown('<div class="ri-section-title">Modular Knowledge Base</div>', unsafe_allow_html=True)
     st.caption(
         "Read-only view of the supplied source packs: business units, processes, risk taxonomy, "
@@ -1261,12 +1215,12 @@ def _risk_source_confidence_rows(
         },
         {
             "Evidence Component": "Mapped controls",
-            "Available": len(record.control_mappings),
+            "Available": str(len(record.control_mappings)),
             "Detail": "; ".join(mapping.control_id for mapping in record.control_mappings[:4]),
         },
         {
             "Evidence Component": "Evidence references",
-            "Available": len(record.evidence_references),
+            "Available": str(len(record.evidence_references)),
             "Detail": "; ".join(reference.evidence_id for reference in record.evidence_references[:4]),
         },
         {
@@ -2438,12 +2392,12 @@ def selected_review_dossier(
     scoring_rationale = [
         {
             "Scoring Component": "Impact",
-            "Value": int(record.impact_assessment.overall_impact_score),
+            "Value": str(int(record.impact_assessment.overall_impact_score)),
             "Rationale": record.impact_assessment.overall_impact_rationale,
         },
         {
             "Scoring Component": "Frequency",
-            "Value": int(record.likelihood_assessment.likelihood_score),
+            "Value": str(int(record.likelihood_assessment.likelihood_score)),
             "Rationale": record.likelihood_assessment.rationale,
         },
         {
@@ -3168,14 +3122,12 @@ def _table_column_config(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for index, column in enumerate(first_row):
         values = [row.get(column, "") for row in rows]
         width = _table_column_width(column, values)
-        alignment = _table_column_alignment(column, values)
         if _is_numeric_column(values):
-            config[column] = st.column_config.NumberColumn(column, width=width, alignment=alignment)
+            config[column] = st.column_config.NumberColumn(column, width=width)
         else:
             config[column] = st.column_config.TextColumn(
                 column,
                 width=width,
-                alignment=alignment,
                 pinned=index == 0 and _is_identifier_column(column),
             )
     return config
@@ -3202,32 +3154,6 @@ def _table_column_width(column: str, values: list[Any]) -> int:
     if longest <= 42:
         return 220
     return 300
-
-
-def _table_column_alignment(column: str, values: list[Any]) -> Literal["left", "center", "right"]:
-    name = column.lower()
-    if _is_numeric_column(values):
-        return "center"
-    if _is_identifier_column(column):
-        return "center"
-    center_terms = (
-        "rating",
-        "response",
-        "status",
-        "score",
-        "count",
-        "frequency",
-        "cadence",
-        "reviewed",
-        "severity",
-        "owner",
-        "green",
-        "amber",
-        "red",
-    )
-    if any(term in name for term in center_terms):
-        return "center"
-    return "left"
 
 
 def _is_identifier_column(column: str) -> bool:
