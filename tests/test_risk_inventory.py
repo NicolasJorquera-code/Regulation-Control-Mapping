@@ -1360,7 +1360,7 @@ class TestRiskInventoryControlMappingUiHelpers:
         source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
 
         assert "Selected Risk Gap Analysis" not in source
-        assert "Selected Control Statement" in source
+        assert "Improved Control Statement" in source
 
     def test_gap_analysis_metric_strip_removed(self):
         source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")

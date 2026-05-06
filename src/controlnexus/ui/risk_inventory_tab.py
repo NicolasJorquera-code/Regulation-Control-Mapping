@@ -2264,6 +2264,7 @@ def _render_control_gap_lab(
                 "Severity": gap.severity,
                 "Description": gap.description,
                 "Existing Controls": "; ".join(gap.existing_control_ids),
+                "Recommendation to Improve Existing Controls": gap.recommendation,
             }
             for gap in gaps
         )
@@ -2288,7 +2289,7 @@ def _render_control_gap_lab(
         selected_recommendations = build_synthetic_control_recommendations(record, workspace)
         st.markdown('<div class="ri-section-title">Residual Risk Calculation</div>', unsafe_allow_html=True)
         _render_residual_calculation_strip(record)
-        st.markdown('<div class="ri-section-title">Selected Control Statement</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ri-section-title">Improved Control Statement</div>', unsafe_allow_html=True)
         if selected_recommendations:
             for recommendation in selected_recommendations:
                 root_cause_html = "".join(
@@ -2366,33 +2367,73 @@ def risk_rating_scale_score(rating: str) -> int:
 
 
 def residual_risk_rationale_text(record: RiskInventoryRecord) -> str:
-    """Return a plain-language residual-risk rationale without rating-score labels."""
+    """Return a risk-specific residual-risk rationale grounded in the record's context."""
     residual_rating = record.residual_risk.residual_rating.value
     inherent_rating = record.inherent_risk.inherent_rating.value
     control_score = int(record.residual_risk.control_environment_score)
     control_strength = record.control_environment.control_environment_rating.value
+    impact_score = int(record.impact_assessment.overall_impact_score)
+    likelihood_score = int(record.likelihood_assessment.likelihood_score)
+    subcategory = record.taxonomy_node.level_2_category
+    process_name = record.process_name
+    risk_event = record.risk_statement.risk_event or record.risk_statement.risk_description
+
+    mapped_count = len(record.control_mappings)
     gap_count = len(build_control_gaps(record))
-    recommendation_count = len(build_synthetic_control_recommendations(record, None))
-    base = _score_label_to_rating_text(record.residual_risk.rationale)
-    base = base.replace("matrix-calculated", "calculated").replace("deterministic", "configured")
-    base_sentences = _split_sentences(base)
-    opening = (
-        f"Residual risk is rated {residual_rating} on the 1-4 basis because the inherent risk is {inherent_rating} "
-        f"and the current control score is {control_score}, reflecting a {control_strength} control environment."
+    appetite_status = record.risk_appetite.status if record.risk_appetite else "within"
+
+    inherent_sentence = (
+        f"Inherent risk for this {subcategory} exposure in {process_name} is {inherent_rating} because "
+        f"the event \"{risk_event}\" carries an impact score of {impact_score} and a frequency score of "
+        f"{likelihood_score} before mitigation."
     )
-    control_sentence = _ensure_sentence(
-        f"{record.control_environment.rationale} The selected risk has {len(record.control_mappings)} mapped control(s), "
-        f"{gap_count} identified gap(s), and {recommendation_count} suggested control enhancement(s)"
-    )
-    action_sentence = _ensure_sentence(
+
+    if mapped_count:
+        weak_mapped = sum(
+            1
+            for m in record.control_mappings
+            if m.coverage_assessment.lower() in {"partial", "weak", "none"}
+            or (m.design_effectiveness and m.design_effectiveness.rating.value in {"Improvement Needed", "Inadequate"})
+            or (m.operating_effectiveness and m.operating_effectiveness.rating.value in {"Improvement Needed", "Inadequate"})
+        )
+        if weak_mapped:
+            control_sentence = (
+                f"The current control environment is {control_strength} (score {control_score}) with "
+                f"{mapped_count} mapped control(s), but {weak_mapped} show partial coverage or below-satisfactory "
+                f"effectiveness, which limits how much the inherent rating can be reduced."
+            )
+        else:
+            control_sentence = (
+                f"The current control environment is {control_strength} (score {control_score}) with "
+                f"{mapped_count} mapped control(s) operating at satisfactory levels, supporting the step-down "
+                f"from inherent to residual."
+            )
+    else:
+        control_sentence = (
+            f"No controls are mapped to this risk, so the {control_strength} control environment "
+            f"(score {control_score}) provides minimal mitigation against the inherent exposure."
+        )
+
+    if gap_count:
+        gap_sentence = (
+            f"After applying the control environment, residual risk lands at {residual_rating} and is "
+            f"{appetite_status} appetite, with {gap_count} open gap(s) preventing further reduction."
+        )
+    else:
+        gap_sentence = (
+            f"After applying the control environment, residual risk lands at {residual_rating} and is "
+            f"{appetite_status} appetite, with no material control gaps outstanding."
+        )
+
+    action_sentence = (
         f"Management response is {record.residual_risk.management_response.response_type.value.title()}: "
         f"{record.residual_risk.management_response.recommended_action}"
     )
-    sentences = [opening]
-    if base_sentences:
-        sentences.append(base_sentences[0])
-    sentences.extend([control_sentence, action_sentence])
-    return " ".join(sentences[:4])
+
+    return " ".join(
+        _ensure_sentence(sentence)
+        for sentence in (inherent_sentence, control_sentence, gap_sentence, action_sentence)
+    )
 
 
 def _score_label_to_rating_text(text: str) -> str:

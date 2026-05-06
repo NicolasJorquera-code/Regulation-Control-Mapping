@@ -34,32 +34,61 @@ def build_synthetic_control_recommendations(
     frequency = _suggested_frequency(record)
     root_causes = record.risk_statement.causes or record.taxonomy_node.typical_root_causes[:3]
     evidence = _expected_evidence(recommended_type, record)
-    statement = (
-        f"{owner} performs a {frequency.lower()} {recommended_type.lower()} control for "
-        f"{record.process_name} to validate that {record.taxonomy_node.level_2_category.lower()} "
-        f"drivers are identified, escalated, remediated, and evidenced before residual exposure "
-        "exceeds appetite."
+    risk_event = (record.risk_statement.risk_event or record.risk_statement.risk_description).rstrip(".")
+    consequences = record.risk_statement.consequences[:2]
+    primary_causes = root_causes[:3]
+    cause_phrase = ", ".join(primary_causes) if primary_causes else record.taxonomy_node.level_2_category.lower()
+    consequence_phrase = (
+        f" before it leads to {', '.join(consequences).rstrip('.').lower()}"
+        if consequences
+        else ""
     )
+
+    control_name = _synthetic_control_name(record, recommended_type)
+    statement = (
+        f"{owner} performs a {frequency.lower()} {recommended_type.lower()} control over {record.process_name} "
+        f"to detect and prevent \"{risk_event}\" by monitoring {cause_phrase}, escalating exceptions to risk management, "
+        f"and ensuring corrective action is documented{consequence_phrase}."
+    )
+    if record.control_mappings:
+        existing_names = ", ".join(mapping.control_name for mapping in record.control_mappings[:3])
+        coverage_phrase = (
+            f"Existing controls ({existing_names}) do not fully address {gaps[0]}; this synthetic control closes "
+            f"that gap by directly targeting {cause_phrase}."
+        )
+    else:
+        coverage_phrase = (
+            f"No controls are currently mapped to this risk, so this synthetic control provides first-line coverage "
+            f"of {cause_phrase}."
+        )
     rationale = (
-        f"Recommended because {', '.join(gaps)}. The control is designed to cover "
-        f"{', '.join(root_causes[:3]) or 'the primary root causes'} and produce audit-ready evidence."
+        f"Recommended because {gaps[0]}. {coverage_phrase} The control is designed to interrupt the path from "
+        f"{cause_phrase} to \"{risk_event}\" and produce audit-ready evidence."
     )
     priority = "High" if record.residual_risk.residual_rating.value in {"High", "Critical"} else "Medium"
     return [
         SyntheticControlRecommendation(
             recommendation_id=f"SYN-{record.risk_id}-001",
             risk_id=record.risk_id,
-            control_name=f"{record.taxonomy_node.level_2_category} Coverage Control",
+            control_name=control_name,
             control_type=recommended_type,
             control_statement=statement,
             rationale=rationale,
-            addressed_root_causes=root_causes[:3],
+            addressed_root_causes=primary_causes,
             suggested_owner=owner,
             frequency=frequency,
             expected_evidence=evidence,
             priority=priority,
         )
     ]
+
+
+def _synthetic_control_name(record: RiskInventoryRecord, control_type: str) -> str:
+    """Build a control name that ties back to the specific risk event and process."""
+    event = (record.risk_statement.risk_event or record.taxonomy_node.level_2_category).strip().rstrip(".")
+    keywords = [token for token in event.split() if len(token) > 3][:4]
+    summary = " ".join(keywords).title() if keywords else record.taxonomy_node.level_2_category
+    return f"{summary} {control_type}".strip()
 
 
 def build_control_gaps(record: RiskInventoryRecord) -> list[RiskControlGap]:
@@ -76,10 +105,57 @@ def build_control_gaps(record: RiskInventoryRecord) -> list[RiskControlGap]:
             description=reason,
             root_causes=(record.risk_statement.causes or record.taxonomy_node.typical_root_causes)[:3],
             existing_control_ids=[mapping.control_id for mapping in record.control_mappings],
-            recommendation="Add or strengthen controls before approving residual risk.",
+            recommendation=_gap_recommendation(record, reason),
         )
         for idx, reason in enumerate(reasons, start=1)
     ]
+
+
+def _gap_recommendation(record: RiskInventoryRecord, reason: str) -> str:
+    """Recommend how to improve the controls already mapped in the Control Mapping tab."""
+    gap_type = _gap_type(reason)
+    mappings = record.control_mappings
+    risk_event = (record.risk_statement.risk_event or record.risk_statement.risk_description).rstrip(".")
+
+    if not mappings:
+        return (
+            f"No controls are currently mapped to this risk. Add a preventive control over "
+            f"{record.process_name} that directly interrupts \"{risk_event}\" and produces audit-ready evidence."
+        )
+
+    primary = mappings[0]
+    primary_name = primary.control_name
+    other_names = [m.control_name for m in mappings[1:3]]
+    others_clause = f" and align it with {', '.join(other_names)}" if other_names else ""
+
+    if gap_type == "Effectiveness Weakness":
+        weak = next(
+            (
+                m
+                for m in mappings
+                if (m.design_effectiveness and m.design_effectiveness.rating.value in {"Improvement Needed", "Inadequate"})
+                or (m.operating_effectiveness and m.operating_effectiveness.rating.value in {"Improvement Needed", "Inadequate"})
+            ),
+            primary,
+        )
+        return (
+            f"Strengthen {weak.control_name}: tighten its design (defined criteria, sample size, reviewer sign-off) "
+            f"and operating cadence so it reliably detects \"{risk_event}\"{others_clause}."
+        )
+    if gap_type == "Partial Coverage":
+        return (
+            f"Extend {primary_name} to cover the residual scope (root causes: "
+            f"{', '.join((record.risk_statement.causes or record.taxonomy_node.typical_root_causes)[:2]) or 'primary drivers'})"
+            f"{others_clause}, or add a complementary control that closes the uncovered path."
+        )
+    if gap_type == "Outside Appetite":
+        return (
+            f"Residual risk is outside appetite. Increase the frequency and rigor of {primary_name}"
+            f"{others_clause} (e.g. shorter cadence, broader sample, dual review) until residual returns within appetite."
+        )
+    return (
+        f"Add or strengthen controls beyond {primary_name}{others_clause} to bring \"{risk_event}\" within appetite."
+    )
 
 
 def validate_knowledge_pack(workspace: RiskInventoryWorkspace) -> list[ValidationFinding]:
