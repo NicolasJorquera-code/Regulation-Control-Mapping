@@ -1,0 +1,442 @@
+version: 2.0.0
+business_units:
+- bu_id: BU-01
+  bu_name: Vision & Strategy (Executive / Board Governance)
+  description: Board, executive strategy, risk appetite oversight, capital planning, and strategic initiative governance.
+  head: Chief Strategy Officer
+  employee_count: 85
+  inherent_risk: 3
+  regulatory_intensity: 3
+  control_density: 2
+  key_regulatory_frameworks:
+  - OCC Heightened Standards
+  - Reg YY
+  - CCAR/DFAST
+  risk_profile_summary: Strategy and governance exposure centers on risk appetite alignment, capital allocation discipline, board reporting quality, and executive decision traceability.
+  process_ids:
+  - PR-01
+  - PR-02
+  - PR-03
+  - PR-04
+  - PR-23
+  - PR-34
+  - PR-38
+  - PR-43
+  - PR-45
+  - PR-48
+  - PR-50
+  - PR-52
+  - PR-53
+  - PR-55
+  - PR-56
+- bu_id: BU-02
+  bu_name: Product Development & Management
+  description: Product lifecycle governance, pricing, requirements traceability, launch controls, and product change oversight.
+  head: Head of Product Management
+  employee_count: 210
+  inherent_risk: 4
+  regulatory_intensity: 4
+  control_density: 3
+  key_regulatory_frameworks:
+  - OCC New Product Risk Mgmt
+  - UDAAP
+  - Reg Z
+  - Reg DD
+  - Fair Lending
+  risk_profile_summary: Product exposure is driven by new product approval, customer-facing terms, pricing data quality, and cross-functional launch readiness.
+  process_ids:
+  - PR-04
+  - PR-05
+  - PR-06
+  - PR-07
+  - PR-08
+  - PR-09
+  - PR-10
+  - PR-13
+  - PR-18
+  - PR-22
+  - PR-44
+  - PR-46
+  - PR-54
+  - PR-57
+- bu_id: BU-03
+  bu_name: Marketing & Sales
+  description: Marketing content, disclosure review, channel strategy, customer acquisition, sales practices, and incentive governance.
+  head: Chief Marketing Officer
+  employee_count: 420
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  key_regulatory_frameworks:
+  - UDAAP
+  - Fair Lending
+  - ECOA
+  - FHA
+  - Reg Z/DD Advertising
+  - TCPA
+  risk_profile_summary: Marketing and sales risk is concentrated in disclosures, fair treatment, suitability, incentive design, and complaint feedback loops.
+  process_ids:
+  - PR-05
+  - PR-06
+  - PR-08
+  - PR-09
+  - PR-10
+  - PR-13
+  - PR-18
+  - PR-20
+  - PR-52
+  - PR-55
+- bu_id: BU-04
+  bu_name: Sourcing & Procurement (Third-Party Risk Mgmt)
+  description: Vendor onboarding, sourcing, procurement, contracting, ongoing vendor management, and third-party risk governance.
+  head: Chief Procurement Officer
+  employee_count: 145
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  key_regulatory_frameworks:
+  - OCC 2023-17
+  - FRB SR 13-19
+  - FFIEC Outsourcing
+  - GLBA
+  risk_profile_summary: Sourcing risk focuses on critical vendor due diligence, contract controls, service performance, concentration, and outsourced information protection.
+  process_ids:
+  - PR-11
+  - PR-12
+  - PR-29
+  - PR-33
+  - PR-37
+  - PR-38
+  - PR-41
+  - PR-42
+  - PR-54
+- bu_id: BU-05
+  bu_name: Banking Operations
+  description: Account opening support, account maintenance, payment operations, branch cash operations, settlement, and operational exception management.
+  head: Chief Operations Officer
+  employee_count: 1650
+  inherent_risk: 4
+  regulatory_intensity: 4
+  control_density: 4
+  key_regulatory_frameworks:
+  - Reg CC
+  - Reg E
+  - UCC 4A
+  - NACHA Rules
+  risk_profile_summary: Operations exposure is heavy in payment execution, customer account lifecycle events, cash handling, settlement exceptions, and daily reconciliation evidence.
+  process_ids:
+  - PR-13
+  - PR-14
+  - PR-15
+  - PR-16
+  - PR-17
+  - PR-19
+  - PR-30
+  - PR-31
+  - PR-34
+  - PR-44
+  - PR-45
+  - PR-46
+  - PR-47
+  - PR-59
+  - PR-60
+- bu_id: BU-06
+  bu_name: Customer Service
+  description: Customer inquiry intake, complaint management, appeals, disputes, servicing feedback, and service recovery.
+  head: Head of Customer Experience
+  employee_count: 980
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  key_regulatory_frameworks:
+  - UDAAP
+  - CFPB Complaint Mgmt
+  - Reg E/Z Error Resolution
+  risk_profile_summary: Customer service risk is driven by complaint aging, error resolution timelines, customer harm indicators, handoff quality, and case documentation.
+  process_ids:
+  - PR-09
+  - PR-10
+  - PR-13
+  - PR-14
+  - PR-15
+  - PR-18
+  - PR-19
+  - PR-20
+  - PR-29
+  - PR-31
+  - PR-44
+  - PR-60
+- bu_id: BU-07
+  bu_name: Human Capital Management
+  description: Talent acquisition, employee onboarding, training, compensation, employee relations, payroll, and workforce separation.
+  head: Chief Human Resources Officer
+  employee_count: 360
+  inherent_risk: 3
+  regulatory_intensity: 3
+  control_density: 3
+  key_regulatory_frameworks:
+  - EEO/OFCCP
+  - FLSA
+  - ERISA
+  - FINRA/NMLS Registration
+  risk_profile_summary: Human capital risk spans staffing, registration, mandatory training, incentive plan conduct, investigation discipline, payroll accuracy, and offboarding controls.
+  process_ids:
+  - PR-09
+  - PR-19
+  - PR-21
+  - PR-22
+  - PR-23
+  - PR-24
+  - PR-25
+  - PR-26
+  - PR-27
+  - PR-39
+  - PR-40
+  - PR-44
+  - PR-57
+- bu_id: BU-08
+  bu_name: Information Technology
+  description: Technology delivery, security, privacy, access governance, change, resiliency, service support, and data platform enablement.
+  head: Chief Information Officer
+  employee_count: 1250
+  inherent_risk: 4
+  regulatory_intensity: 4
+  control_density: 5
+  key_regulatory_frameworks:
+  - SOX 404 ITGCs
+  - FFIEC IT Handbook
+  - NIST CSF
+  - GLBA
+  risk_profile_summary: IT has the broadest dependency footprint through identity, change, cyber defense, platform availability, data protection, and service continuity.
+  process_ids:
+  - PR-05
+  - PR-06
+  - PR-10
+  - PR-11
+  - PR-13
+  - PR-14
+  - PR-16
+  - PR-19
+  - PR-21
+  - PR-22
+  - PR-24
+  - PR-25
+  - PR-26
+  - PR-27
+  - PR-28
+  - PR-29
+  - PR-30
+  - PR-31
+  - PR-32
+  - PR-33
+  - PR-35
+  - PR-39
+  - PR-40
+  - PR-44
+  - PR-46
+  - PR-47
+  - PR-48
+  - PR-49
+  - PR-56
+  - PR-57
+  - PR-58
+  - PR-59
+- bu_id: BU-09
+  bu_name: Financial Accounting
+  description: Financial close, accounts payable, treasury accounting, SOX controls, tax, fixed asset accounting, and reporting support.
+  head: Chief Accounting Officer
+  employee_count: 520
+  inherent_risk: 4
+  regulatory_intensity: 5
+  control_density: 4
+  key_regulatory_frameworks:
+  - SOX 404
+  - GAAP/IFRS
+  - FDICIA
+  risk_profile_summary: Accounting risk is concentrated in close accuracy, payment disbursement controls, liquidity and cash reporting, SOX evidence, tax, lease, and asset valuation.
+  process_ids:
+  - PR-01
+  - PR-02
+  - PR-03
+  - PR-04
+  - PR-06
+  - PR-11
+  - PR-12
+  - PR-14
+  - PR-15
+  - PR-16
+  - PR-17
+  - PR-23
+  - PR-25
+  - PR-27
+  - PR-28
+  - PR-32
+  - PR-33
+  - PR-34
+  - PR-35
+  - PR-36
+  - PR-37
+  - PR-38
+  - PR-41
+  - PR-42
+  - PR-43
+  - PR-45
+  - PR-49
+  - PR-50
+  - PR-51
+  - PR-53
+  - PR-58
+- bu_id: BU-10
+  bu_name: Asset Management (Corporate Real Estate / Facilities)
+  description: Facilities operations, lease management, construction, physical security, maintenance, and asset decommissioning.
+  head: Head of Corporate Real Estate
+  employee_count: 240
+  inherent_risk: 3
+  regulatory_intensity: 2
+  control_density: 2
+  key_regulatory_frameworks:
+  - GAAP/IFRS
+  - ASC 842
+  - OSHA
+  - ADA
+  risk_profile_summary: Facilities risk is driven by capital project governance, premises access, lease accounting handoffs, maintenance evidence, and continuity dependencies.
+  process_ids:
+  - PR-12
+  - PR-17
+  - PR-26
+  - PR-30
+  - PR-37
+  - PR-38
+  - PR-39
+  - PR-40
+  - PR-41
+  - PR-42
+  - PR-47
+- bu_id: BU-11
+  bu_name: Enterprise Risk, Compliance & Resiliency
+  description: Enterprise risk assessment, risk appetite, operational risk, compliance testing, financial risk, continuity, incident management, and model risk.
+  head: Chief Risk Officer
+  employee_count: 690
+  inherent_risk: 5
+  regulatory_intensity: 5
+  control_density: 5
+  key_regulatory_frameworks:
+  - OCC Heightened Standards
+  - Reg YY
+  - Basel III
+  - SR 11-7
+  - BSA/AML
+  risk_profile_summary: Risk and compliance touches almost every material process through challenge, independent monitoring, control testing, appetite governance, issue remediation, resiliency, and model validation.
+  process_ids:
+  - PR-01
+  - PR-02
+  - PR-03
+  - PR-04
+  - PR-05
+  - PR-07
+  - PR-08
+  - PR-09
+  - PR-11
+  - PR-12
+  - PR-13
+  - PR-15
+  - PR-16
+  - PR-17
+  - PR-18
+  - PR-20
+  - PR-21
+  - PR-22
+  - PR-23
+  - PR-24
+  - PR-26
+  - PR-27
+  - PR-28
+  - PR-29
+  - PR-30
+  - PR-31
+  - PR-32
+  - PR-33
+  - PR-34
+  - PR-35
+  - PR-36
+  - PR-38
+  - PR-39
+  - PR-40
+  - PR-41
+  - PR-42
+  - PR-43
+  - PR-44
+  - PR-45
+  - PR-46
+  - PR-47
+  - PR-48
+  - PR-49
+  - PR-50
+  - PR-51
+  - PR-52
+  - PR-53
+  - PR-54
+  - PR-55
+  - PR-56
+  - PR-57
+  - PR-58
+  - PR-59
+  - PR-60
+- bu_id: BU-12
+  bu_name: External Relationship Management (Reg. Affairs / IR)
+  description: Regulatory affairs, examination response, public disclosure, government relations, investor relations, legal affairs, and communications.
+  head: General Counsel
+  employee_count: 310
+  inherent_risk: 3
+  regulatory_intensity: 4
+  control_density: 3
+  key_regulatory_frameworks:
+  - OCC/FRB Exam Process
+  - SEC Disclosure
+  - CRA
+  risk_profile_summary: External relationship exposure is driven by regulator response, public disclosure, litigation, communications governance, investor messaging, and supervisory commitments.
+  process_ids:
+  - PR-02
+  - PR-03
+  - PR-07
+  - PR-08
+  - PR-18
+  - PR-20
+  - PR-24
+  - PR-32
+  - PR-36
+  - PR-43
+  - PR-46
+  - PR-48
+  - PR-50
+  - PR-51
+  - PR-52
+  - PR-53
+  - PR-54
+  - PR-55
+- bu_id: BU-13
+  bu_name: Business Capability Development (EPMO / Data Gov.)
+  description: Program portfolio management, enterprise change, data governance, process improvement, quality management, and performance measurement.
+  head: Chief Transformation Officer
+  employee_count: 275
+  inherent_risk: 3
+  regulatory_intensity: 3
+  control_density: 3
+  key_regulatory_frameworks:
+  - OCC Heightened Standards
+  - BCBS 239
+  - SOX 404
+  risk_profile_summary: Capability development risk is centered on portfolio prioritization, change adoption, data quality, process management, quality measurement, and program dependency control.
+  process_ids:
+  - PR-01
+  - PR-04
+  - PR-21
+  - PR-22
+  - PR-28
+  - PR-35
+  - PR-49
+  - PR-56
+  - PR-57
+  - PR-58
+  - PR-59
+  - PR-60

@@ -6,6 +6,7 @@ and executive views are projections from these models.
 
 from __future__ import annotations
 
+import ast
 from datetime import datetime, timezone
 from enum import Enum, IntEnum
 from typing import Any
@@ -303,14 +304,46 @@ class ControlInventoryEntry(BaseModel):
     control_name: str
     control_type: str = ""
     description: str = ""
+    hierarchy_id: str = ""
+    leaf_name: str = ""
+    full_description: str = ""
+    selected_level_1: str = ""
+    selected_level_2: str = ""
+    business_unit_id: str = ""
+    business_unit_name: str = ""
     owner: str = ""
+    who: str = ""
+    what: str = ""
+    when: str = ""
     frequency: str = ""
+    where: str = ""
+    why: str = ""
+    quality_rating: str = "Satisfactory"
+    validator_passed: bool = True
+    validator_retries: int = 0
+    validator_failures: list[str] = Field(default_factory=list)
+    evidence: str = ""
     process_ids: list[str] = Field(default_factory=list)
     taxonomy_node_ids: list[str] = Field(default_factory=list)
     mapped_root_causes: list[str] = Field(default_factory=list)
     design_rating: str = "Satisfactory"
     operating_rating: str = "Satisfactory"
     evidence_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("validator_failures", mode="before")
+    @classmethod
+    def _coerce_validator_failures(cls, value: Any) -> list[str]:
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        if value in (None, "", "[]"):
+            return []
+        try:
+            parsed = ast.literal_eval(str(value))
+        except (SyntaxError, ValueError):
+            parsed = None
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed]
+        return [str(value)]
 
 
 class ControlMapping(BaseModel):
@@ -511,6 +544,10 @@ class BusinessUnit(BaseModel):
     description: str = ""
     head: str = ""
     employee_count: int = 0
+    inherent_risk: int = 0
+    regulatory_intensity: int = 0
+    control_density: int = 0
+    key_regulatory_frameworks: list[str] = Field(default_factory=list)
     risk_profile_summary: str = ""
     procedure_ids: list[str] = Field(default_factory=list)
     process_ids: list[str] = Field(default_factory=list)
@@ -530,6 +567,7 @@ class Process(BaseModel):
     process_id: str
     process_name: str
     bu_id: str
+    supporting_bu_ids: list[str] = Field(default_factory=list)
     description: str = ""
     owner: str = ""
     last_reviewed: str = ""
@@ -615,8 +653,35 @@ class RootCauseTaxonomyEntry(BaseModel):
     code: str
     name: str
     category: str  # People / Process / Technology / External
+    cause_origin: str = ""
+    definition: str = ""
+    selection_criteria: str = ""
     description: str = ""
     examples: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_definition_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        normalized = dict(data)
+        if "definition" in normalized and not normalized.get("description"):
+            normalized["description"] = normalized["definition"]
+        if "description" in normalized and not normalized.get("definition"):
+            normalized["definition"] = normalized["description"]
+        if "example" in normalized and "examples" not in normalized:
+            normalized["examples"] = [normalized["example"]]
+        return normalized
+
+    @model_validator(mode="after")
+    def _sync_definition_fields(self) -> "RootCauseTaxonomyEntry":
+        if self.definition and not self.description:
+            object.__setattr__(self, "description", self.definition)
+        if self.description and not self.definition:
+            object.__setattr__(self, "definition", self.description)
+        if not self.selection_criteria:
+            object.__setattr__(self, "selection_criteria", self.definition or self.description)
+        return self
 
 
 class ControlTaxonomyEntry(BaseModel):
@@ -721,7 +786,15 @@ class RiskInventoryWorkspace(BaseModel):
         return self.processes
 
     def processes_for_bu(self, bu_id: str) -> list[Process]:
-        return [p for p in self.processes if p.bu_id == bu_id]
+        business_unit = next((bu for bu in self.business_units if bu.bu_id == bu_id), None)
+        referenced_process_ids = set(business_unit.process_ids if business_unit else [])
+        return [
+            process
+            for process in self.processes
+            if process.bu_id == bu_id
+            or bu_id in process.supporting_bu_ids
+            or process.process_id in referenced_process_ids
+        ]
 
     def procedures_for_bu(self, bu_id: str) -> list[Process]:
         return self.processes_for_bu(bu_id)

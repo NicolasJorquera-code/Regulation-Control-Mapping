@@ -20,6 +20,9 @@ def knowledge_base_lookup(workspace: RiskInventoryWorkspace, entity_type: str, e
     if entity_type in {"control", "controls", "control_inventory"}:
         rows = [item.model_dump() for item in workspace.control_inventory]
         return _filter_rows(rows, ("control_id", "control_name"), entity_id)
+    if entity_type in {"root_cause", "root_causes", "root_cause_taxonomy"}:
+        rows = [item.model_dump() for item in workspace.root_cause_taxonomy]
+        return _filter_rows(rows, ("code", "name", "category"), entity_id)
     if entity_type in {"issue", "issues"}:
         rows = [item.model_dump() for item in workspace.issues]
         return _filter_rows(rows, ("issue_id", "title"), entity_id)
@@ -39,6 +42,11 @@ def risk_taxonomy_lookup(workspace: RiskInventoryWorkspace, taxonomy_id: str = "
 def control_taxonomy_lookup(workspace: RiskInventoryWorkspace, control_type: str = "") -> dict[str, Any]:
     rows = [item.model_dump() for item in workspace.control_taxonomy]
     return _query_rows(rows, control_type, ("code", "name", "family", "description"))
+
+
+def root_cause_taxonomy_lookup(workspace: RiskInventoryWorkspace, root_cause: str = "") -> dict[str, Any]:
+    rows = [item.model_dump() for item in workspace.root_cause_taxonomy]
+    return _query_rows(rows, root_cause, ("code", "name", "category", "definition", "selection_criteria"))
 
 
 def control_inventory_search(
@@ -128,6 +136,7 @@ def build_risk_inventory_tool_executor(
         "knowledge_base_lookup": lambda **kw: knowledge_base_lookup(workspace, **kw),
         "risk_taxonomy_lookup": lambda **kw: risk_taxonomy_lookup(workspace, **kw),
         "control_taxonomy_lookup": lambda **kw: control_taxonomy_lookup(workspace, **kw),
+        "root_cause_taxonomy_lookup": lambda **kw: root_cause_taxonomy_lookup(workspace, **kw),
         "control_inventory_search": lambda **kw: control_inventory_search(workspace, **kw),
         "evidence_lookup": lambda **kw: evidence_lookup(workspace, **kw),
         "obligation_lookup": lambda **kw: obligation_lookup(workspace, **kw),

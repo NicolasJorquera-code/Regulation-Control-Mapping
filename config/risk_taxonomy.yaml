@@ -1933,24 +1933,6 @@ risk_catalog:
       - Internal Compliance Monitoring
       - Talent Management Practices
 
-  - id: OPS-OTH-003
-    name: Climate Risk
-    level_1: Operational
-    level_1_code: OPS
-    sub_group: Other
-    default_severity: 3
-    description: >
-      Risk arising from physical climate hazards (acute events, chronic
-      shifts) and from transition risks (policy, technology, market
-      responses to decarbonization), affecting credit exposures, facilities,
-      operations, and strategic positioning. Cross-cutting risk with
-      manifestations in credit, operational, and strategic dimensions.
-    default_mitigating_types:
-      - Risk and Compliance Assessments
-      - Business Continuity Planning and Awareness
-      - Physical Safeguards
-    grounding: "OCC Principles for Climate-Related Financial Risk Management; BCBS CCRFR Principles"
-
 # ==============================================================================
 # END OF RISK CATALOG — 114 Level 2 entries across 9 Level 1 categories
 # ==============================================================================

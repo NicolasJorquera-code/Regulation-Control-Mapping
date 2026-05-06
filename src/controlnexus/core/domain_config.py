@@ -63,6 +63,8 @@ class BusinessUnitConfig(BaseModel):
     primary_sections: list[str] = Field(default_factory=list)
     key_control_types: list[str] = Field(default_factory=list)
     regulatory_exposure: list[str] = Field(default_factory=list)
+    head_role: str = ""
+    employee_count: int | None = None
     # Computed, not authored in YAML
     processes: list[str] = Field(default_factory=list, exclude=True)
 
@@ -182,6 +184,21 @@ class RiskCatalogEntry(BaseModel):
                     links.append(ct)
             data["default_mitigating_links"] = links
         return data
+
+    @property
+    def default_mitigating_types(self) -> list[str]:
+        """Return the default mitigating control type names."""
+        return [link.control_type for link in self.default_mitigating_links]
+
+
+class RiskTaxonomyConfig(BaseModel):
+    """Canonical two-tier risk taxonomy attached to a DomainConfig."""
+
+    model_config = ConfigDict(frozen=True)
+
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    risk_level_1_categories: list[RiskLevel1Category] = Field(default_factory=list)
+    risk_catalog: list[RiskCatalogEntry] = Field(default_factory=list)
 
 
 class RiskInstance(BaseModel):
@@ -396,6 +413,7 @@ class DomainConfig(BaseModel):
     processes: list[ProcessConfig] = Field(default_factory=list)
     risk_level_1_categories: list[RiskLevel1Category] = Field(default_factory=list)
     risk_catalog: list[RiskCatalogEntry] = Field(default_factory=list)
+    risk_taxonomy: RiskTaxonomyConfig | None = None
 
     placements: list[PlacementConfig] = Field(
         default_factory=lambda: [
@@ -712,11 +730,40 @@ class DomainConfig(BaseModel):
 # ── Loader ────────────────────────────────────────────────────────────────────
 
 
+def _risk_taxonomy_candidates(path: Path) -> list[Path]:
+    """Return likely risk_taxonomy.yaml locations for a profile path."""
+    candidates = [
+        path.parent / "risk_taxonomy.yaml",
+        path.parent.parent / "risk_taxonomy.yaml",
+    ]
+    seen: set[Path] = set()
+    result: list[Path] = []
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved not in seen:
+            seen.add(resolved)
+            result.append(candidate)
+    return result
+
+
+def _load_attached_risk_taxonomy(path: Path) -> dict[str, Any] | None:
+    """Load a canonical sidecar risk taxonomy when one is available."""
+    for candidate in _risk_taxonomy_candidates(path):
+        if candidate.exists():
+            with candidate.open("r", encoding="utf-8") as f:
+                return yaml.safe_load(f) or {}
+    return None
+
+
 def load_domain_config(path: Path) -> DomainConfig:
     """Load and validate a DomainConfig from a YAML file.
 
-    If a sibling ``risk_taxonomy.yaml`` exists, its ``risk_level_1_categories``
-    and ``risk_catalog`` are merged into the config (config values take precedence).
+    If a nearby ``risk_taxonomy.yaml`` exists, attach it as
+    ``DomainConfig.risk_taxonomy``. Profiles in ``config/profiles`` can
+    therefore use the canonical ``config/risk_taxonomy.yaml`` without
+    duplicating the taxonomy into every profile. Legacy ``process_areas``
+    profiles keep their synthetic graph risk catalog separate from the
+    attached canonical taxonomy.
 
     Raises ``pydantic.ValidationError`` if the YAML is malformed or
     cross-references are invalid.
@@ -724,16 +771,18 @@ def load_domain_config(path: Path) -> DomainConfig:
     with path.open("r", encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
 
-    # Check for sibling risk taxonomy
-    taxonomy_path = path.parent / "risk_taxonomy.yaml"
-    if taxonomy_path.exists():
-        with taxonomy_path.open("r", encoding="utf-8") as f:
-            tax_raw = yaml.safe_load(f) or {}
-        # Merge L1 categories if not already in config
-        if "risk_level_1_categories" not in raw and "risk_level_1_categories" in tax_raw:
-            raw["risk_level_1_categories"] = tax_raw["risk_level_1_categories"]
-        # Merge risk catalog if not already in config
-        if "risk_catalog" not in raw and "risk_catalog" in tax_raw:
-            raw["risk_catalog"] = tax_raw["risk_catalog"]
+    # Attach sidecar taxonomy when the profile does not already define one.
+    if "risk_taxonomy" not in raw:
+        tax_raw = _load_attached_risk_taxonomy(path)
+        if tax_raw and not raw.get("risk_level_1_categories"):
+            raw["risk_taxonomy"] = tax_raw
+            # For already-pivoted configs without an inline catalog, expose the
+            # taxonomy at top level too. Pre-pivot process_areas configs retain
+            # their synthetic process-risk catalog for graph compatibility.
+            if not raw.get("process_areas") and not raw.get("risk_catalog"):
+                if "risk_level_1_categories" in tax_raw:
+                    raw["risk_level_1_categories"] = tax_raw["risk_level_1_categories"]
+                if "risk_catalog" in tax_raw:
+                    raw["risk_catalog"] = tax_raw["risk_catalog"]
 
     return DomainConfig(**raw)

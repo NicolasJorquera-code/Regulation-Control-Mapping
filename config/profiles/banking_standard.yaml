@@ -137,6 +137,7 @@ control_types:
 business_units:
   - id: "BU-001"
     name: Retail Banking
+    head_role: "Head of Retail Banking"
     description: "Provides consumer deposit accounts, personal loans, mortgages, credit cards, and branch-based financial services to individual customers and small businesses."
     primary_sections: ["5", "3.0", "6.0"]
     key_control_types:
@@ -155,6 +156,7 @@ business_units:
 
   - id: "BU-002"
     name: Commercial Banking
+    head_role: "Head of Commercial Banking"
     description: "Delivers lending, treasury management, and deposit solutions to mid-market and large corporate clients."
     primary_sections: ["5", "2.0", "3.0"]
     key_control_types:
@@ -172,6 +174,7 @@ business_units:
 
   - id: "BU-003"
     name: Corporate and Investment Banking
+    head_role: "Head of Corporate and Investment Banking"
     description: "Provides capital markets advisory, underwriting, syndicated lending, mergers and acquisitions advisory, and structured finance solutions."
     primary_sections: ["2.0", "3.0", "5"]
     key_control_types:
@@ -190,6 +193,7 @@ business_units:
 
   - id: "BU-004"
     name: Wealth Management and Private Banking
+    head_role: "Head of Wealth Management and Private Banking"
     description: "Delivers investment advisory, portfolio management, trust and estate services, financial planning, and private banking solutions."
     primary_sections: ["5", "3.0", "6.0"]
     key_control_types:
@@ -208,6 +212,7 @@ business_units:
 
   - id: "BU-005"
     name: Asset Management
+    head_role: "Head of Asset Management"
     description: "Manages pooled investment vehicles, institutional separate accounts, and fund administration services."
     primary_sections: ["2.0", "5", "9"]
     key_control_types:
@@ -226,6 +231,7 @@ business_units:
 
   - id: "BU-006"
     name: Treasury and Capital Markets
+    head_role: "Head of Treasury and Capital Markets"
     description: "Manages the enterprise balance sheet, liquidity positioning, interest rate risk, funding strategies, and proprietary investment portfolio."
     primary_sections: ["9", "11.0", "5"]
     key_control_types:
@@ -244,6 +250,7 @@ business_units:
 
   - id: "BU-007"
     name: Operations
+    head_role: "Head of Operations"
     description: "Executes transaction processing, payment settlement, account servicing, trade operations, and back-office support functions."
     primary_sections: ["5", "9", "8"]
     key_control_types:
@@ -262,6 +269,7 @@ business_units:
 
   - id: "BU-008"
     name: Risk Management
+    head_role: "Head of Risk Management"
     description: "Provides independent identification, measurement, monitoring, and reporting of credit, market, operational, liquidity, and model risk."
     primary_sections: ["11.0", "9", "1.0"]
     key_control_types:
@@ -280,6 +288,7 @@ business_units:
 
   - id: "BU-009"
     name: Compliance
+    head_role: "Head of Compliance"
     description: "Establishes and maintains the enterprise compliance management program, including regulatory change management, compliance testing, BSA/AML program administration."
     primary_sections: ["11.0", "12.0", "7.0"]
     key_control_types:
@@ -299,6 +308,7 @@ business_units:
 
   - id: "BU-010"
     name: Internal Audit
+    head_role: "Head of Internal Audit"
     description: "Provides independent and objective assurance over the effectiveness of governance, risk management, and internal controls."
     primary_sections: ["11.0", "13.0", "9"]
     key_control_types:
@@ -316,6 +326,7 @@ business_units:
 
   - id: "BU-011"
     name: Finance and Accounting
+    head_role: "Head of Finance and Accounting"
     description: "Manages financial reporting, general ledger accounting, regulatory capital reporting, tax compliance, budgeting and forecasting."
     primary_sections: ["9", "11.0", "1.0"]
     key_control_types:
@@ -335,6 +346,7 @@ business_units:
 
   - id: "BU-012"
     name: Information Technology
+    head_role: "Head of Information Technology"
     description: "Delivers enterprise technology infrastructure, application development and support, cybersecurity, identity and access management."
     primary_sections: ["8", "11.0", "13.0"]
     key_control_types:
@@ -354,6 +366,7 @@ business_units:
 
   - id: "BU-013"
     name: Human Resources
+    head_role: "Head of Human Resources"
     description: "Manages talent acquisition, employee relations, compensation and benefits administration, workforce planning, and performance management."
     primary_sections: ["7.0", "11.0", "13.0"]
     key_control_types:
@@ -372,6 +385,7 @@ business_units:
 
   - id: "BU-014"
     name: Legal
+    head_role: "Head of Legal"
     description: "Provides legal advisory services, manages litigation and regulatory enforcement matters, oversees contract management."
     primary_sections: ["11.0", "12.0", "1.0"]
     key_control_types:
@@ -389,6 +403,7 @@ business_units:
 
   - id: "BU-015"
     name: Third Party Risk Management
+    head_role: "Head of Third Party Risk Management"
     description: "Oversees the enterprise vendor management lifecycle including due diligence, onboarding, ongoing monitoring, and offboarding."
     primary_sections: ["4.0", "11.0", "12.0"]
     key_control_types:
@@ -407,6 +422,7 @@ business_units:
 
   - id: "BU-016"
     name: Business Continuity and Corporate Security
+    head_role: "Head of Business Continuity and Corporate Security"
     description: "Develops, maintains, and tests enterprise business continuity plans, crisis management protocols, workplace safety programs, and physical security measures."
     primary_sections: ["11.0", "8", "10.0"]
     key_control_types:
@@ -425,6 +441,7 @@ business_units:
 
   - id: "BU-017"
     name: Mortgage Banking
+    head_role: "Head of Mortgage Banking"
     description: "Originates, underwrites, closes, services, and sells residential mortgage loans."
     primary_sections: ["2.0", "5", "6.0"]
     key_control_types:

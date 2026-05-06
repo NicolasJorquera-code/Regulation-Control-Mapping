@@ -2,9 +2,9 @@
 
 Front-end-only experience that supports two storylines:
 
-1. **Single-process demo:** Demo Mode defaults to a realistic Payment Exception
-   Handling workbench while preserving a scope selector for the business unit
-   and no-process dashboard view.
+1. **Enterprise demo:** Demo Mode defaults to a realistic financial institution
+   scope model with 13 BUs, 60 processes, primary/supporting BU relationships,
+   and a populated Payment Operations process workbench.
 2. **User workflow:** Non-demo mode lets the user upload process documents and
    run the deterministic graph as before.
 
@@ -30,9 +30,10 @@ import yaml  # type: ignore[import-untyped]
 from controlnexus.analysis.ingest import ingest_excel
 from controlnexus.risk_inventory.demo import (
     default_demo_fixture_path,
+    financial_institution_demo_fixture_path,
     load_demo_workspace,
 )
-from controlnexus.risk_inventory.config import MatrixConfigLoader
+from controlnexus.risk_inventory.config import MatrixConfigLoader, resolve_project_root
 from controlnexus.risk_inventory.document_ingest import DocumentAnalysis, analyze_process_document
 from controlnexus.risk_inventory.export import (
     risk_inventory_excel_bytes,
@@ -56,6 +57,11 @@ from controlnexus.risk_inventory.services import (
     build_control_gaps,
     build_synthetic_control_recommendations,
 )
+from controlnexus.risk_inventory.taxonomy import (
+    normalize_root_cause_names,
+    risk_statement_with_root_cause_selection,
+)
+from controlnexus.ui.components.data_table import render_data_table
 
 DEMO_RISK_INVENTORY_TABS = [
     "Knowledge Base",
@@ -76,19 +82,83 @@ KNOWLEDGE_BASE_TABS = [
     "Processes",
     "Risk Taxonomy (2-Tier)",
     "Control Taxonomy",
+    "Root Cause Taxonomy",
     "Controls Register",
     "KRI Library",
 ]
 
-DEFAULT_KNOWLEDGE_BASE_PROFILE = "Payment Exception Handling"
+CONTROL_INVENTORY_COLUMNS = [
+    "control_id",
+    "hierarchy_id",
+    "leaf_name",
+    "full_description",
+    "selected_level_1",
+    "selected_level_2",
+    "business_unit_id",
+    "business_unit_name",
+    "who",
+    "what",
+    "when",
+    "frequency",
+    "where",
+    "why",
+    "quality_rating",
+    "validator_passed",
+    "validator_retries",
+    "validator_failures",
+    "evidence",
+]
+
+CONTROL_INVENTORY_DISPLAY_COLUMNS = [
+    "Control ID",
+    "Control Level 1",
+    "Control Level 2",
+    "Full Description",
+]
+
+CONTROL_INVENTORY_DISPLAY_FIELD_MAP = {
+    "Control ID": "control_id",
+    "Control Level 1": "selected_level_1",
+    "Control Level 2": "selected_level_2",
+    "Full Description": "full_description",
+}
+
+CONTROL_REGISTER_DEFAULT_COLUMNS = [
+    "control_id",
+    "business_unit_name",
+    "selected_level_1",
+    "selected_level_2",
+    "frequency",
+    "full_description",
+]
+
+CONTROL_REGISTER_WORKBOOK_PATH = "section_1__controls.xlsx"
+
+CONTROL_MAPPING_INVENTORY_COLUMNS = [
+    "selected_level_1",
+    "selected_level_2",
+    "who",
+    "what",
+    "when",
+    "frequency",
+    "where",
+    "why",
+    "quality_rating",
+    "validator_passed",
+    "evidence",
+]
+
+DEFAULT_KNOWLEDGE_BASE_PROFILE = "Financial Institution Demo"
+DEMO_SCOPE_DEFAULT_BU_ID = "BU-05"
+DEMO_SCOPE_DEFAULT_PROCESS_ID = "PR-16"
 
 KNOWLEDGE_BASE_PROFILES: dict[str, dict[str, Any]] = {
-    "Payment Exception Handling": {
-        "model": "Single-process payment-operations scenario based on public erroneous wire-transfer lessons.",
-        "source_emphasis": "Focused source pack across payment workflow evidence, controls, KRIs, issues, obligations, and public scenario trace.",
-        "sample_business_unit": "Payment Operations",
-        "sample_process": "Payment Exception Handling",
-        "complexity": "Focused",
+    "Financial Institution Demo": {
+        "model": "13-BU financial institution operating model with 60 APQC-aligned process templates and multi-BU process participation.",
+        "source_emphasis": "Enterprise source pack across functional BUs, primary/supporting process ownership, curated process-risk fixtures, generated risk queues, controls, KRIs, evidence, issues, and obligations.",
+        "sample_business_unit": "Banking Operations",
+        "sample_process": "Payment Processing and Settlement (Wire/ACH)",
+        "complexity": "Enterprise demo",
     },
 }
 
@@ -106,18 +176,42 @@ def knowledge_base_profile_options() -> list[str]:
 def render_risk_inventory_tab() -> None:
     """Render the full Risk Inventory Builder experience."""
     _inject_risk_inventory_css()
-    _, toggle_col = st.columns([6, 1])
+    title_col, toggle_col = st.columns([5.8, 1])
     with toggle_col:
         demo_enabled = st.toggle(
             "Demo",
             value=bool(st.session_state.get("demo_mode", False)),
             key="demo_mode",
         )
+    with title_col:
+        _render_risk_inventory_page_title(demo_enabled)
 
     if demo_enabled:
         _render_demo_workspace()
     else:
         _render_user_workflow()
+
+
+def _render_risk_inventory_page_title(demo_enabled: bool) -> None:
+    """Render the shared page title above the primary tabs."""
+    eyebrow = "Demo Workspace" if demo_enabled else "Risk Inventory Builder"
+    title = "Financial Institution Risk Inventory Workbench" if demo_enabled else "Risk Inventory Workflow Builder"
+    description = (
+        "Explore an enterprise financial-institution scenario across source knowledge, risk records, "
+        "control coverage, residual gaps, and KRIs."
+        if demo_enabled
+        else "Bring your own process evidence, review the source knowledge base, and generate a structured risk inventory."
+    )
+    st.markdown(
+        f"""
+        <div class="ri-app-title">
+            <span>{html.escape(eyebrow)}</span>
+            <div class="ri-app-title-main">{html.escape(title)}</div>
+            <p>{html.escape(description)}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -132,75 +226,139 @@ def _render_demo_workspace() -> None:
         "risk_inventory_workspace" not in st.session_state
         or st.session_state.get("risk_inventory_workspace_profile") != profile_name
     ):
-        st.session_state["risk_inventory_workspace"] = load_demo_workspace().model_dump()
+        st.session_state["risk_inventory_workspace"] = load_demo_workspace(
+            financial_institution_demo_fixture_path()
+        ).model_dump()
         st.session_state["risk_inventory_workspace_profile"] = profile_name
     workspace = RiskInventoryWorkspace.model_validate(st.session_state["risk_inventory_workspace"])
-    selected_bu_id, selected_run = _render_demo_scope_selector(workspace)
 
     tabs = st.tabs(DEMO_RISK_INVENTORY_TABS)
 
     with tabs[0]:
+        _render_demo_scope_selector(workspace, "knowledge_base")
         _render_knowledge_base(workspace, profile_name)
     with tabs[1]:
+        selected_bu_id, selected_run = _render_demo_scope_selector(workspace, "risk_inventory")
         if selected_run:
             _render_risk_inventory_combined(selected_run, workspace)
         else:
             _render_workspace_aggregated_inventory(workspace, selected_bu_id)
     with tabs[2]:
+        selected_bu_id, selected_run = _render_demo_scope_selector(workspace, "control_mapping")
         if selected_run:
             _render_control_mapping(selected_run, workspace)
         else:
             _render_workspace_control_mapping(workspace, selected_bu_id)
     with tabs[3]:
+        selected_bu_id, selected_run = _render_demo_scope_selector(workspace, "gap_analysis")
         _render_control_gap_lab(selected_run, workspace, selected_bu_id)
 
 
 def _render_demo_scope_selector(
     workspace: RiskInventoryWorkspace,
+    key_suffix: str,
 ) -> tuple[str | None, RiskInventoryRun | None]:
     st.markdown('<div class="ri-section-title">Scope Selector</div>', unsafe_allow_html=True)
-    business_unit_labels = ["All Business Units"] + [bu.bu_name for bu in workspace.business_units]
-    default_bu_index = 1 if workspace.business_units else 0
+    bu_label_map = {_business_unit_scope_label(bu): bu for bu in workspace.business_units}
+    business_unit_labels = ["All Business Units"] + list(bu_label_map)
+    default_bu_label = next(
+        (
+            label
+            for label, bu in bu_label_map.items()
+            if bu.bu_id == DEMO_SCOPE_DEFAULT_BU_ID
+        ),
+        business_unit_labels[1] if workspace.business_units else "All Business Units",
+    )
     if st.session_state.get("ri_demo_bu_choice") not in business_unit_labels:
-        st.session_state["ri_demo_bu_choice"] = business_unit_labels[default_bu_index]
+        st.session_state["ri_demo_bu_choice"] = default_bu_label
+    bu_key = f"ri_demo_bu_choice_{key_suffix}"
+    _prepare_synced_selectbox_key(bu_key, "ri_demo_bu_choice", business_unit_labels, default_bu_label)
 
     scope_cols = st.columns([1, 1.4])
     with scope_cols[0]:
         bu_choice = st.selectbox(
             "Business Unit",
             business_unit_labels,
-            index=default_bu_index,
-            key="ri_demo_bu_choice",
+            index=business_unit_labels.index(st.session_state[bu_key]),
+            key=bu_key,
+            on_change=_sync_demo_scope_choice,
+            args=(bu_key, "ri_demo_bu_choice"),
         )
 
     selected_bu_id: str | None = None
     process_pool = workspace.processes
     if bu_choice != "All Business Units":
-        selected_bu = next((bu for bu in workspace.business_units if bu.bu_name == bu_choice), None)
+        selected_bu = bu_label_map.get(bu_choice)
         selected_bu_id = selected_bu.bu_id if selected_bu else None
         if selected_bu_id:
             process_pool = workspace.processes_for_bu(selected_bu_id)
 
     dashboard_label = "Workspace Dashboard (no process focus)"
-    process_labels = [dashboard_label] + [process.process_name for process in process_pool]
-    default_process_index = 1 if process_pool else 0
+    process_label_map = {
+        _process_scope_label(process, selected_bu_id): process
+        for process in process_pool
+    }
+    process_labels = [dashboard_label] + list(process_label_map)
+    default_process_label = next(
+        (
+            label
+            for label, process in process_label_map.items()
+            if process.process_id == DEMO_SCOPE_DEFAULT_PROCESS_ID
+        ),
+        process_labels[1] if process_pool else dashboard_label,
+    )
     if st.session_state.get("ri_demo_process_choice") not in process_labels:
-        st.session_state["ri_demo_process_choice"] = process_labels[default_process_index]
+        st.session_state["ri_demo_process_choice"] = default_process_label
+    process_key = f"ri_demo_process_choice_{key_suffix}"
+    _prepare_synced_selectbox_key(process_key, "ri_demo_process_choice", process_labels, default_process_label)
 
     with scope_cols[1]:
         process_choice = st.selectbox(
             "Process",
             process_labels,
-            index=default_process_index,
-            key="ri_demo_process_choice",
+            index=process_labels.index(st.session_state[process_key]),
+            key=process_key,
+            on_change=_sync_demo_scope_choice,
+            args=(process_key, "ri_demo_process_choice"),
         )
 
     selected_run: RiskInventoryRun | None = None
     if process_choice != dashboard_label:
-        selected_process = next((process for process in process_pool if process.process_name == process_choice), None)
+        selected_process = process_label_map.get(process_choice)
         selected_run = workspace.run_for_process(selected_process.process_id) if selected_process else None
 
     return selected_bu_id, selected_run
+
+
+def _prepare_synced_selectbox_key(
+    widget_key: str,
+    master_key: str,
+    options: list[str],
+    default_value: str,
+) -> None:
+    """Keep duplicate demo scope widgets aligned across Streamlit tab panes."""
+    master_value = st.session_state.get(master_key, default_value)
+    if master_value not in options:
+        master_value = default_value
+        st.session_state[master_key] = master_value
+    if st.session_state.get(widget_key) != master_value:
+        st.session_state[widget_key] = master_value
+
+
+def _sync_demo_scope_choice(widget_key: str, master_key: str) -> None:
+    st.session_state[master_key] = st.session_state.get(widget_key)
+
+
+def _business_unit_scope_label(business_unit: Any) -> str:
+    return f"{business_unit.bu_id} · {business_unit.bu_name}"
+
+
+def _process_scope_label(process: Any, selected_bu_id: str | None) -> str:
+    label = str(process.process_name)
+    if selected_bu_id:
+        role = "Primary" if process.bu_id == selected_bu_id else "Supporting"
+        label = f"{label} ({role})"
+    return label
 
 
 # ---------------------------------------------------------------------------
@@ -454,11 +612,11 @@ def _render_workspace_executive(
             st.write(run.executive_summary.headline)
             cols = st.columns(2)
             with cols[0]:
-                st.markdown("**Top residual risks**")
+                st.markdown("**Top Residual Risks**")
                 for risk in run.executive_summary.top_residual_risks:
                     st.markdown(f"- {html.escape(risk)}")
             with cols[1]:
-                st.markdown("**Recommended actions**")
+                st.markdown("**Recommended Actions**")
                 for action in run.executive_summary.recommended_actions:
                     st.markdown(f"- {html.escape(action)}")
 
@@ -574,6 +732,7 @@ def knowledge_base_complexity_metrics(
         {"Metric": "Processes", "Value": len(workspace.processes), "Detail": "Process fixtures wired"},
         {"Metric": "Risks", "Value": risk_count, "Detail": f"{high_plus} high or critical residual"},
         {"Metric": "Controls", "Value": control_count, "Detail": "Distinct controls in source packs"},
+        {"Metric": "Root Causes", "Value": len(workspace.root_cause_taxonomy), "Detail": "Canonical cause taxonomy"},
         {"Metric": "KRIs", "Value": len(workspace.kri_library), "Detail": "Thresholded indicators"},
         {"Metric": "Evidence", "Value": len(workspace.evidence_artifacts), "Detail": "Reusable artifacts"},
     ]
@@ -663,7 +822,7 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace, profile_name: str 
     st.markdown('<div class="ri-section-title">Modular Knowledge Base</div>', unsafe_allow_html=True)
     st.caption(
         "Read-only view of the supplied source packs: business units, processes, risk taxonomy, "
-        "control taxonomy, synthetic controls register, and KRI library."
+        "control taxonomy, root cause taxonomy, controls register, and KRI library."
     )
 
     sub_tabs = st.tabs(KNOWLEDGE_BASE_TABS)
@@ -677,6 +836,10 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace, profile_name: str 
                     "Head": bu.head,
                     "Employees": bu.employee_count,
                     "Process Count": len(workspace.procedures_for_bu(bu.bu_id)),
+                    "Inherent Risk": bu.inherent_risk or "",
+                    "Reg. Intensity": bu.regulatory_intensity or "",
+                    "Control Density": bu.control_density or "",
+                    "Key Frameworks": ", ".join(bu.key_regulatory_frameworks),
                     "Description": bu.description,
                     "Risk Profile": bu.risk_profile_summary,
                 }
@@ -689,9 +852,12 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace, profile_name: str 
         _render_table(
             [
                 {
-                    "Process ID": p.procedure_id,
                     "Process": p.procedure_name,
-                    "Business Unit": bu_lookup.get(p.bu_id, p.bu_id),
+                    "Primary BU": bu_lookup.get(p.bu_id, p.bu_id),
+                    "Supporting BUs": ", ".join(
+                        bu_lookup.get(bu_id, bu_id) for bu_id in p.supporting_bu_ids
+                    ),
+                    "APQC Reference": p.apqc_crosswalk.get("process_name", ""),
                     "Owner": p.owner,
                     "Criticality": p.criticality,
                     "Review Cadence": p.cadence,
@@ -734,23 +900,15 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace, profile_name: str 
         )
 
     with sub_tabs[3]:
-        _render_table(
-            [
-                {
-                    "Code": c.code,
-                    "Family": c.family,
-                    "Control Family": c.name,
-                    "Description": c.description,
-                    "Typical Evidence": ", ".join(c.typical_evidence),
-                }
-                for c in workspace.control_taxonomy
-            ],
-        )
+        _render_table(control_taxonomy_section_rows(workspace))
 
     with sub_tabs[4]:
-        _render_table(synthetic_control_inventory_rows(workspace))
+        _render_table(root_cause_taxonomy_rows(workspace))
 
     with sub_tabs[5]:
+        _render_control_register_dataset(workspace)
+
+    with sub_tabs[6]:
         l2_lookup = {node.id: node.level_2_category for node in workspace.risk_taxonomy_l2}
         _render_table(
             [
@@ -767,6 +925,22 @@ def _render_knowledge_base(workspace: RiskInventoryWorkspace, profile_name: str 
                 for k in workspace.kri_library
             ],
         )
+
+
+def root_cause_taxonomy_rows(workspace: RiskInventoryWorkspace) -> list[dict[str, Any]]:
+    """Rows for the Knowledge Base root-cause taxonomy table."""
+    return [
+        {
+            "Code": entry.code,
+            "Category": entry.category,
+            "Cause Origin": entry.cause_origin,
+            "Root Cause": entry.name,
+            "Definition": entry.definition or entry.description,
+            "Selection Criteria": entry.selection_criteria,
+            "Examples": "; ".join(entry.examples),
+        }
+        for entry in workspace.root_cause_taxonomy
+    ]
 
 
 def synthetic_control_inventory_rows(
@@ -807,6 +981,113 @@ def synthetic_control_inventory_rows(
     return rows
 
 
+def control_taxonomy_section_rows(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Rows for the Knowledge Base Control Taxonomy compact projection."""
+    workbook_rows = _section_control_taxonomy_rows()
+    if workbook_rows:
+        return workbook_rows
+
+    scoped_process_ids = {
+        process.process_id
+        for process in (workspace.processes_for_bu(selected_bu_id) if selected_bu_id else workspace.processes)
+    }
+    rows: list[dict[str, Any]] = []
+    for control in workspace.control_inventory:
+        if scoped_process_ids and control.process_ids and not scoped_process_ids.intersection(control.process_ids):
+            continue
+        rows.append(_compact_control_taxonomy_row(control))
+    return rows
+
+
+def control_register_dataset_rows(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Rows for the Knowledge Base Controls Register full dataset."""
+    workbook_rows = _section_control_dataset_rows()
+    if workbook_rows:
+        return workbook_rows
+
+    scoped_process_ids = {
+        process.process_id
+        for process in (workspace.processes_for_bu(selected_bu_id) if selected_bu_id else workspace.processes)
+    }
+    rows: list[dict[str, Any]] = []
+    for control in workspace.control_inventory:
+        if scoped_process_ids and control.process_ids and not scoped_process_ids.intersection(control.process_ids):
+            continue
+        rows.append(_control_register_dataset_row(control))
+    return rows
+
+
+def control_inventory_register_rows(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Compatibility wrapper for the compact Control Taxonomy projection."""
+    return control_taxonomy_section_rows(workspace, selected_bu_id)
+
+
+def _compact_control_taxonomy_row(control: ControlInventoryEntry) -> dict[str, Any]:
+    """Return the compact control-taxonomy projection."""
+    dumped = control.model_dump()
+    return {
+        label: dumped.get(field, "")
+        for label, field in CONTROL_INVENTORY_DISPLAY_FIELD_MAP.items()
+    }
+
+
+def _control_register_dataset_row(control: ControlInventoryEntry) -> dict[str, Any]:
+    dumped = control.model_dump()
+    return {column: dumped.get(column, "") for column in CONTROL_INVENTORY_COLUMNS}
+
+
+def _section_control_taxonomy_rows() -> list[dict[str, Any]]:
+    """Return the section-one generated controls workbook taxonomy projection."""
+    workbook_path = resolve_project_root() / CONTROL_REGISTER_WORKBOOK_PATH
+    if not workbook_path.exists():
+        return []
+    return [
+        {
+            "Control ID": record.control_id,
+            "Control Level 1": record.selected_level_1,
+            "Control Level 2": record.selected_level_2,
+            "Full Description": record.full_description,
+        }
+        for record in ingest_excel(workbook_path)
+    ]
+
+
+def _section_control_dataset_rows() -> list[dict[str, Any]]:
+    """Return the full section-one generated controls workbook dataset."""
+    workbook_path = resolve_project_root() / CONTROL_REGISTER_WORKBOOK_PATH
+    if not workbook_path.exists():
+        return []
+    return [
+        {
+            column: record.to_export_dict().get(column, "")
+            for column in CONTROL_INVENTORY_COLUMNS
+        }
+        for record in ingest_excel(workbook_path)
+    ]
+
+
+def _render_control_register_dataset(
+    workspace: RiskInventoryWorkspace,
+    selected_bu_id: str | None = None,
+) -> None:
+    render_data_table(
+        records=control_register_dataset_rows(workspace, selected_bu_id),
+        default_columns=CONTROL_REGISTER_DEFAULT_COLUMNS,
+        all_columns=CONTROL_INVENTORY_COLUMNS,
+        key="ri_control_register_dataset",
+        export_filename="controls_section_1_register.csv",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Risk Inventory tab (combined Inherent + Inventory)
 # ---------------------------------------------------------------------------
@@ -831,12 +1112,25 @@ def _render_risk_inventory_combined(
 
     selected_record = next(record for record in run.records if record.risk_id == selected_id)
     _render_risk_command_center(selected_record, workspace, run)
-    _render_risk_command_review_summary(selected_record, workspace)
 
 
-def _risk_statement_display(record: RiskInventoryRecord) -> str:
-    """Return the approved risk statement without appending root-cause notes."""
-    return record.risk_statement.risk_description.strip()
+def _risk_statement_display(
+    record: RiskInventoryRecord,
+    workspace: RiskInventoryWorkspace | None = None,
+) -> str:
+    """Return the approved risk statement with root-cause selection criteria."""
+    taxonomy = workspace.root_cause_taxonomy if workspace else None
+    causes = normalize_root_cause_names(
+        record.risk_statement.causes or record.taxonomy_node.typical_root_causes,
+        taxonomy,
+        node=record.taxonomy_node,
+        max_items=3,
+    )
+    return risk_statement_with_root_cause_selection(
+        record.risk_statement.risk_description.strip(),
+        causes,
+        taxonomy,
+    )
 
 
 def risk_inventory_workbench_rows(
@@ -853,7 +1147,7 @@ def risk_inventory_workbench_rows(
                 "Business Unit": _business_unit_for_record(record, workspace) or run.input_context.business_unit,
                 "Process": record.process_name,
                 "Risk Subcategory": record.taxonomy_node.level_2_category,
-                "Risk Statement": _risk_statement_display(record),
+                "Risk Statement": _risk_statement_display(record, workspace),
                 "Enterprise Risk Category": record.taxonomy_node.level_1_category,
                 "Impact": int(record.impact_assessment.overall_impact_score),
                 "Frequency": int(record.likelihood_assessment.likelihood_score),
@@ -905,8 +1199,13 @@ def selected_risk_detail(
         "business_unit": business_unit,
         "level_1_category": record.taxonomy_node.level_1_category,
         "level_2_category": record.taxonomy_node.level_2_category,
-        "risk_statement": _risk_statement_display(record),
-        "root_causes": record.risk_statement.causes or record.taxonomy_node.typical_root_causes,
+        "risk_statement": _risk_statement_display(record, workspace),
+        "root_causes": normalize_root_cause_names(
+            record.risk_statement.causes or record.taxonomy_node.typical_root_causes,
+            workspace.root_cause_taxonomy if workspace else None,
+            node=record.taxonomy_node,
+            max_items=3,
+        ),
         "impact_score": int(record.impact_assessment.overall_impact_score),
         "frequency_score": int(record.likelihood_assessment.likelihood_score),
         "frequency_rating": record.likelihood_assessment.likelihood_rating,
@@ -1072,8 +1371,8 @@ def _render_risk_command_center(
         """,
         unsafe_allow_html=True,
     )
-    _render_chip_group("Root causes", list(detail["root_causes"]))
-    _render_chip_group("Affected stakeholders", record.risk_statement.affected_stakeholders)
+    _render_chip_group("Root Causes", list(detail["root_causes"]))
+    _render_chip_group("Affected Stakeholders", record.risk_statement.affected_stakeholders)
     _render_inherent_risk_summary(record)
     _render_selected_risk_kri_cards(record, workspace)
 
@@ -1091,7 +1390,7 @@ def _render_risk_command_review_summary(
             "KRIs": str(len(kris)),
         }
     )
-    st.markdown("**Management response**")
+    st.markdown("**Management Response**")
     st.write(record.residual_risk.management_response.recommended_action)
 
 
@@ -1105,7 +1404,7 @@ def _render_inherent_risk_summary(record: RiskInventoryRecord) -> None:
             <div class="ri-inherent-flow">
                 <div class="ri-inherent-rating-row">
                     <div>
-                        <span>Current inherent basis</span>
+                        <span>Current Inherent Basis</span>
                         <b>Score {int(record.inherent_risk.inherent_score)}</b>
                     </div>
                     <strong class="ri-inherent-badge ri-{tone}">{html.escape(record.inherent_risk.inherent_rating.value)}</strong>
@@ -1247,8 +1546,8 @@ def _selected_risk_kri_card_html(row: dict[str, Any]) -> str:
         f'<span><b>Watch</b>{html.escape(str(row["Amber"]))}</span>'
         f'<span><b>Escalate</b>{html.escape(str(row["Red"]))}</span>'
         "</div>"
-        f'<p class="ri-selected-kri-note"><b>CRO rationale.</b> {html.escape(str(row["Rationale"]))}</p>'
-        f'<p class="ri-selected-kri-note"><b>Escalation path.</b> {html.escape(str(row["Escalation Path"]))}</p>'
+        f'<p class="ri-selected-kri-note"><b>CRO Rationale.</b> {html.escape(str(row["Rationale"]))}</p>'
+        f'<p class="ri-selected-kri-note"><b>Escalation Path.</b> {html.escape(str(row["Escalation Path"]))}</p>'
         "</div>"
     )
 
@@ -1266,12 +1565,12 @@ def _risk_source_confidence_rows(
             "Detail": "; ".join(run.input_context.source_documents) or run.run_manifest.get("fixture", ""),
         },
         {
-            "Evidence Component": "Mapped controls",
+            "Evidence Component": "Mapped Controls",
             "Available": str(len(record.control_mappings)),
             "Detail": "; ".join(mapping.control_id for mapping in record.control_mappings[:4]),
         },
         {
-            "Evidence Component": "Evidence references",
+            "Evidence Component": "Evidence References",
             "Available": str(len(record.evidence_references)),
             "Detail": "; ".join(reference.evidence_id for reference in record.evidence_references[:4]),
         },
@@ -1374,9 +1673,9 @@ def _render_selected_risk_profile(
             f'<div class="ri-statement">{html.escape(detail["risk_statement"])}</div>',
             unsafe_allow_html=True,
         )
-        _render_chip_group("Root causes", list(detail["root_causes"]))
-        _render_chip_group("Affected stakeholders", record.risk_statement.affected_stakeholders)
-        st.markdown("**Mitigation plan**")
+        _render_chip_group("Root Causes", list(detail["root_causes"]))
+        _render_chip_group("Affected Stakeholders", record.risk_statement.affected_stakeholders)
+        st.markdown("**Mitigation Plan**")
         st.write(detail["mitigation_plan"])
     with body_right:
         st.markdown('<div class="ri-section-title">Impact x Frequency Heatmap</div>', unsafe_allow_html=True)
@@ -1421,7 +1720,7 @@ def _render_scoring_rationale(record: RiskInventoryRecord) -> None:
             },
         ]
     )
-    st.markdown("**Impact dimensions**")
+    st.markdown("**Impact Dimensions**")
     _render_table(
         [
             {
@@ -1505,7 +1804,7 @@ def _render_evidence_source_trace(
             }
         )
     if trace_rows:
-        st.markdown("**Source trace**")
+        st.markdown("**Source Trace**")
         _render_table(trace_rows)
 
 
@@ -1547,7 +1846,7 @@ def _render_open_findings(record: RiskInventoryRecord, workspace: RiskInventoryW
 
 
 def _render_mitigation_plan(record: RiskInventoryRecord) -> None:
-    st.markdown(f"**Management response:** {record.residual_risk.management_response.response_type.value.title()}")
+    st.markdown(f"**Management Response:** {record.residual_risk.management_response.response_type.value.title()}")
     st.write(record.residual_risk.management_response.recommended_action)
     if record.action_plan:
         _render_table([item.model_dump() for item in record.action_plan])
@@ -1582,29 +1881,31 @@ def _portfolio_heat_value(rows: list[dict[str, Any]]) -> str:
 def _render_root_cause_detail(
     record: RiskInventoryRecord, workspace: RiskInventoryWorkspace | None
 ) -> None:
-    causes = record.risk_statement.causes or record.taxonomy_node.typical_root_causes
+    taxonomy = workspace.root_cause_taxonomy if workspace else []
+    causes = normalize_root_cause_names(
+        record.risk_statement.causes or record.taxonomy_node.typical_root_causes,
+        taxonomy or None,
+        node=record.taxonomy_node,
+        max_items=3,
+    )
     if not causes:
         return
     st.markdown('<div class="ri-section-title">Root Cause Lens</div>', unsafe_allow_html=True)
-    taxonomy = workspace.root_cause_taxonomy if workspace else []
+    by_name = {entry.name: entry for entry in taxonomy}
     rows: list[dict[str, Any]] = []
     for cause in causes:
-        match = next(
-            (
-                item
-                for item in taxonomy
-                if item.name.lower() in cause.lower()
-                or cause.lower() in item.name.lower()
-                or any(example.lower() in cause.lower() for example in item.examples)
-            ),
-            None,
-        )
+        match = by_name.get(cause)
         rows.append(
             {
                 "Root Cause": cause,
                 "Taxonomy Category": match.category if match else "Inferred",
                 "Taxonomy Code": match.code if match else "",
-                "Definition": match.description if match else "Generated from the risk taxonomy node and process context.",
+                "Definition": (
+                    (match.definition or match.description)
+                    if match
+                    else "Generated from the risk taxonomy node and process context."
+                ),
+                "Selection Criteria": match.selection_criteria if match else "",
             }
         )
     _render_table(rows)
@@ -1659,88 +1960,17 @@ def _render_control_mapping(
     if not record.control_mappings:
         st.warning("No controls are mapped to this risk. This is a coverage gap.")
     else:
-        for mapping in record.control_mappings:
-            statement_detail = control_statement_detail(record, mapping, workspace)
-            design_rating = (
-                mapping.design_effectiveness.rating.value if mapping.design_effectiveness else "Not Rated"
-            )
-            operating_rating = (
-                mapping.operating_effectiveness.rating.value
-                if mapping.operating_effectiveness
-                else "Not Rated"
-            )
-            assessment_html = "".join(
-                _control_assessment_tile(label, value, rationale, tone)
-                for label, value, rationale, tone in (
-                    (
-                        "Coverage",
-                        mapping.coverage_assessment.title(),
-                        _coverage_rationale(record, mapping),
-                        _coverage_class(mapping.coverage_assessment),
-                    ),
-                    (
-                        "Design",
-                        design_rating,
-                        mapping.design_effectiveness.rationale if mapping.design_effectiveness else "Design effectiveness has not been rated.",
-                        _rating_class(design_rating),
-                    ),
-                    (
-                        "Operating",
-                        operating_rating,
-                        mapping.operating_effectiveness.rationale if mapping.operating_effectiveness else "Operating effectiveness has not been rated.",
-                        _rating_class(operating_rating),
-                    ),
-                )
-            )
-            badge_html = "".join(
-                _badge(label, value, "neutral")
-                for label, value in (
-                    ("Owner", statement_detail["owner"]),
-                    ("Frequency", statement_detail["frequency"]),
-                    ("Type", statement_detail["control_type"]),
-                )
-                if value
-            )
-            root_causes = mapping.mapped_root_causes or record.risk_statement.causes or record.taxonomy_node.typical_root_causes
-            root_cause_html = "".join(
-                f'<span class="ri-chip">{html.escape(root_cause)}</span>'
-                for root_cause in root_causes[:5]
-            )
-            st.markdown(
-                f"""
-                <div class="ri-control-coverage-panel">
-                    <div class="ri-control-head">
-                        <div>
-                            <span class="ri-control-id">{html.escape(mapping.control_id)}</span>
-                            <b>{html.escape(mapping.control_name)}</b>
-                        </div>
-                        <span class="ri-control-type">{html.escape(statement_detail["coverage_label"])}</span>
-                    </div>
-                    <div class="ri-control-context ri-control-statement-wrap">
-                        <b>Optimal full-coverage control statement</b>
-                        <p class="ri-control-statement">{html.escape(statement_detail["control_statement"])}</p>
-                        <p class="ri-evidence-line"><b>Evidence to prove full coverage.</b> {html.escape(statement_detail["expected_evidence"])}</p>
-                    </div>
-                    <div class="ri-control-badge-row">{badge_html}</div>
-                    <div class="ri-control-assessment-grid">{assessment_html}</div>
-                    <div class="ri-control-context">
-                        <b>Risk coverage rationale</b>
-                        <p>{html.escape(mapping.mitigation_rationale)}</p>
-                    </div>
-                    <div class="ri-control-context">
-                        <b>Mapped root causes</b>
-                        <div>{root_cause_html}</div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        selected_mapping = _control_coverage_selector(record)
+        _render_control_coverage_panel(record, selected_mapping, workspace)
 
-    _render_process_linked_controls_table(run)
+    _render_process_linked_controls_table(run, workspace)
 
 
-def _render_process_linked_controls_table(run: RiskInventoryRun) -> None:
-    rows = _run_control_mapping_rows(run)
+def _render_process_linked_controls_table(
+    run: RiskInventoryRun,
+    workspace: RiskInventoryWorkspace | None = None,
+) -> None:
+    rows = _run_control_mapping_rows(run, workspace)
     st.markdown('<div class="ri-section-title">All Mapped Controls In This Process</div>', unsafe_allow_html=True)
     if not rows:
         _render_neutral_callout("No controls are linked to this process.")
@@ -1749,6 +1979,109 @@ def _render_process_linked_controls_table(run: RiskInventoryRun) -> None:
         f"{run.input_context.process_name}: {len(rows)} mapped control(s) across {len(run.records)} selected process risk record(s)."
     )
     _render_table(rows)
+
+
+def _control_coverage_selector(record: RiskInventoryRecord) -> ControlMapping:
+    options = [mapping.control_id for mapping in record.control_mappings]
+    mapping_by_id = {mapping.control_id: mapping for mapping in record.control_mappings}
+    selector_key = f"ri_selected_control_mapping_{record.risk_id}"
+    if st.session_state.get(selector_key) not in options:
+        st.session_state[selector_key] = options[0]
+    selected_control_id = st.selectbox(
+        "Control",
+        options,
+        key=selector_key,
+        format_func=lambda control_id: _control_coverage_option_label(mapping_by_id[control_id]),
+    )
+    return mapping_by_id[selected_control_id]
+
+
+def _control_coverage_option_label(mapping: ControlMapping) -> str:
+    return f"{mapping.control_id} - {mapping.control_name}"
+
+
+def _render_control_coverage_panel(
+    record: RiskInventoryRecord,
+    mapping: ControlMapping,
+    workspace: RiskInventoryWorkspace | None,
+) -> None:
+    statement_detail = control_statement_detail(record, mapping, workspace)
+    design_rating = mapping.design_effectiveness.rating.value if mapping.design_effectiveness else "Not Rated"
+    operating_rating = mapping.operating_effectiveness.rating.value if mapping.operating_effectiveness else "Not Rated"
+    assessment_html = "".join(
+        _control_assessment_tile(label, value, rationale, tone)
+        for label, value, rationale, tone in (
+            (
+                "Coverage",
+                mapping.coverage_assessment.title(),
+                _coverage_rationale(record, mapping),
+                _coverage_class(mapping.coverage_assessment),
+            ),
+            (
+                "Design",
+                design_rating,
+                (
+                    mapping.design_effectiveness.rationale
+                    if mapping.design_effectiveness
+                    else "Design effectiveness has not been rated."
+                ),
+                _rating_class(design_rating),
+            ),
+            (
+                "Operating",
+                operating_rating,
+                (
+                    mapping.operating_effectiveness.rationale
+                    if mapping.operating_effectiveness
+                    else "Operating effectiveness has not been rated."
+                ),
+                _rating_class(operating_rating),
+            ),
+        )
+    )
+    badge_html = "".join(
+        _badge(label, value, "neutral")
+        for label, value in (
+            ("Owner", statement_detail["owner"]),
+            ("Frequency", statement_detail["frequency"]),
+            ("Type", statement_detail["control_type"]),
+        )
+        if value
+    )
+    root_causes = mapping.mapped_root_causes or record.risk_statement.causes or record.taxonomy_node.typical_root_causes
+    root_cause_html = "".join(
+        f'<span class="ri-chip">{html.escape(root_cause)}</span>'
+        for root_cause in root_causes[:5]
+    )
+    st.markdown(
+        f"""
+        <div class="ri-control-coverage-panel">
+            <div class="ri-control-head">
+                <div>
+                    <span class="ri-control-id">{html.escape(mapping.control_id)}</span>
+                    <b>{html.escape(mapping.control_name)}</b>
+                </div>
+                <span class="ri-control-type">{html.escape(statement_detail["coverage_label"])}</span>
+            </div>
+            <div class="ri-control-context ri-control-statement-wrap">
+                <b>Optimal Full-Coverage Control Statement</b>
+                <p class="ri-control-statement">{html.escape(statement_detail["control_statement"])}</p>
+                <p class="ri-evidence-line"><b>Evidence to Prove Full Coverage.</b> {html.escape(statement_detail["expected_evidence"])}</p>
+            </div>
+            <div class="ri-control-badge-row">{badge_html}</div>
+            <div class="ri-control-assessment-grid">{assessment_html}</div>
+            <div class="ri-control-context">
+                <b>Risk Coverage Rationale</b>
+                <p>{html.escape(mapping.mitigation_rationale)}</p>
+            </div>
+            <div class="ri-control-context">
+                <b>Mapped Root Causes</b>
+                <div>{root_cause_html}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def control_statement_detail(
@@ -1991,13 +2324,13 @@ def _render_control_gap_lab(
                             {_badge("Frequency", recommendation.frequency, "neutral")}
                             {_badge("Type", recommendation.control_type, "neutral")}
                         </div>
-                        <p class="ri-evidence-line"><b>Expected evidence.</b> {html.escape(recommendation.expected_evidence)}</p>
+                        <p class="ri-evidence-line"><b>Expected Evidence.</b> {html.escape(recommendation.expected_evidence)}</p>
                         <div class="ri-control-context">
-                            <b>Why this control exists</b>
+                            <b>Why This Control Exists</b>
                             <p>{html.escape(recommendation.rationale)}</p>
                         </div>
                         <div class="ri-control-context">
-                            <b>Root causes addressed</b>
+                            <b>Root Causes Addressed</b>
                             <div>{root_cause_html}</div>
                         </div>
                     </div>
@@ -2135,7 +2468,7 @@ def _render_control_coverage(record: RiskInventoryRecord) -> None:
 
     left, right = st.columns([1.25, 1])
     with left:
-        st.markdown("**Mapped controls**")
+        st.markdown("**Mapped Controls**")
         _render_table(
             [
                 {
@@ -2147,7 +2480,7 @@ def _render_control_coverage(record: RiskInventoryRecord) -> None:
             ],
         )
     with right:
-        st.markdown("**Coverage by control type**")
+        st.markdown("**Coverage by Control Type**")
         _render_table(
             [
                 {"Control Type": ctype, "Mapped Control Count": count}
@@ -2155,7 +2488,7 @@ def _render_control_coverage(record: RiskInventoryRecord) -> None:
             ],
         )
 
-    st.markdown("**Coverage gaps**")
+    st.markdown("**Coverage Gaps**")
     gaps: list[str] = [gap for gap in record.coverage_gaps if "root cause" not in gap.lower()]
     if gaps:
         for gap in gaps:
@@ -2190,7 +2523,7 @@ def _render_effectiveness_detail(record: RiskInventoryRecord) -> None:
     c.metric("Open Issues", open_issue_total)
     d.metric("High/Critical Issues", high_sev_open)
 
-    st.markdown("**Effectiveness by control**")
+    st.markdown("**Effectiveness by Control**")
     _render_table(
         [
             {
@@ -2206,7 +2539,7 @@ def _render_effectiveness_detail(record: RiskInventoryRecord) -> None:
     )
 
     if open_issue_total:
-        st.markdown("**Open issues**")
+        st.markdown("**Open Issues**")
         _render_table(
             [
                 {
@@ -2283,9 +2616,9 @@ def _render_kri_recommendations(
                     <div class="ri-kri-threshold ri-medium"><span>Amber</span><b>{html.escape(kri.thresholds.amber)}</b></div>
                     <div class="ri-kri-threshold ri-high"><span>Red</span><b>{html.escape(kri.thresholds.red)}</b></div>
                 </div>
-                <div class="ri-kri-narrative"><b>CRO rationale.</b> {html.escape(kri.rationale)}</div>
-                <div class="ri-kri-narrative"><b>Escalation path.</b> {html.escape(kri.escalation_path)}</div>
-                <div class="ri-kri-narrative"><b>Where and how to use this KRI.</b> {html.escape(kri.placement_guidance)}</div>
+                <div class="ri-kri-narrative"><b>CRO Rationale.</b> {html.escape(kri.rationale)}</div>
+                <div class="ri-kri-narrative"><b>Escalation Path.</b> {html.escape(kri.escalation_path)}</div>
+                <div class="ri-kri-narrative"><b>Where and How to Use This KRI.</b> {html.escape(kri.placement_guidance)}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -2374,11 +2707,11 @@ def _render_residual_review_summary(record: RiskInventoryRecord) -> None:
     )
 
     if review.challenge_comments:
-        st.markdown("**Reviewer comments**")
+        st.markdown("**Reviewer Comments**")
         st.write(review.challenge_comments)
 
     if review.challenged_fields:
-        _render_chip_group("Fields requiring review", review.challenged_fields)
+        _render_chip_group("Fields Requiring Review", review.challenged_fields)
 
     st.caption("Reviewer workflow details are retained in the reviewer-ready export.")
 
@@ -2417,7 +2750,7 @@ def _render_review(run: RiskInventoryRun, workspace: RiskInventoryWorkspace | No
             if st.button(f"Review {row['Risk ID']}", key=f"ri_review_queue_{row['Risk ID']}", width="stretch"):
                 selected_id = str(row["Risk ID"])
                 st.session_state["ri_review_selected_risk_id"] = selected_id
-        with st.expander("Queue table", expanded=False):
+        with st.expander("Queue Table", expanded=False):
             _render_table(rows)
 
     record = next(record for record in run.records if record.risk_id == selected_id)
@@ -2530,7 +2863,7 @@ def _render_review(run: RiskInventoryRun, workspace: RiskInventoryWorkspace | No
     )
     _store_review_decision(decision)
     if review:
-        _render_chip_group("Fields requiring review", review.challenged_fields)
+        _render_chip_group("Fields Requiring Review", review.challenged_fields)
     st.caption("Review decisions are stored in session state and included in the Excel workbook artifact.")
     st.markdown('<div class="ri-section-title">Validation Findings</div>', unsafe_allow_html=True)
     findings = [finding for finding in run.validation_findings if finding.record_id == record.risk_id]
@@ -2768,20 +3101,20 @@ def _render_review_dossier(dossier: dict[str, Any]) -> None:
             ],
             "No validation basis is configured for this record.",
         )
-        st.markdown("**Reviewer checklist**")
+        st.markdown("**Reviewer Checklist**")
         _render_table_or_neutral(dossier["checklist"], "No checklist prompts are available.")
     with detail_tabs[1]:
         _render_table_or_neutral([dossier["scoring"]], "No configured scoring values are available.")
         _render_table_or_neutral(dossier["scoring_rationale"], "No scoring rationale is available.")
     with detail_tabs[2]:
-        st.markdown("**Mapped controls**")
+        st.markdown("**Mapped Controls**")
         _render_table_or_neutral(dossier["controls"], "No controls are mapped to this risk.")
-        st.markdown("**Coverage gaps**")
+        st.markdown("**Coverage Gaps**")
         _render_table_or_neutral(dossier["gaps"], "No material control gaps are currently identified.")
-        st.markdown("**Suggested controls**")
+        st.markdown("**Suggested Controls**")
         _render_table_or_neutral(dossier["synthetic_controls"], "No synthetic control suggestions are required.")
     with detail_tabs[3]:
-        st.markdown("**Evidence references**")
+        st.markdown("**Evidence References**")
         _render_table_or_neutral(dossier["evidence"], "No evidence references are attached to this risk.")
         st.markdown("**Linked KRIs**")
         _render_table_or_neutral(dossier["kris"], "No KRIs are linked to this risk category.")
@@ -2816,92 +3149,96 @@ def _render_executive(run: RiskInventoryRun, workspace: RiskInventoryWorkspace |
 
 
 def _render_user_knowledge_base_intro() -> None:
-    input_items = [
-        ("Operating context", "Business units, process owners, products, systems, and material obligations."),
-        ("Process evidence", "Policy, procedure, PDF, Markdown, or TXT files used to extract control and risk cues."),
-        ("Control baseline", "Existing controls with owners, frequency, expected evidence, and test results."),
-        ("Risk framework", "Risk taxonomy, control taxonomy, KRI library, appetite, and scoring rules."),
-    ]
-    output_items = [
-        ("Risk inventory", "Risk records with executive-quality statements, taxonomy placement, root causes, and impact drivers."),
-        ("Scoring record", "Impact, frequency, inherent risk, control score, residual rating, and rationale."),
-        ("Control coverage", "Risk-to-control mapping with coverage strength, evidence needs, and open gaps."),
-        ("Reviewer package", "KRI monitoring, synthetic control statements, validation prompts, and Excel-ready export."),
-    ]
-    benefit_items = [
-        ("Faster review", "Starts from evidence already on file instead of blank risk forms."),
-        ("Cleaner challenge", "Keeps rationale, evidence, KRIs, and reviewer questions tied to each risk."),
-        ("Executive-ready output", "Produces workbench views and exports that support management review."),
-    ]
-    flow_steps = [
-        ("01", "Load Knowledge", "Review source tables and add new evidence."),
-        ("02", "Extract Context", "Confirm process facts before scoring."),
-        ("03", "Run Workflow", "Classify, score, map controls, and identify gaps."),
-        ("04", "Use Outputs", "Review workbenches and export the risk inventory."),
-    ]
-    input_html = "".join(_knowledge_base_io_item_html(title, description) for title, description in input_items)
-    output_html = "".join(_knowledge_base_io_item_html(title, description) for title, description in output_items)
-    benefit_html = "".join(
-        (
-            '<div class="ri-kb-benefit">'
-            f"<b>{html.escape(title)}</b>"
-            f"<p>{html.escape(description)}</p>"
-            "</div>"
-        )
-        for title, description in benefit_items
-    )
-    flow_html = "".join(
-        (
-            '<div class="ri-kb-flow-step">'
-            f"<span>{html.escape(number)}</span>"
-            f"<b>{html.escape(title)}</b>"
-            f"<p>{html.escape(description)}</p>"
-            "</div>"
-        )
-        for number, title, description in flow_steps
-    )
     st.markdown(
-        f"""
+        """
         <div class="ri-kb-page-heading">
             <span>Knowledge Base</span>
             <div class="ri-kb-page-title">Start with source evidence. Finish with a reviewer-ready risk inventory.</div>
             <p>
-                Review the institution data already on file, add process evidence, and run the workflow to produce
-                risk records, control mapping, KRIs, gap analysis, and exportable reviewer materials.
+                Review what the workflow can consume, what it can produce, and where each source table strengthens the
+                risk inventory before you run the analysis.
             </p>
         </div>
-        <div class="ri-kb-io-grid">
-            <div class="ri-kb-io-card ri-kb-input-card">
-                <div class="ri-kb-card-head">
-                    <span>Input data</span>
-                    <b>What the workflow consumes</b>
+        <div class="ri-kb-capability-grid">
+            <section class="ri-kb-capability-column ri-kb-input-column">
+                <span>Input Data</span>
+                <h3>What the Workflow Consumes</h3>
+                <p>
+                    These sources give the agent enough institutional context to turn process evidence into grounded,
+                    reviewable risk scenarios.
+                </p>
+                <div class="ri-kb-capability-list">
+                    <div class="ri-kb-capability-row">
+                        <b>Operating Context</b>
+                        <p>
+                            Uses business units, process owners, products, systems, and material obligations to anchor
+                            each scenario in the institution's actual operating model.
+                        </p>
+                    </div>
+                    <div class="ri-kb-capability-row">
+                        <b>Process Evidence</b>
+                        <p>
+                            Reads policies, procedures, PDFs, Markdown, TXT files, control cues, and risk cues so the
+                            workflow can infer where failures, handoffs, dependencies, and review points exist.
+                        </p>
+                    </div>
+                    <div class="ri-kb-capability-row">
+                        <b>Control Baseline</b>
+                        <p>
+                            Uses existing controls, owners, frequencies, expected evidence, and test results to separate
+                            covered risk drivers from genuine control gaps.
+                        </p>
+                    </div>
+                    <div class="ri-kb-capability-row">
+                        <b>Risk Framework</b>
+                        <p>
+                            Applies the risk taxonomy, root cause taxonomy, control taxonomy, KRI library, appetite, and
+                            scoring rules so the output follows the current governance model.
+                        </p>
+                    </div>
                 </div>
-                <div class="ri-kb-item-list">{input_html}</div>
-            </div>
-            <div class="ri-kb-io-card ri-kb-output-card">
-                <div class="ri-kb-card-head">
-                    <span>Deliverables</span>
-                    <b>What the workflow produces</b>
+            </section>
+            <section class="ri-kb-capability-column ri-kb-output-column">
+                <span>Deliverables</span>
+                <h3>What the Workflow Produces</h3>
+                <p>
+                    The workflow returns a reviewer-ready package that can populate the risk inventory and downstream
+                    workbenches without losing the rationale behind each field.
+                </p>
+                <div class="ri-kb-capability-list">
+                    <div class="ri-kb-capability-row">
+                        <b>Risk Inventory</b>
+                        <p>
+                            Produces risk records with executive-quality statements, taxonomy placement, root causes,
+                            and impact drivers tied back to the source evidence.
+                        </p>
+                    </div>
+                    <div class="ri-kb-capability-row">
+                        <b>Scoring Record</b>
+                        <p>
+                            Returns impact, frequency, inherent risk, control score, residual rating, and concise
+                            rationale so reviewers can see how each rating was reached.
+                        </p>
+                    </div>
+                    <div class="ri-kb-capability-row">
+                        <b>Control Coverage</b>
+                        <p>
+                            Maps risks to controls, evaluates coverage strength, identifies evidence needs, and calls out
+                            open gaps that need remediation or validation.
+                        </p>
+                    </div>
+                    <div class="ri-kb-capability-row">
+                        <b>Reviewer Package</b>
+                        <p>
+                            Prepares KRI monitoring, synthetic control statements, validation prompts, and Excel-ready
+                            export fields for review, challenge, and inventory refresh.
+                        </p>
+                    </div>
                 </div>
-                <div class="ri-kb-item-list">{output_html}</div>
-            </div>
+            </section>
         </div>
-        <div class="ri-kb-benefit-band">
-            <span>Why it helps</span>
-            <div>{benefit_html}</div>
-        </div>
-        <div class="ri-kb-flow">{flow_html}</div>
         """,
         unsafe_allow_html=True,
-    )
-
-
-def _knowledge_base_io_item_html(title: str, description: str) -> str:
-    return (
-        '<div class="ri-kb-io-item">'
-        f"<b>{html.escape(title)}</b>"
-        f"<p>{html.escape(description)}</p>"
-        "</div>"
     )
 
 
@@ -2933,10 +3270,10 @@ def _render_input_and_maybe_run() -> RiskInventoryRun | None:
     defaults = _context_defaults(analysis, structured_context)
 
     st.markdown('<div class="ri-section-title">Review Extracted Context</div>', unsafe_allow_html=True)
+    process_id = str(defaults["process_id"])
     c1, c2, c3 = st.columns([1.1, 1, 1])
     with c1:
         process_name = st.text_input("Process Name", value=str(defaults["process_name"]), key="ri_process_name")
-        process_id = st.text_input("Process ID", value=str(defaults["process_id"]), key="ri_process_id")
     with c2:
         product = st.text_input("Product / Service", value=str(defaults["product"]), key="ri_product")
         business_unit = st.text_input("Business Unit", value=str(defaults["business_unit"]), key="ri_bu")
@@ -3005,7 +3342,7 @@ def _render_input_and_maybe_run() -> RiskInventoryRun | None:
             )
             status.write("Calculated inherent risk, control environment, and residual risk.")
             st.session_state["risk_inventory_user_run"] = result["final_report"]
-            status.update(label="Risk inventory workflow complete.", state="complete")
+            status.update(label="Risk Inventory Workflow Complete.", state="complete")
         st.rerun()
 
     data = st.session_state.get("risk_inventory_user_run")
@@ -3019,6 +3356,7 @@ def _render_user_existing_knowledge_tables() -> None:
             "Processes",
             "Risk Taxonomy",
             "Control Taxonomy",
+            "Root Cause Taxonomy",
             "Controls Register",
             "KRI Library",
         ]
@@ -3034,7 +3372,6 @@ def _render_user_existing_knowledge_tables() -> None:
             "Material Obligations",
         ],
         "Processes": [
-            "Process ID",
             "Process",
             "Business Unit",
             "Process Owner",
@@ -3052,19 +3389,17 @@ def _render_user_existing_knowledge_tables() -> None:
             "Risk Subcategory",
             "Definition",
         ],
-        "Control Taxonomy": ["Code", "Family", "Control Family", "Description"],
-        "Controls Register": [
-            "Control ID",
-            "Control Objective",
-            "Control Activity",
-            "Control Type",
-            "Frequency",
-            "Owner",
-            "Expected Evidence",
-            "Last Test Date",
-            "Design Effectiveness",
-            "Operating Effectiveness",
+        "Control Taxonomy": CONTROL_INVENTORY_DISPLAY_COLUMNS,
+        "Root Cause Taxonomy": [
+            "Code",
+            "Category",
+            "Cause Origin",
+            "Root Cause",
+            "Definition",
+            "Selection Criteria",
+            "Examples",
         ],
+        "Controls Register": CONTROL_INVENTORY_COLUMNS,
         "KRI Library": [
             "KRI ID",
             "KRI",
@@ -3083,6 +3418,7 @@ def _render_user_existing_knowledge_tables() -> None:
         "Processes": "ri_user_procs",
         "Risk Taxonomy": "ri_user_risk_taxonomy",
         "Control Taxonomy": "ri_user_control_taxonomy",
+        "Root Cause Taxonomy": "ri_user_root_cause_taxonomy",
         "Controls Register": "ri_user_controls",
         "KRI Library": "ri_user_kris",
     }
@@ -3250,9 +3586,28 @@ def _control_upload() -> list[dict[str, Any]]:
             return [
                 {
                     "control_id": record.control_id,
+                    "hierarchy_id": record.hierarchy_id,
+                    "leaf_name": record.leaf_name,
+                    "full_description": record.full_description,
+                    "selected_level_1": record.selected_level_1,
+                    "selected_level_2": record.selected_level_2,
+                    "business_unit_id": record.business_unit_id,
+                    "business_unit_name": record.business_unit_name,
+                    "who": record.who,
+                    "what": record.what,
+                    "when": record.when,
+                    "frequency": record.frequency,
+                    "where": record.where,
+                    "why": record.why,
+                    "quality_rating": record.quality_rating,
+                    "validator_passed": record.validator_passed,
+                    "validator_retries": record.validator_retries,
+                    "validator_failures": record.validator_failures,
+                    "evidence": record.evidence,
                     "control_name": record.leaf_name or record.control_id,
                     "control_type": record.selected_level_2 or record.control_type,
                     "description": record.full_description,
+                    "owner": record.who,
                     "design_rating": "Satisfactory",
                     "operating_rating": "Satisfactory",
                 }
@@ -3293,30 +3648,38 @@ def _render_document_analysis(analysis: DocumentAnalysis) -> None:
     m2.metric("Risk Cues", len(analysis.detected_risk_categories))
     m3.metric("Control Cues", len(analysis.detected_controls))
     m4.metric("Obligations", len(analysis.obligations))
-    _render_chip_group("Detected risk categories", analysis.detected_risk_categories)
-    _render_chip_group("Detected control cues", analysis.detected_controls)
-    _render_chip_group("Exposure cues", analysis.exposure_cues)
-    with st.expander("Detected obligations and extracted text", expanded=False):
+    _render_chip_group("Detected Risk Categories", analysis.detected_risk_categories)
+    _render_chip_group("Detected Control Cues", analysis.detected_controls)
+    _render_chip_group("Exposure Cues", analysis.exposure_cues)
+    with st.expander("Detected Obligations and Extracted Text", expanded=False):
         for obligation in analysis.obligations:
             st.markdown(f"- {obligation}")
-        st.text_area("Extracted text preview", value=analysis.text[:5000], height=220, disabled=True)
+        st.text_area("Extracted Text Preview", value=analysis.text[:5000], height=220, disabled=True)
 
 
 def _render_control_preview(controls: list[dict[str, Any]]) -> None:
     st.caption(f"{len(controls)} controls will be available for mapping.")
     if controls:
-        _render_table(
-            [
-                {
-                    "Control ID": control.get("control_id", ""),
-                    "Control Name": control.get("control_name", control.get("name", "")),
-                    "Control Type": control.get("control_type", ""),
-                    "Design Effectiveness": control.get("design_rating", "Satisfactory"),
-                    "Operating Effectiveness": control.get("operating_rating", "Satisfactory"),
-                }
-                for control in controls
-            ],
-        )
+        _render_table([_control_preview_row(control) for control in controls])
+
+
+def _control_preview_row(control: dict[str, Any]) -> dict[str, Any]:
+    """Return a compact workbook-style preview row for uploaded controls."""
+    return {
+        "control_id": control.get("control_id", ""),
+        "control_name": control.get("control_name") or control.get("leaf_name") or control.get("name", ""),
+        "selected_level_1": control.get("selected_level_1", ""),
+        "selected_level_2": control.get("selected_level_2") or control.get("control_type", ""),
+        "who": control.get("who") or control.get("owner", ""),
+        "what": control.get("what") or control.get("description", ""),
+        "when": control.get("when", ""),
+        "frequency": control.get("frequency", ""),
+        "where": control.get("where", ""),
+        "why": control.get("why", ""),
+        "quality_rating": control.get("quality_rating", control.get("design_rating", "Satisfactory")),
+        "validator_passed": control.get("validator_passed", ""),
+        "evidence": control.get("evidence", ""),
+    }
 
 
 def _render_summary_metrics(run: RiskInventoryRun) -> None:
@@ -3471,13 +3834,42 @@ def _table_column_config(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _table_column_width(column: str, values: list[Any]) -> int:
     name = column.lower()
+    exact_widths = {
+        "control id": 170,
+        "risk record id": 170,
+        "business unit id": 150,
+        "kri id": 150,
+        "code": 110,
+        "selected level 1": 160,
+        "selected level 2": 260,
+        "business unit": 220,
+        "control name": 280,
+        "control": 280,
+        "process": 260,
+        "who": 220,
+        "owner": 220,
+        "head": 220,
+        "what": 480,
+        "when": 240,
+        "where": 280,
+        "why": 500,
+        "evidence": 520,
+        "quality rating": 170,
+        "validator passed": 160,
+        "validator retries": 150,
+        "validator failures": 360,
+    }
+    if name in exact_widths:
+        return exact_widths[name]
     if "risk statement" in name or name.endswith(" statement"):
+        return 520
+    if "full description" in name or "expected evidence" in name:
         return 520
     if any(term in name for term in ("description", "rationale", "summary", "message", "action", "definition")):
         return 420
     if any(term in name for term in ("risk profile", "regulatory relevance", "systems", "comments", "findings")):
         return 360
-    if any(term in name for term in ("process", "control", "subcategory", "category", "stakeholder")):
+    if any(term in name for term in ("subcategory", "category", "stakeholder")):
         return 240
     if any(term in name for term in ("rating", "response", "status", "frequency", "cadence", "reviewed", "severity")):
         return 160
@@ -3549,7 +3941,6 @@ def _workspace_control_mapping_rows(
                 {
                     "Business Unit ID": proc.bu_id,
                     "Business Unit": bu_lookup.get(proc.bu_id, proc.bu_id),
-                    "Process ID": proc.procedure_id,
                     "Process": proc.procedure_name,
                     "Risk Record ID": record.risk_id,
                     "Enterprise Risk Category": record.taxonomy_node.level_1_category,
@@ -3639,6 +4030,7 @@ def _run_control_mapping_rows(
     for record in run.records:
         score_row = control_score_row(record)
         for mapping in record.control_mappings:
+            inventory = _control_inventory_entry(mapping.control_id, workspace)
             rows.append(
                 {
                     "Risk Record ID": record.risk_id,
@@ -3650,6 +4042,7 @@ def _run_control_mapping_rows(
                     "Control ID": mapping.control_id,
                     "Control": mapping.control_name,
                     "Control Type": mapping.control_type,
+                    **_control_mapping_inventory_context(mapping, inventory),
                     "Control Objective": mapping.control_description,
                     "Risk Coverage Rationale": mapping.mitigation_rationale,
                     "Mapped Root Causes": "; ".join(mapping.mapped_root_causes),
@@ -3667,6 +4060,31 @@ def _run_control_mapping_rows(
                 }
             )
     return rows
+
+
+def _control_mapping_inventory_context(
+    mapping: ControlMapping,
+    inventory: ControlInventoryEntry | None,
+) -> dict[str, Any]:
+    """Return workbook-style control fields appropriate for mapping tables."""
+    if inventory:
+        dumped = inventory.model_dump()
+        return {column: dumped.get(column, "") for column in CONTROL_MAPPING_INVENTORY_COLUMNS}
+    return {
+        "selected_level_1": "",
+        "selected_level_2": mapping.control_type,
+        "who": _statement_owner_fallback(mapping),
+        "what": mapping.control_description,
+        "when": "Defined by control design",
+        "frequency": "Defined by control design",
+        "where": "Process workflow and evidence repository",
+        "why": mapping.mitigation_rationale,
+        "quality_rating": (
+            mapping.design_effectiveness.rating.value if mapping.design_effectiveness else "Satisfactory"
+        ),
+        "validator_passed": not bool(mapping.open_issues),
+        "evidence": _mapped_control_expected_evidence(mapping, None),
+    }
 
 
 def _record_coverage_status(record: RiskInventoryRecord) -> str:
@@ -3826,11 +4244,27 @@ def _inject_risk_inventory_css() -> None:
     st.markdown(
         """
         <style>
+        .ri-app-title {
+            border-left: 4px solid #0f62fe; padding: 0.1rem 0 0.2rem 1rem;
+            margin: 0.25rem 0 0.85rem 0; max-width: 1120px;
+        }
+        .ri-app-title span {
+            display: block; color: #0f62fe; font-size: 0.74rem; font-weight: 800;
+            text-transform: uppercase; margin-bottom: 0.25rem;
+        }
+        .ri-app-title-main {
+            color: #161616; font-size: 1.65rem; line-height: 1.18; margin: 0 0 0.3rem 0;
+            font-weight: 800;
+        }
+        .ri-app-title p {
+            color: #525252; line-height: 1.45; margin: 0 !important; max-width: 860px;
+            font-size: 0.96rem;
+        }
         .ri-kb-page-heading {
             border-left: 4px solid #0f62fe; padding: 0.15rem 0 0.25rem 1rem;
             margin: 0.35rem 0 1rem 0; max-width: 1180px;
         }
-        .ri-kb-page-heading span, .ri-kb-card-head span, .ri-kb-benefit-band > span, .ri-kb-flow-step span {
+        .ri-kb-page-heading span {
             display: block; color: #0f62fe; font-size: 0.78rem; font-weight: 800;
             text-transform: uppercase; margin-bottom: 0.35rem;
         }
@@ -3841,66 +4275,33 @@ def _inject_risk_inventory_css() -> None:
         .ri-kb-page-heading p {
             color: #525252; line-height: 1.48; margin: 0; max-width: 980px; font-size: 1rem;
         }
-        .ri-kb-io-grid {
-            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;
-            margin: 0 0 0.75rem 0;
+        .ri-kb-capability-grid {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem;
+            max-width: 1180px; margin: 0 0 1rem 0;
         }
-        .ri-kb-io-card {
-            background: #ffffff; border: 1px solid #c6c6c6; padding: 0.95rem;
-            min-height: 260px; border-top: 4px solid #0f62fe;
+        .ri-kb-capability-column { min-width: 0; }
+        .ri-kb-capability-column > span {
+            display: block; color: #0f62fe; font-size: 0.72rem; font-weight: 800;
+            letter-spacing: 0; text-transform: uppercase; margin-bottom: 0.35rem;
         }
-        .ri-kb-output-card { border-top-color: #24a148; }
-        .ri-kb-output-card .ri-kb-card-head span { color: #198038; }
-        .ri-kb-card-head {
-            border-bottom: 1px solid #e0e0e0; padding-bottom: 0.55rem; margin-bottom: 0.65rem;
+        .ri-kb-output-column > span { color: #198038; }
+        .ri-kb-capability-column h3 {
+            color: #161616; font-size: 1.08rem; line-height: 1.25; margin: 0;
+            padding-bottom: 0.45rem; border-bottom: 1px solid #e0e0e0;
         }
-        .ri-kb-card-head b {
-            display: block; color: #161616; font-size: 1.12rem; line-height: 1.25;
+        .ri-kb-capability-column > p {
+            color: #525252; line-height: 1.45; margin: 0.55rem 0 0.25rem 0 !important;
+            font-size: 0.94rem;
         }
-        .ri-kb-item-list { display: grid; gap: 0.55rem; }
-        .ri-kb-io-item {
-            background: #f4f4f4; border: 1px solid #e0e0e0; padding: 0.62rem 0.7rem;
-            border-left: 3px solid #0f62fe;
+        .ri-kb-capability-list { margin-top: 0.35rem; }
+        .ri-kb-capability-row {
+            padding: 0.65rem 0 0.7rem 0; border-bottom: 1px solid #e0e0e0;
         }
-        .ri-kb-output-card .ri-kb-io-item { border-left-color: #24a148; }
-        .ri-kb-io-item b {
-            display: block; color: #161616; font-size: 0.94rem; margin-bottom: 0.2rem;
+        .ri-kb-capability-row b {
+            display: block; color: #161616; font-size: 0.95rem; margin-bottom: 0.22rem;
         }
-        .ri-kb-io-item p {
-            color: #393939; line-height: 1.38; margin: 0 !important; font-size: 0.9rem;
-        }
-        .ri-kb-benefit-band {
-            background: #f4f4f4; border: 1px solid #c6c6c6; padding: 0.85rem;
-            margin: 0 0 0.75rem 0;
-        }
-        .ri-kb-benefit-band > span { color: #525252; margin-bottom: 0.5rem; }
-        .ri-kb-benefit-band > div {
-            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.55rem;
-        }
-        .ri-kb-benefit {
-            background: #ffffff; border: 1px solid #e0e0e0; padding: 0.65rem;
-        }
-        .ri-kb-benefit b {
-            display: block; color: #161616; font-size: 0.95rem; margin-bottom: 0.2rem;
-        }
-        .ri-kb-benefit p {
-            color: #525252; margin: 0 !important; line-height: 1.36; font-size: 0.88rem;
-        }
-        .ri-kb-flow {
-            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem;
-            margin: 0 0 1rem 0;
-        }
-        .ri-kb-flow-step {
-            background: #f4f4f4; border: 1px solid #c6c6c6; padding: 0.75rem; min-height: 126px;
-        }
-        .ri-kb-flow-step span {
-            color: #0f62fe; margin-bottom: 0.28rem;
-        }
-        .ri-kb-flow-step b {
-            display: block; color: #161616; font-size: 0.98rem; margin-bottom: 0.25rem;
-        }
-        .ri-kb-flow-step p {
-            color: #525252; line-height: 1.36; margin: 0; font-size: 0.86rem;
+        .ri-kb-capability-row p {
+            color: #525252; line-height: 1.42; margin: 0 !important; font-size: 0.9rem;
         }
         .ri-hero { background: #f4f4f4; border-left: 4px solid #0f62fe; padding: 1rem 1.25rem; margin-bottom: 1rem; }
         .ri-hero h1 { font-size: 1.85rem; margin: 0.15rem 0 0.35rem 0; line-height: 1.2; }
@@ -4315,7 +4716,7 @@ def _inject_risk_inventory_css() -> None:
         }
         .ri-selected-kri-note { margin: 0.38rem 0 0 0 !important; color: #393939; line-height: 1.42; }
         @media (max-width: 900px) {
-            .ri-kb-io-grid, .ri-kb-benefit-band > div, .ri-kb-flow { grid-template-columns: 1fr; }
+            .ri-kb-capability-grid { grid-template-columns: 1fr; gap: 1rem; }
             .ri-scope-lens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .ri-source-grid, .ri-bu-diff-grid, .ri-why-grid, .ri-neutral-summary, .ri-residual-calc-strip, .ri-dossier-meta, .ri-control-detail-grid, .ri-control-score-grid, .ri-control-assessment-grid, .ri-inherent-metrics, .ri-inherent-rationale-grid, .ri-selected-kri-meta { grid-template-columns: 1fr; }
             .ri-risk-header, .ri-control-head, .ri-kri-header, .ri-bu-header, .ri-selected-kri-header, .ri-inherent-rating-row {

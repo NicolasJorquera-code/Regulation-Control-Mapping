@@ -1,0 +1,245 @@
+version: 2.0.0
+workspace_id: WS-FI-OPERATING-MODEL-V2
+auto_generate_missing_runs: true
+business_unit_ids:
+- BU-01
+- BU-02
+- BU-03
+- BU-04
+- BU-05
+- BU-06
+- BU-07
+- BU-08
+- BU-09
+- BU-10
+- BU-11
+- BU-12
+- BU-13
+process_ids:
+- PR-01
+- PR-02
+- PR-03
+- PR-04
+- PR-05
+- PR-06
+- PR-07
+- PR-08
+- PR-09
+- PR-10
+- PR-11
+- PR-12
+- PR-13
+- PR-14
+- PR-15
+- PR-16
+- PR-17
+- PR-18
+- PR-19
+- PR-20
+- PR-21
+- PR-22
+- PR-23
+- PR-24
+- PR-25
+- PR-26
+- PR-27
+- PR-28
+- PR-29
+- PR-30
+- PR-31
+- PR-32
+- PR-33
+- PR-34
+- PR-35
+- PR-36
+- PR-37
+- PR-38
+- PR-39
+- PR-40
+- PR-41
+- PR-42
+- PR-43
+- PR-44
+- PR-45
+- PR-46
+- PR-47
+- PR-48
+- PR-49
+- PR-50
+- PR-51
+- PR-52
+- PR-53
+- PR-54
+- PR-55
+- PR-56
+- PR-57
+- PR-58
+- PR-59
+- PR-60
+knowledge_pack:
+  description: Financial institution v2 demo pack with 13 functional BUs and 60 APQC-aligned processes.
+  files:
+    business_units: packs/business_units_fi_v2.yaml
+    processes: packs/processes_fi_v2.yaml
+    run_fixtures: packs/run_fixtures_fi_v2.yaml
+    regulatory_obligations: packs/regulatory_obligations.yaml
+    evidence_artifacts: packs/evidence_artifacts.yaml
+    issues: packs/issues.yaml
+    risk_appetite_framework: packs/risk_appetite_framework.yaml
+    kri_library: packs/kri_library.yaml
+bank:
+  bank_id: DEMO-FS-FI-V2
+  bank_name: Financial Institution Demo
+  description: US-regulated commercial bank demo operating model with functional domains, primary process ownership, supporting BU participation, and LOB-ready process instances.
+risk_taxonomy_l1:
+- code: OPS
+  name: Operational
+  definition: Risk of loss from inadequate or failed internal processes, people, systems, or external events affecting day-to-day execution.
+  level_2_codes:
+  - RIB-BPR
+  - RIB-IFR
+  - RIB-EFR
+  - RIB-ORS
+  - RIB-TPR
+  - RIB-DM
+  - RIB-IT
+  - RIB-PCM
+  - RIB-PHYS
+  - RIB-PHYAS
+  - RIB-CON
+  - RIB-LIT
+  - RIB-IP
+  - RIB-MDL
+  - RIB-RR
+- code: CYB
+  name: Cyber & Privacy
+  definition: Risk of loss from unauthorized access, data exposure, or privacy obligations across customer and employee data.
+  level_2_codes:
+  - RIB-CYB
+  - RIB-PRI
+- code: REG
+  name: Regulatory Compliance
+  definition: Risk of failing to comply with applicable laws, regulations, supervisory expectations, or internal policies.
+  level_2_codes:
+  - RIB-COM
+- code: TAL
+  name: Talent
+  definition: Risk arising from human capital strategy, employment practices, succession, and workforce capability.
+  level_2_codes:
+  - RIB-HCM
+  - RIB-EMP
+root_cause_taxonomy:
+- code: RC-PPL-01
+  name: Skills & Capacity
+  category: People
+  description: Insufficient trained staff, surge-capacity gaps, single points of dependence on individual operators.
+  examples:
+  - Surge volume exceeds trained operator capacity
+  - Key-person dependency on a single approver
+- code: RC-PPL-02
+  name: Awareness & Training
+  category: People
+  description: Procedural non-compliance driven by knowledge gaps, outdated training, or unclear accountability.
+  examples:
+  - New-hire onboarding without procedure attestation
+  - Annual training not refreshed after policy change
+- code: RC-PRC-01
+  name: Process Design
+  category: Process
+  description: Process design does not adequately address the scenario, has unclear ownership, or lacks defined service levels.
+  examples:
+  - No documented escalation path for aged exceptions
+  - Ambiguous segregation between maker and checker
+- code: RC-PRC-02
+  name: Process Execution
+  category: Process
+  description: Process exists but is inconsistently followed, has undocumented deviations, or lapsed control activities.
+  examples:
+  - Skipped end-of-day supervisor sign-off
+  - Override used outside documented criteria
+- code: RC-PRC-03
+  name: Reconciliation & Data Quality
+  category: Process
+  description: Reconciliation breaks, missing required fields, or upstream data defects propagated downstream.
+  examples:
+  - Workflow status not reconciled to ledger
+  - Required cause-code field left blank
+- code: RC-TEC-01
+  name: System Availability
+  category: Technology
+  description: System outage, degraded performance, or interface break interrupting normal processing.
+  examples:
+  - Workflow platform unavailable during peak hours
+  - Core banking interface latency
+- code: RC-TEC-02
+  name: Access & Entitlements
+  category: Technology
+  description: Excessive privilege, stale entitlements, or weak segregation enforcement in production systems.
+  examples:
+  - Privileged user retains access after role change
+  - Emergency access not recertified post-event
+- code: RC-TEC-03
+  name: Change Management
+  category: Technology
+  description: Untested change, missing rollback, or production deployment outside approved change window.
+  examples:
+  - Configuration change not reviewed by application owner
+- code: RC-EXT-01
+  name: Third-Party Performance
+  category: External
+  description: Vendor SLA miss, vendor outage, or vendor incident notification delay affecting bank operations.
+  examples:
+  - Message-repair vendor breach of SLA
+  - Vendor incident notification > 24 hours
+- code: RC-EXT-02
+  name: Adversarial Activity
+  category: External
+  description: Fraud attempt, social engineering, or attempted unauthorized access by external actors.
+  examples:
+  - Business email compromise targeting wire instructions
+  - Synthetic-identity application
+- code: RC-EXT-03
+  name: Regulatory & Legal Change
+  category: External
+  description: New regulation, supervisory guidance change, or litigation creating compliance or reporting demand.
+  examples:
+  - CFPB guidance update on overdraft disclosures
+  - State licensing change for commercial lending
+control_taxonomy:
+- code: CT-PRV
+  name: Preventive Controls
+  family: Preventive
+  description: Controls designed to prevent the risk event from occurring through segregation of duties, system enforcement, dual approval, and defined thresholds.
+  typical_evidence:
+  - Approval logs
+  - System enforcement rules
+  - Segregation matrices
+- code: CT-DET
+  name: Detective Controls
+  family: Detective
+  description: Controls designed to identify a risk event after occurrence so it can be investigated and resolved.
+  typical_evidence:
+  - Exception reports
+  - Reconciliation outputs
+  - Surveillance alerts
+- code: CT-COR
+  name: Corrective Controls
+  family: Corrective
+  description: Controls that remediate, recover, or correct a risk event after detection.
+  typical_evidence:
+  - Issue management records
+  - Remediation evidence
+  - Post-incident reviews
+- code: CT-DIR
+  name: Directive Controls
+  family: Directive
+  description: Policies, procedures, training, and governance setting expectations and accountability.
+  typical_evidence:
+  - Policy attestations
+  - Training completion records
+  - Committee minutes
+metadata:
+  effective_date: '2026-04-30'
+  governance_owner: Enterprise Risk Management
+  approver: Risk Governance Committee
+  classification: Internal demo fixture using fictional generic data

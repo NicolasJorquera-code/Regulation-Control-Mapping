@@ -1,0 +1,2630 @@
+# =============================================================================
+# Process Risk Inventory Fixture
+# -----------------------------------------------------------------------------
+# Process     : PR-16 / Payment Processing and Settlement (Wire/ACH)
+# Business    : BU-05 / Banking Operations
+# Workspace   : WS-FI-OPERATING-MODEL-V2
+# Bank        : DEMO-FS-FI-V2 / Financial Institution Demo
+# Fixture     : payment_exception_handling.yaml
+# Scenario    : High-value wire and ACH payment exception repair, release,
+#               settlement, recall, and reconciliation chain.
+# -----------------------------------------------------------------------------
+# Taxonomy ground truth:
+#   - Risk taxonomy : config/risk_inventory/risk_taxonomy_crosswalk.yaml (RIB-*)
+#   - Root causes   : Root Cause Taxonomy (External / People / Process /
+#                     Technology) — the new ground truth.
+#   - Impact scales : config/risk_inventory/impact_scales.yaml (1–4 per dim)
+#   - Likelihood    : config/risk_inventory/likelihood_scale.yaml (1–4)
+#   - Inherent mtx  : config/risk_inventory/inherent_risk_matrix.yaml
+#   - Residual mtx  : config/risk_inventory/residual_risk_matrix.yaml
+#   - Mgmt response : config/risk_inventory/management_response_rules.yaml
+# =============================================================================
+
+fixture_metadata:
+  fixture_id: FX-PR16-V2
+  fixture_version: "2.0.0"
+  schema_version: "risk_inventory_schema_v1.0.0"
+  authored_by: "Operational Risk Center of Excellence (ORCoE)"
+  authored_date: "2026-04-15"
+  last_validated: "2026-05-01"
+  review_status: "Approved by Operational Risk Committee (ORC), 2026-04-29"
+  notes: >
+    This fixture is the canonical demo anchor for the v2 financial-institution
+    workspace. It is intended to demonstrate executive-quality risk inventory
+    output for a high-stakes operational process. All names, dollar amounts,
+    counts, vendor names, and incident references are illustrative — no real
+    customer, employee, or institutional data is represented.
+
+# =============================================================================
+# 1. SCENARIO — operating context for the process
+# =============================================================================
+
+scenario:
+  process_id: PR-16
+  process_name: "Payment Processing and Settlement (Wire/ACH)"
+  business_unit_id: BU-05
+  business_unit_name: "Banking Operations"
+  process_owner_role: "Head of Banking Operations"
+  process_owner_title: "Executive Owner, Payment Operations"
+  process_classification: "Critical — Material Operational Process"
+  three_lines_of_defense_alignment: "First Line"
+
+  product_service: >
+    High-value funds transfer services for retail, commercial, wealth, and
+    correspondent-bank clients. In scope: domestic Fedwire, CHIPS for high-value
+    USD, FedACH and EPN for ACH credits and debits, SWIFT MT and ISO 20022 MX
+    for cross-border, and book transfer between internal accounts.
+
+  materiality_statement: >
+    The process clears approximately $87B in daily payment volume across
+    roughly 12,400 transactions, of which 1.6 percent (≈ 198 transactions) hit
+    the exception queue on an average business day. Single-payment exposures
+    routinely exceed $50M; the largest exception in the trailing 12 months
+    was $312M. Process failure has direct customer, regulatory, liquidity, and
+    reputational consequences and is in scope for OCC continuous monitoring
+    and Federal Reserve operational resilience review.
+
+  process_chain:
+    - step: "1. Instruction intake"
+      detail: "Customer- or system-originated payment instruction received via online banking, host-to-host, branch, treasury workstation, or correspondent SWIFT MT/MX."
+    - step: "2. Pre-release validation"
+      detail: "Automated rules engine validates fields (account number, beneficiary, currency, format), runs OFAC and PEP screening, AML/fraud scoring, and balance/limit checks."
+    - step: "3. Exception classification & queue assignment"
+      detail: "Failed validations route to specialist queues by exception type (Sanctions Hold, Format Error, Insufficient Funds, Beneficiary Mismatch, Fraud Alert, Compliance Hold)."
+    - step: "4. Exception repair"
+      detail: "Specialist investigates, contacts originator or beneficiary bank, repairs payment data, and resubmits — or rejects with documented reason."
+    - step: "5. Maker-checker authorization"
+      detail: "Repaired payments above threshold require independent second approver. High-value (≥ $1M) requires Operations Team Lead; very high-value (≥ $10M) requires Manager, Wire Operations."
+    - step: "6. Release to network"
+      detail: "Payment released to Fedwire (cut-off 6:30 PM ET), CHIPS (cut-off 5:00 PM ET), FedACH/EPN, or SWIFT outbound queue."
+    - step: "7. Settlement confirmation"
+      detail: "Settlement confirmation matched against outbound payment record. Failures trigger investigation."
+    - step: "8. Recall handling"
+      detail: "If instruction was wrong, fraudulent, or duplicate, recall request initiated under FRB Operating Circular 6 (Fedwire) or NACHA Reversal rules."
+    - step: "9. Reconciliation"
+      detail: "Daily reconciliation of nostro accounts, suspense accounts, and GL posting against settled outbound and inbound payment files."
+    - step: "10. Reporting"
+      detail: "Internal incident reporting (OpsRisk system), regulatory reporting (CTR, SAR where applicable), and management exception aging dashboards."
+
+  systems:
+    - system_id: SYS-WWP
+      name: "Wire Workflow Platform (WWP)"
+      role: "Primary payment exception management and approval workflow"
+      criticality: "Tier 1 — Critical"
+      hosting: "On-premises, dual-active datacenter"
+    - system_id: SYS-CBP
+      name: "Core Banking Platform (CBP)"
+      role: "Account ledger, balance check, GL posting"
+      criticality: "Tier 1 — Critical"
+      hosting: "On-premises"
+    - system_id: SYS-SSE
+      name: "Sanctions Screening Engine (SSE)"
+      role: "Real-time OFAC and consolidated sanctions list screening"
+      criticality: "Tier 1 — Critical"
+      hosting: "Hybrid (vendor SaaS with on-prem rule set)"
+    - system_id: SYS-RFE
+      name: "Real-Time Fraud Engine (RFE)"
+      role: "Transaction anomaly scoring, BEC pattern detection"
+      criticality: "Tier 1 — Critical"
+      hosting: "Vendor SaaS"
+    - system_id: SYS-NRT
+      name: "Nostro Reconciliation Tool (NRT)"
+      role: "Daily nostro and suspense account reconciliation"
+      criticality: "Tier 2 — High"
+      hosting: "On-premises"
+    - system_id: SYS-IAM
+      name: "Identity and Access Management Platform (IAM)"
+      role: "User provisioning, privileged access, role recertification"
+      criticality: "Tier 1 — Critical"
+      hosting: "On-premises"
+    - system_id: SYS-FED
+      name: "Fedwire Participant Interface"
+      role: "Federal Reserve high-value funds transfer network"
+      criticality: "Tier 1 — Critical"
+      hosting: "Federal Reserve Bank (external network)"
+    - system_id: SYS-SWIFT
+      name: "SWIFT Alliance Access"
+      role: "International correspondent payment messaging"
+      criticality: "Tier 1 — Critical"
+      hosting: "On-premises with SWIFT network connection"
+
+  upstream_dependencies:
+    - "Customer-facing channels (online banking, treasury workstation, branch)"
+    - "Host-to-host payment files from corporate clients"
+    - "Inbound SWIFT messages from correspondent banks"
+    - "Internal transfer requests from Wealth Management and Commercial Banking"
+
+  downstream_dependencies:
+    - "General Ledger close and Financial Reporting (PR-32)"
+    - "Customer Appeals, Grievances and Disputes (PR-20)"
+    - "Treasury, Cash and Liquidity Management (PR-34)"
+    - "BSA/AML investigations and SAR filing (PR-29 adjacent)"
+    - "External: Fedwire, CHIPS, ACH operators, correspondent banks"
+
+  data_objects:
+    - "Payment instructions and exception case records"
+    - "Beneficiary account details and remittance information"
+    - "Customer authentication and authorization audit trail"
+    - "Sanctions and fraud screening hits and dispositions"
+    - "Outbound and inbound settlement files and confirmations"
+    - "Nostro and suspense account entries"
+    - "Recall requests and dispositions"
+    - "Incident reports, RCAs, and customer remediation logs"
+
+  stakeholders:
+    internal:
+      - "Wire Operations Specialist (Maker)"
+      - "Wire Operations Team Lead (Checker)"
+      - "Payment Exception Specialist"
+      - "Manager, Wire Operations"
+      - "Manager, Wire Operations Quality Assurance"
+      - "Head of Banking Operations"
+      - "BSA/AML Compliance Officer"
+      - "OFAC Sanctions Officer"
+      - "Fraud Investigations — Wire & ACH"
+      - "Treasury Liaison (intra-day liquidity)"
+      - "IT Operations — Payments Platform Administrator"
+      - "IT Identity & Access Management Analyst"
+      - "Internal Audit (3rd line)"
+      - "Operational Risk Officer (2nd line)"
+    external:
+      - "Originating customers (retail, commercial, wealth)"
+      - "Beneficiary banks and correspondent banks"
+      - "Federal Reserve Bank (Fedwire participant supervision)"
+      - "OCC (continuous monitoring team)"
+      - "FinCEN (BSA/AML reporting)"
+      - "OFAC (sanctions enforcement)"
+
+  applicable_obligations:
+    - obligation_id: REG-OBL-REGE
+      framework: "Regulation E (Electronic Fund Transfers Act)"
+      relevance: "Consumer EFT error resolution timelines and liability allocation."
+    - obligation_id: REG-OBL-REGJ
+      framework: "Regulation J / FRB Operating Circular 6"
+      relevance: "Funds transfers via Fedwire — settlement, recall, and finality rules."
+    - obligation_id: REG-OBL-UCC4A
+      framework: "UCC Article 4A (Funds Transfers)"
+      relevance: "Allocation of risk of loss in commercial wire transfers."
+    - obligation_id: REG-OBL-NACHA
+      framework: "NACHA Operating Rules"
+      relevance: "ACH origination, return, and reversal rules and warranties."
+    - obligation_id: REG-OBL-BSAAML
+      framework: "Bank Secrecy Act / AML"
+      relevance: "Suspicious Activity Report (SAR) filing for unusual payment patterns."
+    - obligation_id: REG-OBL-OFAC
+      framework: "OFAC Sanctions Compliance"
+      relevance: "Real-time screening and blocking of payments to sanctioned parties."
+    - obligation_id: REG-OBL-OCCHS
+      framework: "OCC Heightened Standards (12 CFR Part 30, Appendix D)"
+      relevance: "Operational risk governance, three-lines-of-defense, risk appetite."
+    - obligation_id: REG-OBL-FFIEC-WPS
+      framework: "FFIEC Wholesale Payment Systems IT Examination Handbook"
+      relevance: "Payment system controls, resilience, and information security."
+
+  prior_incidents_referenced:
+    - incident_id: "INC-2024-Q3-WIRE-001"
+      summary: "Aged exception case (4h12m past SLA) caused customer treasury settlement delay; $1.4M overdraft fee remediated to customer; root cause: queue assignment misconfiguration after platform upgrade."
+      management_response: "Issue ISS-2024-Q3-008, closed 2024-Q4 with platform configuration change and SLA monitor rebuild."
+    - incident_id: "INC-2025-Q1-BEC-003"
+      summary: "Attempted BEC: spoofed CFO email requesting $4.7M wire to new beneficiary. Real-time fraud engine flagged via beneficiary anomaly score; payment held pre-release; loss avoided."
+      management_response: "No customer impact. Fraud Investigations enhanced beneficiary risk-scoring model with this pattern."
+
+  scenario_description: |
+    On any given business day, Banking Operations clears tens of thousands of
+    payment instructions across multiple networks, of which a small but
+    non-trivial fraction hit the exception queue and require human repair.
+    The exception channel is simultaneously the operational pressure-relief
+    valve (fixing what automation cannot) and the most concentrated source of
+    operational risk in the payment chain — every override, every manual
+    repair, every authorization decision is a potential point of loss,
+    regulatory finding, fraud entry-point, or customer harm.
+
+    This fixture describes the inherent risks present in that channel, the
+    controls operating against them, the residual risk position after control
+    effectiveness is considered, the leading and lagging indicators monitored
+    by Operations and Risk, and the active management actions in place to
+    reduce residual exposure where it is approaching or breaching appetite.
+
+# =============================================================================
+# 2. RISK APPETITE FRAMEWORK — for this process
+# =============================================================================
+
+risk_appetite_framework:
+  framework_id: RAF-PR16-V2
+  effective_date: "2026-01-01"
+  approver: "Operational Risk Committee (ORC)"
+  approver_role: "Chair: Chief Risk Officer"
+  next_review: "2026-12-31"
+  parent_framework: "Enterprise Risk Appetite Statement v4.2 (2026)"
+
+  appetite_statement: >
+    The Bank has low appetite for operational losses arising from the payment
+    processing and settlement process, and zero appetite for losses arising
+    from inadequate sanctions screening, internal fraud, or systemic process
+    failures that cause material customer harm. The Bank accepts a defined
+    level of operational losses arising from human error and external fraud
+    inherent to the volume and velocity of high-value payments, provided such
+    losses are detected, investigated, remediated, and learned from within
+    documented timelines.
+
+  qualitative_thresholds:
+    - dimension: "Internal fraud or unauthorized payment release"
+      appetite: "Zero"
+      narrative: "Any confirmed internal fraud event triggers immediate Risk Committee escalation and Board notification."
+    - dimension: "Sanctions screening failure"
+      appetite: "Zero"
+      narrative: "Any confirmed OFAC or sanctions list miss on a released payment triggers immediate self-disclosure to OFAC and Board notification."
+    - dimension: "Customer financial harm > $250k from process failure"
+      appetite: "Zero"
+      narrative: "Any single-incident customer harm above $250k requires Board-level remediation oversight."
+    - dimension: "Aged exception backlog beyond SLA"
+      appetite: "Low"
+      narrative: "Sustained breach of SLA aging thresholds for two consecutive weeks triggers escalation to ORC."
+    - dimension: "Payment platform unavailability during settlement window"
+      appetite: "Low"
+      narrative: "Any outage of >15 minutes during the Fedwire or CHIPS settlement window triggers operational resilience review."
+
+  quantitative_thresholds:
+    - threshold_id: AT-PR16-01
+      metric: "Operational losses from payment process (rolling 12 months, $)"
+      green: "< $750k"
+      amber: "$750k – $1.5M"
+      red: "> $1.5M"
+      escalation_at_amber: "Quarterly review at Operational Risk Committee"
+      escalation_at_red: "Immediate notification to CRO; ad-hoc Risk Committee session"
+    - threshold_id: AT-PR16-02
+      metric: "Open exceptions aged > 4 hours (intra-day, count)"
+      green: "< 5"
+      amber: "5 – 14"
+      red: "≥ 15"
+      escalation_at_amber: "Manager, Wire Operations notified; staffing review"
+      escalation_at_red: "Head of Banking Operations notified; mandatory after-action review"
+    - threshold_id: AT-PR16-03
+      metric: "Sanctions screening miss (per quarter, count)"
+      green: "0"
+      amber: "n/a — zero appetite"
+      red: "≥ 1"
+      escalation_at_amber: "n/a"
+      escalation_at_red: "Immediate OFAC self-disclosure; Board notification"
+    - threshold_id: AT-PR16-04
+      metric: "BEC / external fraud confirmed loss (rolling 12 months, $)"
+      green: "< $200k"
+      amber: "$200k – $500k"
+      red: "> $500k"
+      escalation_at_amber: "Quarterly fraud governance forum"
+      escalation_at_red: "CRO and General Counsel notification"
+    - threshold_id: AT-PR16-05
+      metric: "Override approvals on high-value wires (rolling 30 days, count)"
+      green: "< 6"
+      amber: "6 – 9"
+      red: "≥ 10"
+      escalation_at_amber: "Manager, Wire Operations Quality Assurance review"
+      escalation_at_red: "Head of Banking Operations review with Internal Audit notification"
+    - threshold_id: AT-PR16-06
+      metric: "Payment platform unplanned downtime in settlement window (rolling 90 days, minutes)"
+      green: "< 5"
+      amber: "5 – 14"
+      red: "≥ 15"
+      escalation_at_amber: "Quarterly operational resilience review"
+      escalation_at_red: "Immediate post-incident review; Federal Reserve notification per OCC HS"
+
+  escalation_protocol: |
+    Amber thresholds trigger first-line management review and second-line
+    Operational Risk monitoring within five business days. Red thresholds
+    trigger same-day notification to the Head of Banking Operations and the
+    Operational Risk Committee Chair, with a written 72-hour incident report
+    and management response. Repeated red breaches in any rolling 90-day
+    window are reported to the Risk Committee of the Board.
+
+# =============================================================================
+# 3. CONTROLS — the existing baseline operating against the risks below
+# =============================================================================
+
+controls:
+
+  - control_id: C-PR16-01
+    name: "Dual approval for high-value wire releases"
+    control_type: "Authorization"
+    placement: "Preventive"
+    method: "Manual with system support"
+    description: >
+      Wire releases with face value ≥ $1M require independent dual approval
+      (maker by Wire Operations Specialist, checker by Wire Operations Team
+      Lead). Releases ≥ $10M require Manager, Wire Operations as the second
+      approver. The Wire Workflow Platform (WWP) enforces the approval routing
+      based on the payment amount and beneficiary risk score, prevents the same
+      user from approving their own preparation, and writes a non-repudiable
+      audit entry for every approval action.
+    owner_role: "Manager, Wire Operations"
+    accountable_executive: "Head of Banking Operations"
+    frequency: "Per transaction (continuous, real-time)"
+    automation_level: "Hybrid (system-enforced routing; human approval action)"
+    primary_systems: [SYS-WWP, SYS-IAM]
+    evidence_artifacts:
+      - "Daily WWP approval audit log (retained 7 years)"
+      - "Quarterly approval pattern analytics report"
+      - "Annual control self-assessment with Internal Audit attestation"
+    design_assessment:
+      rating: "Strong"
+      narrative: >
+        Control design aligns with FFIEC Wholesale Payment Systems guidance and
+        OCC Heightened Standards expectations for segregation of duties.
+        System-enforced routing prevents the most common design failure mode
+        (same-user prepare and approve). Threshold tiering matches loss
+        severity progression.
+    operating_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Control operates as designed for routine releases. Quarterly testing
+        in Q4-2025 and Q1-2026 found 100% of sampled releases (n=120) had
+        compliant dual approval. Two override approvals in Q1-2026 (under
+        the emergency override authority) were reviewed post-event and
+        determined to be appropriate; however, the override pathway itself
+        is the focus of issue ISS-PR16-001.
+    open_issues:
+      - issue_id: ISS-PR16-001
+        title: "Emergency override authority exceeds documented appetite tolerance"
+        severity: "Medium"
+        target_close: "2026-Q3"
+    addresses_root_causes:
+      - "people.internal_malicious_acts"
+      - "people.human_error"
+      - "process.implementation_or_operating_failure"
+    covers_risks: [R-PR16-01, R-PR16-04, R-PR16-07]
+
+  - control_id: C-PR16-02
+    name: "Exception aging dashboard and SLA-based escalation"
+    control_type: "Exception Reporting"
+    placement: "Detective"
+    method: "Automated with manual component"
+    description: >
+      The WWP generates a real-time exception aging dashboard refreshed every
+      five minutes, classifying open exceptions by SLA bucket (within SLA,
+      approaching SLA, breached SLA). At the 60-minute mark, exceptions auto-
+      escalate to the Wire Operations Team Lead via WWP and email; at the
+      4-hour mark they auto-escalate to the Manager, Wire Operations and
+      Manager, Wire Operations Quality Assurance, and a daily aging report is
+      delivered to the Head of Banking Operations.
+    owner_role: "Wire Operations Team Lead"
+    accountable_executive: "Manager, Wire Operations"
+    frequency: "Continuous (5-minute refresh)"
+    automation_level: "Automated (system-generated alerts and reports)"
+    primary_systems: [SYS-WWP]
+    evidence_artifacts:
+      - "Daily aged exception report (retained 7 years)"
+      - "Monthly SLA breach trend analysis"
+      - "Quarterly executive aging dashboard"
+    design_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Design is aligned with the regulatory expectation to identify and
+        resolve payment exceptions in a timely manner. The 60-minute and
+        4-hour escalation thresholds were calibrated against UCC 4A and Reg E
+        error resolution timelines. The dashboard, however, does not
+        differentiate by exception type — sanctions and fraud holds are
+        treated identically to format errors despite different urgency.
+    operating_assessment:
+      rating: "Improvement Needed"
+      narrative: >
+        Control operates as designed for the underlying SLA monitoring, but
+        Q1-2026 testing found that the 4-hour escalation alert was missed in
+        4 of 18 sampled aged cases (22%) due to email distribution list
+        configuration issues. Additionally, INC-2024-Q3-WIRE-001 demonstrated
+        that queue assignment misconfiguration can mask aging from the
+        dashboard entirely.
+    open_issues:
+      - issue_id: ISS-PR16-002
+        title: "Exception aging dashboard distribution list integrity failures"
+        severity: "Medium"
+        target_close: "2026-Q2"
+      - issue_id: ISS-PR16-003
+        title: "Aging dashboard does not differentiate exception type urgency"
+        severity: "Low"
+        target_close: "2026-Q4"
+    addresses_root_causes:
+      - "process.design_failure"
+      - "process.implementation_or_operating_failure"
+      - "people.inadequate_workforce_management_resourcing"
+    covers_risks: [R-PR16-02, R-PR16-08]
+
+  - control_id: C-PR16-03
+    name: "Out-of-band beneficiary callback verification"
+    control_type: "Verification and Validation"
+    placement: "Preventive"
+    method: "Manual"
+    description: >
+      For payment instructions received via email, instructions involving a
+      first-time beneficiary, or instructions where the beneficiary or amount
+      varies materially from the originator's historical pattern, the Payment
+      Exception Specialist must initiate a callback to the originator using a
+      contact number obtained from a system-of-record other than the
+      instruction itself (typically the Customer Relationship Management
+      system or a previously verified phone number on file). The callback,
+      identity-verification questions used, and authorization confirmation
+      are recorded in WWP before the payment can be released.
+    owner_role: "Payment Exception Specialist"
+    accountable_executive: "Manager, Wire Operations"
+    frequency: "Per qualifying transaction"
+    automation_level: "Manual (system flags qualifying transactions; specialist performs callback)"
+    primary_systems: [SYS-WWP, SYS-CBP]
+    evidence_artifacts:
+      - "Callback log entries in WWP (retained 7 years)"
+      - "Monthly fraud governance forum review of callback adherence"
+      - "Annual fraud control effectiveness review"
+    design_assessment:
+      rating: "Strong"
+      narrative: >
+        Out-of-band verification is the industry standard preventive control
+        against business email compromise (BEC) and impersonation fraud per
+        FFIEC, FBI IC3, and ABA fraud guidance. Trigger criteria are
+        well-defined and align with documented BEC patterns. The use of a
+        non-instruction-derived contact source is the central design strength.
+    operating_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Control operates as designed. Q1-2026 testing of 95 sampled qualifying
+        transactions found callbacks performed on 91 (96%); the 4 missed cases
+        were retrospectively determined to not have triggered the system
+        flag due to a beneficiary risk-score lag (now remediated). One
+        successful BEC attempt in the trailing 18 months (INC-2025-Q1-BEC-003)
+        was caught by C-PR16-09 before it required this control to fire.
+    open_issues: []
+    addresses_root_causes:
+      - "external.external_malicious_or_criminal_acts"
+      - "external.client_conduct_or_error"
+      - "people.inadequate_knowledge_skills_or_training"
+    covers_risks: [R-PR16-03]
+
+  - control_id: C-PR16-04
+    name: "Real-time sanctions screening at payment release"
+    control_type: "Automated Rules"
+    placement: "Preventive"
+    method: "Automated"
+    description: >
+      Every payment is screened against the OFAC SDN list, OFAC Consolidated
+      Sanctions List, EU sanctions, UN sanctions, and the Bank's internal
+      blocked-party watchlist at three checkpoints: instruction intake,
+      pre-repair (after exception specialist edits), and final release.
+      Hits are immediately suspended and routed to the OFAC Sanctions Officer
+      queue for adjudication. The Sanctions Screening Engine (SSE) is updated
+      within 60 minutes of any list publication via vendor data feed and
+      internal escalation channel.
+    owner_role: "OFAC Sanctions Officer"
+    accountable_executive: "Chief BSA/AML Compliance Officer"
+    frequency: "Continuous (per transaction)"
+    automation_level: "Automated (deterministic + fuzzy match algorithms)"
+    primary_systems: [SYS-SSE, SYS-WWP]
+    evidence_artifacts:
+      - "SSE daily screening log (retained 7 years per OFAC recordkeeping)"
+      - "Monthly false-positive and tuning analysis"
+      - "Quarterly sanctions list update audit trail"
+      - "Annual independent BSA/AML and OFAC audit (most recent: 2025-Q4)"
+    design_assessment:
+      rating: "Strong"
+      narrative: >
+        Triple-checkpoint screening (intake, post-repair, release) is
+        specifically designed to defeat the threat vector where a payment
+        is repaired in a way that introduces a sanctions hit not present at
+        intake — historically the most common path to a screening miss.
+        Fuzzy match thresholds are tuned quarterly based on false-positive
+        and false-negative analysis.
+    operating_assessment:
+      rating: "Strong"
+      narrative: >
+        Zero confirmed sanctions screening misses in the trailing 24 months.
+        Q1-2026 testing of 200 sampled transactions found 100% screening at
+        all three checkpoints. The 2025-Q4 independent audit issued one
+        observation (vendor list update SLA, now closed). False-positive
+        rate of 2.4% is within industry benchmark of 2–4%.
+    open_issues: []
+    addresses_root_causes:
+      - "external.regulatory_or_legislative_change"
+      - "process.design_failure"
+      - "technology.inadequate_data_storage_retention_destruction"
+    covers_risks: [R-PR16-04]
+
+  - control_id: C-PR16-05
+    name: "Payment platform availability monitoring and failover testing"
+    control_type: "Surveillance"
+    placement: "Detective"
+    method: "Automated with manual component"
+    description: >
+      The WWP, CBP, SSE, and Fedwire/SWIFT interfaces are monitored 24x7 by
+      the IT Operations Network Operations Center (NOC) with synthetic
+      transactions every two minutes during the settlement window and every
+      five minutes outside it. Tier-1 system availability is measured against
+      a 99.95% intra-day SLO. Quarterly failover tests exercise the
+      hot-standby payment platform; an annual full-disaster-recovery test
+      validates end-to-end recovery to the alternate datacenter within the
+      defined 60-minute recovery time objective (RTO).
+    owner_role: "Manager, IT Operations — Payments Platform"
+    accountable_executive: "Chief Technology Officer"
+    frequency: "Continuous monitoring; quarterly failover; annual DR"
+    automation_level: "Automated (monitoring); manual (failover test execution)"
+    primary_systems: [SYS-WWP, SYS-CBP, SYS-SSE, SYS-FED, SYS-SWIFT]
+    evidence_artifacts:
+      - "Daily availability and SLO report (retained 3 years)"
+      - "Quarterly failover test results"
+      - "Annual DR test report with regulatory attestation package"
+      - "Monthly capacity and performance trend report"
+    design_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Monitoring design is aligned with FFIEC IT Examination Handbook and
+        OCC operational resilience expectations. The 60-minute RTO is
+        conservative for high-value payments. Quarterly failover frequency is
+        higher than the industry minimum but lower than what the most resilient
+        peers (semi-annual full DR) maintain.
+    operating_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Trailing-24-month availability for WWP is 99.97%, exceeding the SLO.
+        2025 annual DR test met all RTO objectives. One Tier-1 incident
+        (WWP partial outage of 23 minutes during a non-peak window in 2025-Q2)
+        was below the 60-minute RTO and did not impact settlement. Q1-2026
+        failover test surfaced a configuration drift in the standby SSE
+        node (issue ISS-PR16-004, in remediation).
+    open_issues:
+      - issue_id: ISS-PR16-004
+        title: "Standby SSE node configuration drift"
+        severity: "Medium"
+        target_close: "2026-Q2"
+    addresses_root_causes:
+      - "technology.inadequate_maintenance_or_capacity"
+      - "technology.inadequate_change_release_deployment"
+      - "external.natural_disaster_or_environmental_disruption"
+    covers_risks: [R-PR16-05]
+
+  - control_id: C-PR16-06
+    name: "Daily nostro and suspense account reconciliation"
+    control_type: "Reconciliation"
+    placement: "Detective"
+    method: "Automated with manual component"
+    description: >
+      Each business day by 10:00 AM ET on D+1, the Nostro Reconciliation Tool
+      (NRT) automatically reconciles outbound and inbound payment activity
+      across all nostro accounts, suspense accounts, and the General Ledger.
+      Items that fail to match auto-route to the Reconciliation Operations
+      Specialist for investigation. Items aging beyond 5 business days
+      escalate to the Manager, Reconciliation; items aging beyond 15
+      business days require a written variance memo and Controller sign-off.
+    owner_role: "Reconciliation Operations Specialist"
+    accountable_executive: "Controller"
+    frequency: "Daily (auto-match); event-driven (investigation and escalation)"
+    automation_level: "Hybrid (automated match; manual investigation)"
+    primary_systems: [SYS-NRT, SYS-CBP, SYS-WWP]
+    evidence_artifacts:
+      - "Daily reconciliation report (retained 7 years per SOX recordkeeping)"
+      - "Aged item tracking log"
+      - "Monthly nostro balance attestation"
+      - "Annual SOX 404 ITGC and process control testing"
+    design_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Reconciliation design follows SOX 404 and FFIEC expectations. Three-
+        way reconciliation (outbound payment record, settlement confirmation,
+        GL posting) is the design standard. The aging-based escalation
+        ladders are appropriate. One weakness: the NRT match algorithm uses
+        amount-and-date matching that can miss timing-difference items
+        without flagging them, requiring manual identification.
+    operating_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        The 2025 SOX testing cycle found the control operating effectively
+        with no exceptions. The trailing 12-month average aged item count
+        (>5 business days) is 12 items, with quarterly cleanup keeping the
+        balance below 30. One material variance ($1.4M) in 2024-Q4 was
+        traced to a system clock skew between WWP and CBP after a clock-
+        synchronization service failure (technology root cause).
+    open_issues:
+      - issue_id: ISS-PR16-005
+        title: "NRT match algorithm does not flag timing-difference items"
+        severity: "Low"
+        target_close: "2027-Q1"
+    addresses_root_causes:
+      - "technology.inadequate_data_storage_retention_destruction"
+      - "process.implementation_or_operating_failure"
+      - "people.human_error"
+    covers_risks: [R-PR16-06]
+
+  - control_id: C-PR16-07
+    name: "Privileged access recertification for payment workflow systems"
+    control_type: "System and Application Restrictions"
+    placement: "Preventive"
+    method: "Manual with system support"
+    description: >
+      Privileged access roles in WWP, SSE, and IAM (specifically: WWP-Admin,
+      WWP-OverrideApprover, SSE-RuleAuthor, SSE-Adjudicator, IAM-RoleManager)
+      are recertified quarterly by the role owner and confirmed by the
+      accountable executive. Access not affirmatively recertified is
+      automatically suspended within five business days of the recertification
+      cycle close. Emergency access (break-glass) is monitored in real time by
+      Security Operations Center and reviewed weekly.
+    owner_role: "IT Identity & Access Management Analyst"
+    accountable_executive: "Chief Information Security Officer (CISO)"
+    frequency: "Quarterly (recertification); weekly (break-glass review)"
+    automation_level: "Hybrid (system-driven workflow; manual attestation)"
+    primary_systems: [SYS-IAM, SYS-WWP, SYS-SSE]
+    evidence_artifacts:
+      - "Quarterly recertification campaign report (retained 7 years)"
+      - "Break-glass access weekly review log"
+      - "Privileged user inventory (refreshed daily)"
+      - "Annual access management audit (Internal Audit)"
+    design_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Quarterly cadence is consistent with NIST 800-53 AC-6 and FFIEC IAM
+        guidance. Tying recertification suspension to non-action is a strong
+        design choice — it shifts the default from over-permissioned to
+        under-permissioned. Break-glass monitoring is an important compensating
+        control. Design weakness: 90-day recertification window is long for
+        the most sensitive override roles; some peers operate at 30 days.
+    operating_assessment:
+      rating: "Improvement Needed"
+      narrative: >
+        Q1-2026 recertification campaign closed with 92% on-time completion;
+        target is 98%. Late completions concentrated in two business unit
+        roles. Internal Audit's 2025 access management review found three
+        instances where privileged access was retained beyond 30 days after
+        a role change (issue ISS-PR16-006). The break-glass review is
+        operating effectively.
+    open_issues:
+      - issue_id: ISS-PR16-006
+        title: "Privileged access retained beyond 30 days post-role-change"
+        severity: "High"
+        target_close: "2026-Q2"
+      - issue_id: ISS-PR16-007
+        title: "Recertification window too long for highest-sensitivity override roles"
+        severity: "Medium"
+        target_close: "2026-Q4"
+    addresses_root_causes:
+      - "process.implementation_or_operating_failure"
+      - "technology.inadequate_change_release_deployment"
+      - "external.external_malicious_or_criminal_acts"
+    covers_risks: [R-PR16-07, R-PR16-01]
+
+  - control_id: C-PR16-08
+    name: "Cross-training and rotation program for payment exception staff"
+    control_type: "Talent Management Practices"
+    placement: "Preventive"
+    method: "Manual"
+    description: >
+      All Payment Exception Specialists rotate through each exception queue
+      type (Sanctions Hold, Fraud Alert, Format Error, Beneficiary Mismatch,
+      Compliance Hold, Insufficient Funds) on a documented 6-month cycle.
+      Cross-training completion is tracked in the Learning Management System
+      with role-based proficiency tests. The team maintains a documented
+      coverage matrix ensuring at least three trained specialists are
+      qualified for every queue type at all times.
+    owner_role: "Manager, Wire Operations Quality Assurance"
+    accountable_executive: "Head of Banking Operations"
+    frequency: "Continuous (rotation cycle); annual (coverage matrix review)"
+    automation_level: "Manual (LMS tracking; supervisor scheduling)"
+    primary_systems: ["Learning Management System (LMS)", SYS-WWP]
+    evidence_artifacts:
+      - "Quarterly coverage matrix attestation"
+      - "LMS proficiency completion records"
+      - "Annual staffing and resourcing adequacy assessment"
+    design_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Cross-training design addresses the structural risk of single-skill
+        staff and key-person concentration that has historically driven
+        capacity-related exception aging incidents at peer institutions.
+        Three-deep coverage requirement is consistent with operational
+        resilience expectations.
+    operating_assessment:
+      rating: "Improvement Needed"
+      narrative: >
+        2026-Q1 coverage matrix shows two queue types (Sanctions Hold and
+        Fraud Alert) with only two qualified specialists rather than the
+        required three, due to one departure and one extended leave. Issue
+        ISS-PR16-008 was opened in 2026-Q1; remediation in progress with two
+        additional specialists in advanced training. Rotation cycle compliance
+        is at 78% against an 85% target.
+    open_issues:
+      - issue_id: ISS-PR16-008
+        title: "Sanctions Hold and Fraud Alert queue coverage below 3-deep target"
+        severity: "Medium"
+        target_close: "2026-Q3"
+    addresses_root_causes:
+      - "people.inadequate_knowledge_skills_or_training"
+      - "people.inadequate_workforce_management_resourcing"
+    covers_risks: [R-PR16-02, R-PR16-08]
+
+  - control_id: C-PR16-09
+    name: "Real-time payment fraud rules engine with anomaly detection"
+    control_type: "Automated Rules"
+    placement: "Preventive"
+    method: "Automated with manual component"
+    description: >
+      Every payment is scored in real time by the Real-Time Fraud Engine (RFE)
+      against rule-based criteria (velocity, beneficiary novelty, amount
+      anomaly, geographic risk, customer behavior baseline) and a supervised
+      machine-learning model trained on historical fraud and BEC events.
+      Scores above defined thresholds either suspend the payment for Fraud
+      Investigations review (high score) or flag it for additional verification
+      (medium score). Model retraining occurs quarterly with full validation
+      per SR 11-7 model risk management standards.
+    owner_role: "Fraud Investigations Manager"
+    accountable_executive: "Chief Fraud Officer"
+    frequency: "Continuous (per transaction); quarterly (model retraining)"
+    automation_level: "Automated (scoring); manual (high-score adjudication)"
+    primary_systems: [SYS-RFE, SYS-WWP]
+    evidence_artifacts:
+      - "Daily fraud scoring report"
+      - "Suspended payment investigation log"
+      - "Quarterly model performance and validation report"
+      - "Annual independent model validation per SR 11-7"
+    design_assessment:
+      rating: "Strong"
+      narrative: >
+        Combined rule-based and ML scoring is the industry-leading design for
+        BEC and external fraud detection. Quarterly retraining cadence
+        prevents the most common fraud-detection failure mode (model drift).
+        Tiered response (suspend vs. flag) balances customer experience
+        against fraud prevention.
+    operating_assessment:
+      rating: "Strong"
+      narrative: >
+        Trailing-12-month fraud detection rate is 89% (industry benchmark
+        ~75–82%) against confirmed external fraud attempts. False-positive
+        rate is 0.6% — within tolerance. INC-2025-Q1-BEC-003 was caught by
+        this control. The Q1-2026 model validation found one minor
+        calibration observation, no material findings.
+    open_issues: []
+    addresses_root_causes:
+      - "external.external_malicious_or_criminal_acts"
+      - "external.client_conduct_or_error"
+      - "people.internal_malicious_acts"
+    covers_risks: [R-PR16-01, R-PR16-03, R-PR16-07]
+
+  - control_id: C-PR16-10
+    name: "Quarterly business continuity testing for payment operations"
+    control_type: "Business Continuity Planning and Awareness"
+    placement: "Contingency Planning"
+    method: "Manual"
+    description: >
+      Each quarter, Banking Operations executes a business continuity exercise
+      simulating one of: payment platform outage, alternate-site activation,
+      cyber incident requiring system isolation, or pandemic-style workforce
+      restriction. Exercises include real-time decision-making, communication
+      protocols, and recovery activity documentation. After-action reviews
+      identify gaps and feed into the BCP plan update cycle. Annual exercise
+      includes Federal Reserve regulator observation.
+    owner_role: "Business Continuity Manager"
+    accountable_executive: "Head of Banking Operations"
+    frequency: "Quarterly (exercise); annual (full-scale with regulator)"
+    automation_level: "Manual"
+    primary_systems: ["Business Continuity Planning System", SYS-WWP, SYS-CBP]
+    evidence_artifacts:
+      - "Quarterly BCP exercise after-action report"
+      - "Annual regulator-observed exercise package"
+      - "BCP plan update history"
+      - "Workforce communication test logs"
+    design_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Quarterly exercise frequency exceeds OCC Heightened Standards minimum
+        (annual). Scenario rotation covers the four threat archetypes. The
+        Federal Reserve observation cycle provides external validation.
+        Design is sound; operational depth could improve.
+    operating_assessment:
+      rating: "Satisfactory"
+      narrative: >
+        Q4-2025 exercise (cyber isolation scenario) identified two
+        communication-protocol gaps now closed. Q1-2026 exercise (alternate
+        site) ran successfully with all RTO objectives met. The annual
+        Federal Reserve observation in 2025-Q3 issued zero findings.
+    open_issues: []
+    addresses_root_causes:
+      - "external.natural_disaster_or_environmental_disruption"
+      - "external.geopolitical_economic_or_social_instability"
+      - "technology.inadequate_maintenance_or_capacity"
+    covers_risks: [R-PR16-05]
+
+# =============================================================================
+# 4. RISKS — material risks for this process
+# =============================================================================
+
+risks:
+
+  # ---------------------------------------------------------------------------
+  # R-PR16-01 — Unauthorized release of high-value wire payment by an insider
+  # ---------------------------------------------------------------------------
+  - risk_id: R-PR16-01
+    title: "Unauthorized release of high-value wire payment by an insider"
+    taxonomy_node_id: RIB-IFR
+    taxonomy_path: "Operational Risk > Internal Fraud / Internal Misconduct"
+    risk_owner: "Head of Wire Operations"
+    risk_owner_role_id: ROLE-WIRE-OPS-HEAD
+    second_line_owner: "Operational Risk Officer — Banking Operations"
+    description: >
+      A current or former employee with payment-system access — acting alone or
+      in collusion — releases an unauthorized high-value wire by (a) exploiting
+      a privileged override path, (b) circumventing dual-approval through a
+      workflow weakness or coverage gap, or (c) coordinating with an internal
+      accomplice acting as second approver. The economic exposure is acute
+      because single-payment values routinely exceed $50M, Fedwire and CHIPS
+      settlement is finality-binding within minutes of release, and historical
+      recovery rates on insider fraud in payments at peer institutions in the
+      ABA / ORX consortium dataset (2019–2024) sit below 18 percent of net
+      exposure.
+
+    risk_event: >
+      Unauthorized release of one or more high-value wire payments by an
+      insider, with funds exiting the institution before detection or recall.
+
+    causes:
+      - cause_id: people.internal_malicious_acts
+        category: People
+        classification: primary
+        rationale: >
+          The defining act is deliberate misappropriation by a person of trust
+          with system access. The remaining causes describe the conditions
+          that make the act possible or undetected; the act itself is the
+          primary cause.
+      - cause_id: process.design_failure
+        category: Process
+        classification: contributing
+        rationale: >
+          Where the maker-checker workflow permits the same user to act in
+          both originator and approver roles for an exception repair (for
+          example, by reassigning a queue item to themselves after rejection),
+          design weakness creates the opportunity. The institution has closed
+          the explicit single-user path but residual pathway risk remains
+          where temporary coverage assignments are used during incidents.
+      - cause_id: technology.inadequate_system_design_or_development
+        category: Technology
+        classification: contributing
+        rationale: >
+          A privilege model that grants a single high-trust account both
+          repair and release authority, or that tolerates break-glass
+          escalation without independent oversight, materially raises
+          residual likelihood. SYS-WWP enforces SoD at the platform layer,
+          but break-glass procedures have known logging-completeness gaps
+          (ISS-PR16-006).
+      - cause_id: people.cultural_or_conduct_weakness
+        category: People
+        classification: contributing
+        rationale: >
+          A culture that rewards queue-clearing throughput over careful
+          procedural adherence — or that informally tolerates "favor swaps"
+          between approvers under time pressure — increases the likelihood
+          that a determined insider can engineer an authorization chain.
+
+    consequences:
+      financial:
+        - "Direct misappropriation loss at the face value of unauthorized payment(s); historical peer-recovery rates below 18 percent of net exposure (ABA / ORX 2019–2024)."
+        - "Insurance recovery is partial and time-bound: the financial-institution bond / crime policy carries a $25M sub-limit per insider event with $5M deductible."
+      regulatory:
+        - "Suspicious Activity Report (SAR) filing within 30 days of detection; 90 days if subject identification is incomplete."
+        - "Likely MRA from OCC continuous monitoring team if the event reflects a control failure rather than a one-off circumvention."
+        - "Potential Federal Reserve enforcement under the Heightened Standards framework if the failure is systemic."
+        - "FinCEN reporting and possible coordination with law enforcement (FBI, USSS)."
+      reputational:
+        - "Insider-fraud headlines are durably damaging to commercial-banking franchise; peer events have produced multi-quarter deposit-flow consequences."
+        - "Rating agencies cite operational-risk controls explicitly in mid-tier bank surveillance; downgrade risk on material event."
+      customer:
+        - "Originating customer's funds are misappropriated; recovery uncertain and contractually contested."
+        - "Counterparty banks may suspend correspondent privileges pending investigation."
+      legal_litigation:
+        - "Civil claims from originating customer and any harmed counterparties."
+        - "Potential D&O exposure if board-level controls oversight is questioned."
+      operational:
+        - "Mandatory operational standdown of the impacted workflow during forensic review; cascade impact on wire-cutoff capacity."
+
+    affected_stakeholders:
+      - "Originating customer (commercial or retail account holder)"
+      - "Beneficiary bank and any onward correspondent parties"
+      - "Federal Reserve Bank operating Fedwire / CHIPS"
+      - "OCC, Federal Reserve Board (Operational Risk supervision)"
+      - "FinCEN (SAR consumer)"
+      - "Board of Directors and Audit Committee"
+      - "Shareholders and rating agencies"
+      - "Financial-institution bond carrier"
+
+    inherent_assessment:
+      impact_dimensions:
+        financial:
+          score: 4
+          rationale: >
+            A single unauthorized wire ≥ $50M is plausible given normal
+            transaction profiles. Multi-payment scenarios could drive net
+            exposure into $100M+ before detection given the daily $87B
+            volume. Insurance recovery is materially capped.
+        regulatory:
+          score: 4
+          rationale: >
+            SAR filing is automatic; an MRA is highly likely if pattern
+            suggests control failure. A material insider event has historical
+            precedent of producing formal enforcement actions at peers.
+        reputational:
+          score: 4
+          rationale: >
+            Insider fraud in payments commands media attention and produces
+            durable franchise damage. Peer events show 4–8 quarter recovery
+            arc for affected commercial deposit relationships.
+        customer:
+          score: 3
+          rationale: >
+            Direct customer impact is acute but bounded to the originating
+            party and immediate counterparties. Broader retail base less
+            exposed.
+        liquidity:
+          score: 2
+          rationale: >
+            Institution capacity absorbs realistic single-event loss without
+            liquidity stress; longer recovery arcs may pressure deposit
+            franchise but liquidity buffer remains adequate.
+      aggregate_impact_score: 4
+      aggregate_impact_method: "Maximum across dimensions (conservative)"
+      aggregate_impact_band: "Major"
+      likelihood_score: 3
+      likelihood_band: "Likely"
+      likelihood_rationale: >
+        Without compensating controls, peer experience indicates insider
+        fraud attempts in payments operations are persistent — ABA / ORX
+        consortium data shows 0.6 attempted events per $100B annual payment
+        volume across reporting peers (2019–2024). A "Likely" inherent
+        likelihood reflects this base rate before institution-specific
+        controls are applied.
+      inherent_rating:
+        score: 12
+        band: "High"
+        derivation: >
+          Maximum impact dimension (4 — Major) × likelihood (3 — Likely) = 12.
+          Per inherent_risk_matrix.yaml, scores 12-15 fall in the High band.
+          High inherent rating is consistent with peer benchmarking that
+          treats insider payment fraud as a top-quartile op-risk concern.
+
+    control_mapping:
+      - control_id: C-PR16-01
+        coverage_role: primary_preventive
+        coverage_strength: strong
+        addresses_root_causes:
+          - process.design_failure
+          - people.internal_malicious_acts
+        rationale: >
+          Platform-enforced dual approval for wires ≥ $1M directly counters
+          the primary cause path (deliberate release) and the design path
+          (single-user authorization). Strength is "strong" because
+          enforcement is at the platform layer (SYS-WWP), not procedural —
+          the approver field is workflow-bound and cannot be the originator.
+      - control_id: C-PR16-07
+        coverage_role: secondary_preventive
+        coverage_strength: strong
+        addresses_root_causes:
+          - technology.inadequate_system_design_or_development
+        rationale: >
+          Quarterly privileged-access recertification removes accumulated
+          access — a meaningful insider-fraud vector at peers — and
+          constrains the population of users who could exploit override
+          paths.
+      - control_id: C-PR16-03
+        coverage_role: tertiary_preventive
+        coverage_strength: moderate
+        addresses_root_causes:
+          - people.internal_malicious_acts
+        rationale: >
+          Out-of-band beneficiary callback intercepts insider-fraud variants
+          where the insider has substituted beneficiary details on a
+          legitimate payment. Moderate strength because callback is
+          triggered by detail-change rules, not by every release.
+      - control_id: C-PR16-09
+        coverage_role: detective
+        coverage_strength: moderate
+        addresses_root_causes:
+          - people.internal_malicious_acts
+        rationale: >
+          Real-time fraud rules engine flags anomalous release patterns —
+          unusual beneficiary, off-hours activity, atypical amount-for-user.
+          Detective rather than preventive; success depends on attacker
+          deviating from normal patterns.
+
+    control_environment:
+      overall_rating: "Strong"
+      design_summary: >
+        The control stack is well-designed for the primary cause path.
+        Dual-approval is enforced at the platform layer rather than via
+        procedure, and the SoD model excludes the originator from the
+        approver pool by ID, not just by name. Privileged-access governance
+        is workflow-driven with automated revocation. The detective layer
+        (fraud rules engine) provides independent assurance. Design gaps
+        are limited to break-glass logging completeness (ISS-PR16-006).
+      operating_summary: >
+        Q1-2026 sample testing of 1,247 transactions ≥ $1M showed zero
+        SoD violations and zero approver-originator collisions. Privileged
+        access recertification completion was 95.5% (target 100%; 11 of
+        247 users not recertified within 90-day window — ISS-PR16-007 open).
+        No internal-fraud anomaly flags converted to confirmed events in
+        trailing 12 months.
+      open_issues:
+        - issue_id: ISS-PR16-006
+          summary: "Privileged access not removed timely after role change for 2 staff during Q1"
+          status: "Closed (2026-03-12)"
+          severity: "Medium"
+        - issue_id: ISS-PR16-007
+          summary: "Quarterly recertification window slipped 9 times in Q1; 7 of 9 closed within 30 days, 2 in remediation"
+          status: "Open — In remediation"
+          severity: "Medium"
+
+    residual_assessment:
+      impact_dimensions:
+        financial: 4
+        regulatory: 4
+        reputational: 4
+        customer: 3
+        liquidity: 2
+      aggregate_impact_score: 4
+      likelihood_score: 1
+      likelihood_band: "Rare"
+      likelihood_rationale: >
+        Strong platform-enforced SoD, active PAM with quarterly
+        recertification, and detective fraud-rules layer reduce residual
+        likelihood from peer base rate to "Rare". Trailing 24-month internal
+        fraud event count is zero. Re-score is committed if peer benchmark
+        study (AP-PR16-01-M1) indicates upward shift in industry frequency.
+      residual_rating:
+        score: 4
+        band: "Medium-Low"
+        derivation: >
+          Aggregate impact (4 — Major) × residual likelihood (1 — Rare) = 4.
+          Per residual_risk_matrix.yaml, scores 4-7 fall in the
+          Medium-Low band. Note: management response rules elevate appetite
+          status to "Within with conditions" when residual likelihood relies
+          on a single dominant control (here: dual-approval at C-PR16-01).
+      appetite_status: "Within"
+      appetite_status_rationale: >
+        Residual Medium-Low aligns with the institution's qualitative
+        appetite of "Zero tolerance for confirmed events; controls must
+        sustain Rare residual likelihood." Quantitative threshold
+        APP-FRAUD-INT-01 (zero confirmed insider-fraud events in payments
+        per rolling 12 months) is currently met with 24-month clean record.
+      management_response: "Monitor and Sustain"
+      management_response_rationale: >
+        Per management_response_rules.yaml, residual within appetite with
+        clean trailing record warrants "Monitor and Sustain" rather than
+        active reduction. However, the open recertification slippage
+        (ISS-PR16-007) and the cultural sensitivities of insider risk
+        warrant continued investment in detective assurance and periodic
+        unannounced testing.
+
+    exposure_metrics:
+      - metric_id: KRI-PR16-01-A
+        name: "Segregation-of-Duties Violations on Payment Workflow"
+        type: "Spot"
+        unit: "count per quarter"
+        definition: >
+          Count of dual-approval bypass events (originator and approver are
+          the same user, or approver is below required grade) detected by
+          SYS-WWP audit log in a calendar quarter.
+        current_value: "0"
+        thresholds:
+          green: "0"
+          amber: "1"
+          red: "≥ 2"
+        frequency: "Continuous detection; monthly summary; quarterly trending"
+        owner: "Head of Wire Operations"
+        data_source: "SYS-WWP audit log"
+        escalation: >
+          Any Amber: immediate notification to Operational Risk Officer and
+          Head of Banking Operations within 4 hours; Red: same-day
+          escalation to Operational Risk Committee with concurrent SAR
+          review trigger.
+      - metric_id: KRI-PR16-01-B
+        name: "Privileged Access Recertification Compliance"
+        type: "Spot"
+        unit: "percent of population not recertified within window"
+        definition: >
+          Number of payment-system privileged users not recertified within
+          the 90-day window, divided by total privileged user population.
+        current_value: "4.5% (11 of 247 users)"
+        thresholds:
+          green: "≤ 2.0%"
+          amber: "2.1% – 5.0%"
+          red: "> 5.0%"
+        frequency: "Monthly snapshot; quarterly trending"
+        owner: "IAM Lead"
+        data_source: "SYS-IAM recertification module"
+        escalation: >
+          Amber sustained 2 consecutive months: Operational Risk Officer;
+          Red: ORC at next meeting with remediation plan.
+      - metric_id: KRI-PR16-01-C
+        name: "Privileged Override / Break-Glass Use"
+        type: "Spot"
+        unit: "count per month"
+        definition: >
+          Count of privileged-override or break-glass authorizations used
+          in payment workflow systems (SYS-WWP, SYS-CBP, SYS-IAM) per month.
+          Each use requires post-event independent review.
+        current_value: "3 (trailing month, all reviewed and disposed within 5 business days)"
+        thresholds:
+          green: "≤ 5 / month"
+          amber: "6 – 10 / month"
+          red: "> 10 / month"
+        frequency: "Daily detection; weekly summary; monthly review"
+        owner: "Head of Banking Operations IT"
+        data_source: "SYS-IAM and SYS-WWP audit logs"
+        escalation: >
+          Amber: Operational Risk Officer review of each event; Red:
+          ORC with concurrent independent review by Internal Audit.
+      - metric_id: KRI-PR16-01-D
+        name: "Trailing 12-Month Confirmed Internal Fraud Loss in Payments"
+        type: "Spot"
+        unit: "USD"
+        definition: >
+          Sum of confirmed internal-fraud losses attributable to payment
+          operations over trailing 12 months, gross of recovery.
+        current_value: "$0"
+        thresholds:
+          green: "$0"
+          amber: "$1 – $50,000"
+          red: "> $50,000"
+        frequency: "Monthly reporting; immediate on confirmed event"
+        owner: "Operational Risk Loss Database Lead"
+        data_source: "ORM event database (SYS-ORM)"
+        escalation: >
+          Any non-zero: ORC notification within 5 business days; loss
+          exceeds $250K: Audit Committee notification at next meeting.
+      - metric_id: KRI-PR16-01-E
+        name: "Fraud Rules Engine Internal-Actor Anomaly Flags"
+        type: "Forward"
+        unit: "count per quarter"
+        definition: >
+          Count of fraud-rules-engine anomaly alerts where the actor is
+          identified as an internal user, including false positives.
+        current_value: "2 (Q1 2026: one staff training event, one false positive)"
+        thresholds:
+          green: "0 – 2 / quarter"
+          amber: "3 – 5 / quarter"
+          red: "> 5 / quarter"
+        frequency: "Continuous detection; quarterly trending"
+        owner: "Financial Crimes / Fraud Operations"
+        data_source: "SYS-RFE (Real-Time Fraud Engine)"
+        escalation: >
+          Amber: ORM trend review within 30 days; Red: ORC plus immediate
+          root-cause analysis on each flag.
+
+    evidence_references:
+      - evidence_id: EV-PR16-01-001
+        description: "Q1-2026 dual-approval sample testing memo (1,247 transactions ≥ $1M; zero violations)"
+        retention: "7 years (regulatory)"
+        owner: "Operational Risk Testing"
+      - evidence_id: EV-PR16-01-002
+        description: "Q1-2026 PAM recertification report and exception log"
+        retention: "7 years"
+        owner: "IAM Lead"
+      - evidence_id: EV-PR16-01-003
+        description: "2026 annual SoD review for payment systems (independent assurance from Internal Audit)"
+        retention: "7 years"
+        owner: "Internal Audit"
+      - evidence_id: EV-PR16-01-004
+        description: "Q1-2026 break-glass authorization log with post-event review dispositions"
+        retention: "7 years"
+        owner: "Head of Banking Operations IT"
+
+    risk_appetite:
+      qualitative_statement: >
+        Zero tolerance for confirmed unauthorized release of payments by
+        an insider. Any single confirmed event triggers immediate
+        Operational Risk Committee escalation, root-cause analysis,
+        independent control assessment, and remediation plan reported to
+        the Audit Committee.
+      quantitative_threshold_id: APP-FRAUD-INT-01
+      quantitative_threshold: "Zero confirmed insider-fraud events per rolling 12 months"
+      current_position: "Within (24-month clean record)"
+      trend: "Stable"
+
+    recommended_action: >
+      Sustain the current control environment with three reinforcing
+      actions: (1) close residual recertification slippage (ISS-PR16-007)
+      by Q2 2026; (2) commission peer benchmark study to validate
+      residual likelihood scoring against industry trends; (3) execute
+      unannounced insider-fraud simulation drill in Q3 2026 to test
+      detective layer responsiveness.
+
+    action_plan:
+      - milestone_id: AP-PR16-01-M1
+        description: "Close ISS-PR16-007 recertification slippage; reach 100% on-window completion"
+        owner: "IAM Lead"
+        due_date: "2026-06-30"
+        status: "In progress (60% complete; 4 of 11 outstanding users recertified)"
+        dependencies: []
+      - milestone_id: AP-PR16-01-M2
+        description: "Commission peer benchmark study on insider-fraud frequency in payments operations"
+        owner: "Operational Risk Officer — Banking Operations"
+        due_date: "2026-09-30"
+        status: "Planned — RFP draft in review"
+        dependencies: []
+      - milestone_id: AP-PR16-01-M3
+        description: "Execute unannounced insider-fraud simulation drill on payments workflow"
+        owner: "Operational Risk Officer with Internal Audit observer"
+        due_date: "2026-09-30"
+        status: "Planned"
+        dependencies: ["AP-PR16-01-M1"]
+      - milestone_id: AP-PR16-01-M4
+        description: "Refresh insider-threat training for payment operations staff (annual)"
+        owner: "HR Business Partner with Operational Risk"
+        due_date: "2026-08-31"
+        status: "Planned — training content under refresh"
+        dependencies: []
+
+    review_challenge:
+      reviewer: "Chief Risk Officer designee"
+      reviewer_role: "Deputy CRO (Operations & Financial Crime)"
+      review_forum: "Operational Risk Committee"
+      review_date: "2026-04-29"
+      challenge_summary: >
+        Reviewer challenged whether residual likelihood of "Rare"
+        adequately reflects industry trend of rising internal-fraud
+        attempts in payments post-pandemic remote-work normalization.
+        Reviewer also probed reliance on platform-enforced SoD given
+        recent vendor patch deployment activity, asking whether a
+        mid-cycle SoD regression test was performed. Reviewer noted that
+        the institution has no recent unannounced testing of the detective
+        layer and recommended a Q3 simulation drill.
+      management_response: >
+        Risk Owner committed to (1) commission peer benchmark study
+        (AP-PR16-01-M2) and re-score residual if peer data indicates
+        frequency uplift; (2) confirmed compensating control via
+        pre-deployment SoD test pack and provided Q1-2026 patch test
+        evidence; (3) accepted Q3 unannounced drill recommendation
+        (AP-PR16-01-M3).
+      disposition: "Approved with monitoring conditions"
+      next_review: "2026-Q4 ORC (post peer benchmark)"
+      notes: >
+        Re-score scheduled for 2026-Q4 ORC contingent on peer benchmark
+        delivery. Drill outcome to be reported at same forum.
+
+  # ---------------------------------------------------------------------------
+  # R-PR16-02 — Aging exception backlog leads to missed customer cutoffs
+  # ---------------------------------------------------------------------------
+  # NOTE: This is the binding active risk for the process — currently outside
+  # appetite. It is the headline message of the executive summary.
+  # ---------------------------------------------------------------------------
+  - risk_id: R-PR16-02
+    title: "Aging payment-exception backlog breaches customer cutoffs and accumulates remediation cost"
+    taxonomy_node_id: RIB-BPR
+    taxonomy_path: "Operational Risk > Business Process Risk"
+    risk_owner: "Senior Manager — Exception Repair"
+    risk_owner_role_id: ROLE-EXCEPTION-MGR
+    second_line_owner: "Operational Risk Officer — Banking Operations"
+    description: >
+      Backlog of unresolved payment exceptions exceeds repair capacity,
+      causing payments to miss originator cutoffs (Fedwire 6:30 PM ET, CHIPS
+      5:00 PM ET, ACH next-day) and breach customer service-level
+      commitments. Material customer harm occurs when business-critical
+      payments (payroll, vendor settlement, tax payments, real-estate
+      closings) settle late, requiring institution-funded remediation. The
+      condition has been observed and is currently outside the institution's
+      operational-resilience appetite. Trailing 12-month customer remediation
+      payments total $1.4M against an annual appetite limit of $750K.
+
+    risk_event: >
+      Repeated customer-cutoff breaches across one or more payment channels
+      driven by aging exceptions in the repair queue, with cumulative customer
+      remediation, regulatory complaint volume, or reputational exposure
+      breaching defined appetite thresholds.
+
+    causes:
+      - cause_id: people.inadequate_workforce_management_resourcing
+        category: People
+        classification: primary
+        rationale: >
+          Capacity in the Exception Repair function (currently 25 FTE across
+          two shifts) is dimensioned to median exception volume (≈198/day)
+          but has insufficient surge headroom for the P95 day (≈340
+          exceptions). 18% voluntary attrition in trailing 12 months has
+          left 4 senior-grade roles open for an average of 67 days. This is
+          the dominant driver of the binding condition.
+      - cause_id: process.implementation_or_operating_failure
+        category: Process
+        classification: contributing
+        rationale: >
+          Escalation thresholds in the aging dashboard (C-PR16-02) are
+          documented but inconsistently applied — Q1-2026 sample testing
+          showed 11 of 47 aging-amber items not escalated within the
+          required 4-hour window (ISS-PR16-002), indicating implementation
+          drift.
+      - cause_id: external.client_conduct_or_error
+        category: External
+        classification: contributing
+        rationale: >
+          Approximately 38% of exceptions originate from upstream customer
+          input quality (malformed beneficiary data, missing reference,
+          stale account information). The institution has limited ability
+          to control inbound quality; mitigations focus on early customer
+          feedback loops and automated pre-validation at host-to-host
+          channels.
+      - cause_id: process.lack_of_clarity_or_ownership
+        category: Process
+        classification: contributing
+        rationale: >
+          For exception types touching multiple functions (e.g., a sanctions
+          hold that requires Compliance disposition before Operations can
+          repair), ownership of the aging clock is unclear and has been
+          observed to "pause" inappropriately, masking true age.
+
+    consequences:
+      financial:
+        - "Customer remediation payments — direct reimbursement for late-payment penalties, NSF fees, lost discount terms, and contractual late fees borne by the originator. Trailing 12-month total: $1.4M against $750K appetite."
+        - "Operational rework cost: each escalated breach requires Manager review, customer communication, root-cause documentation. Estimated internal cost ≈ $4,200 per breach event."
+      regulatory:
+        - "Regulator complaint volume: trailing 12-month CFPB complaint count attributable to payment-cutoff failures was 14, up from 6 in prior year — visible in OCC continuous monitoring."
+        - "Risk of MRA from OCC if pattern persists or if a single high-profile breach event reaches enforcement-relevance threshold."
+        - "Possible CFPB inquiry on commercial-customer treatment if breach pattern shows demographic skew."
+      reputational:
+        - "Commercial customer franchise damage: 2 commercial banking RFPs cited 'payment reliability' as a discriminator in Q1-2026 — direct attribution to backlog narrative."
+        - "Industry analyst surveillance: pattern visible in third-party operational-risk benchmarking (e.g., Aite, Celent)."
+      customer:
+        - "Direct customer harm — missed payroll, missed tax filings, lost contract discounts, supplier relationship damage. Q1-2026 saw 3 instances of customer-imposed wire-handling restrictions ('originate via competitor bank for time-sensitive items')."
+      operational:
+        - "Compounding effect — overflow into next-day queue further constrains capacity and increases probability of recurring breach (positive-feedback loop observed in February 2026)."
+
+    affected_stakeholders:
+      - "Originating commercial customers (especially those with same-day settlement requirements)"
+      - "Beneficiary parties (vendors, employees, counterparties of customers)"
+      - "Payment Operations staff (workload and morale impact)"
+      - "Customer Experience and Complaints function (downstream complaint handling)"
+      - "OCC continuous monitoring team and CFPB"
+      - "Operational Risk Committee and Audit Committee"
+
+    inherent_assessment:
+      impact_dimensions:
+        financial:
+          score: 3
+          rationale: >
+            Cumulative remediation, rework, and franchise-loss cost is
+            material at the segment level (>$1M annually under elevated
+            condition) but does not threaten enterprise capital. Bounded
+            because per-event customer harm rarely exceeds $50K direct
+            reimbursement.
+        regulatory:
+          score: 3
+          rationale: >
+            Pattern is visible to regulators but does not constitute a
+            standalone enforcement risk unless prolonged. CFPB / OCC
+            attention is "moderate concern" rather than "imminent action."
+          score_explanation: "Moderate"
+        reputational:
+          score: 3
+          rationale: >
+            Direct customer-cited reputational impact in commercial RFPs is
+            real and durable but franchise-bounded. Not headline-news scale
+            unless coupled with a high-profile event.
+        customer:
+          score: 4
+          rationale: >
+            Multiple, repeated, durable customer harm events with clear
+            attribution to the institution's process. Customer harm
+            dimension drives the aggregate impact rating.
+        liquidity:
+          score: 1
+          rationale: "Negligible direct liquidity consequence."
+      aggregate_impact_score: 4
+      aggregate_impact_method: "Maximum across dimensions (driven by Customer)"
+      aggregate_impact_band: "Major"
+      likelihood_score: 3
+      likelihood_band: "Likely"
+      likelihood_rationale: >
+        Without controls (capacity surge, dashboard, escalation), exception
+        backlog forms whenever inbound exception volume exceeds capacity
+        even briefly. Industry data shows 60-70% of mid-size banks
+        experience at least one quarterly cutoff-breach incident in
+        normal operating conditions.
+      inherent_rating:
+        score: 12
+        band: "High"
+        derivation: >
+          Maximum impact (4 — Major, Customer dimension) × likelihood (3 —
+          Likely) = 12. Per inherent_risk_matrix.yaml, score 12 is the
+          lower bound of the High band.
+
+    control_mapping:
+      - control_id: C-PR16-02
+        coverage_role: primary_detective_corrective
+        coverage_strength: moderate
+        addresses_root_causes:
+          - process.implementation_or_operating_failure
+          - process.lack_of_clarity_or_ownership
+        rationale: >
+          The exception aging dashboard with SLA-based escalation is the
+          designed primary mitigation. Strength is "moderate" (not strong)
+          because the design has known gaps (incomplete escalation
+          distribution, ISS-PR16-002; no urgency tiering by customer type,
+          ISS-PR16-003) and operating performance has shown drift (11
+          missed escalations in Q1 sample).
+      - control_id: C-PR16-08
+        coverage_role: secondary_preventive
+        coverage_strength: moderate
+        addresses_root_causes:
+          - people.inadequate_workforce_management_resourcing
+        rationale: >
+          Cross-training and rotation expands the population of staff who
+          can clear different exception types, reducing concentration risk
+          during peak periods. Currently at 60% certification coverage
+          versus 80% target — partial mitigation.
+      - control_id: C-PR16-10
+        coverage_role: tertiary_preventive
+        coverage_strength: moderate
+        addresses_root_causes:
+          - people.inadequate_workforce_management_resourcing
+        rationale: >
+          Quarterly business-continuity testing exercises surge-capacity
+          arrangements (off-shift call-in, contractor activation) which
+          materially reduce sustained backlog risk. Indirect mitigation —
+          tested but seldom invoked.
+
+    control_environment:
+      overall_rating: "Needs Improvement"
+      design_summary: >
+        The control stack is conceptually adequate but the primary
+        detective-corrective control (C-PR16-02) carries two open design
+        issues that materially weaken its coverage. The talent-management
+        control (C-PR16-08) is below target coverage. The control
+        environment relies on a workforce-resourcing assumption (median
+        capacity sufficient for median load) that has been invalidated by
+        observed P95 demand and elevated voluntary attrition.
+      operating_summary: >
+        Q1-2026 sample testing showed material operating drift: 11 of 47
+        aging-amber items not escalated within 4 hours; 3 confirmed cutoff
+        breaches in February driven by single-day backlog; cumulative
+        trailing-12-month customer remediation $1.4M against $750K
+        appetite. The condition is observed, persistent, and trending
+        sideways rather than improving.
+      open_issues:
+        - issue_id: ISS-PR16-002
+          summary: "Escalation distribution list incomplete — 4 of 12 routing rules omit second-line risk officer"
+          status: "Open — In remediation, Q2 close target"
+          severity: "Medium"
+        - issue_id: ISS-PR16-003
+          summary: "Aging dashboard does not differentiate urgency by customer cutoff type (commercial real-estate closing vs. routine vendor)"
+          status: "Open — Design phase, Q3 close target"
+          severity: "High"
+        - issue_id: ISS-PR16-008
+          summary: "Cross-training coverage at 60%, target 80%; 5 of 13 exception types have <3 trained operators"
+          status: "Open — In progress, Q3 close target"
+          severity: "Medium"
+
+    residual_assessment:
+      impact_dimensions:
+        financial: 3
+        regulatory: 3
+        reputational: 3
+        customer: 4
+        liquidity: 1
+      aggregate_impact_score: 4
+      likelihood_score: 3
+      likelihood_band: "Likely"
+      likelihood_rationale: >
+        Despite the control stack, observed Q1-2026 condition shows
+        3 confirmed cutoff breaches and 11 missed escalations. Residual
+        likelihood of "Likely" reflects the persistence of the underlying
+        capacity-vs-demand mismatch and known control design gaps. This
+        will not move below "Likely" until the open issues close and
+        cross-training reaches the 80% target.
+      residual_rating:
+        score: 12
+        band: "High"
+        derivation: >
+          Aggregate impact (4) × residual likelihood (3) = 12. Per
+          residual_risk_matrix.yaml, score 12 is at the lower bound of
+          the High band. This is the highest residual rating in the
+          PR-16 portfolio and the binding active risk.
+      appetite_status: "Outside Appetite"
+      appetite_status_rationale: >
+        Residual High rating breaches the qualitative appetite "Material
+        operational risks should sit at Medium-Low or below following
+        application of designed controls." Quantitative threshold
+        APP-OPSRES-PAY-02 ($750K annual customer remediation cap) is
+        exceeded by $650K trailing 12 months. Both qualitative and
+        quantitative thresholds are breached — clear "Outside Appetite"
+        status.
+      management_response: "Reduce — Active Remediation"
+      management_response_rationale: >
+        Per management_response_rules.yaml, residual outside appetite with
+        observed pattern requires "Reduce" response with active
+        remediation plan reported monthly to ORC. Risk Owner is accountable
+        for execution; Operational Risk Officer is accountable for
+        independent challenge of remediation effectiveness.
+
+    exposure_metrics:
+      - metric_id: KRI-PR16-02-A
+        name: "Customer Cutoff Breaches"
+        type: "Spot"
+        unit: "count per month"
+        definition: >
+          Count of payments that missed the originator's cutoff
+          (Fedwire 6:30 PM ET, CHIPS 5:00 PM ET, ACH same-day window) due
+          to an exception remaining in the repair queue past cutoff.
+        current_value: "5 (April 2026); 11 (Q1 2026 cumulative)"
+        thresholds:
+          green: "≤ 2 / month"
+          amber: "3 – 5 / month"
+          red: "> 5 / month"
+        frequency: "Daily detection; weekly summary; monthly ORC report"
+        owner: "Senior Manager — Exception Repair"
+        data_source: "SYS-WWP exception aging report joined to SYS-CBP cutoff log"
+        escalation: >
+          Amber: weekly review with Head of Wire Operations; Red: monthly
+          ORC with remediation status. Currently Red-flagged.
+      - metric_id: KRI-PR16-02-B
+        name: "Trailing 12-Month Customer Remediation Payments"
+        type: "Spot"
+        unit: "USD"
+        definition: >
+          Cumulative customer remediation payments arising from
+          payment-cutoff failures over trailing 12 months.
+        current_value: "$1,402,300 (May 2026 trailing-12-mo)"
+        thresholds:
+          green: "≤ $500,000"
+          amber: "$500,001 – $750,000"
+          red: "> $750,000"
+        frequency: "Monthly reporting; immediate on individual remediation > $50K"
+        owner: "Customer Experience and Operational Risk jointly"
+        data_source: "ORM event database (SYS-ORM); customer remediation ledger"
+        escalation: >
+          Red sustained: monthly ORC and quarterly Audit Committee report.
+          Currently breaching by $652,300.
+      - metric_id: KRI-PR16-02-C
+        name: "Exception Aging — P95 Time-to-Disposition"
+        type: "Spot"
+        unit: "hours"
+        definition: >
+          The 95th percentile time from exception arrival in the queue to
+          final disposition (released, rejected, or rerouted).
+        current_value: "14.8 hours"
+        thresholds:
+          green: "≤ 8 hours"
+          amber: "8 – 12 hours"
+          red: "> 12 hours"
+        frequency: "Daily measurement; weekly trending"
+        owner: "Senior Manager — Exception Repair"
+        data_source: "SYS-WWP exception aging report"
+        escalation: >
+          Red sustained 3 consecutive days: Head of Wire Operations and
+          ORM. Currently Red.
+      - metric_id: KRI-PR16-02-D
+        name: "Exception Repair Capacity Utilization"
+        type: "Forward"
+        unit: "percent"
+        definition: >
+          Average daily exception repair throughput as a percent of
+          designed-state capacity (ratio of demand to designed supply).
+        current_value: "97% (April 2026 daily average); 121% on peak days"
+        thresholds:
+          green: "≤ 80%"
+          amber: "80% – 90%"
+          red: "> 90%"
+        frequency: "Daily measurement; weekly trending"
+        owner: "Senior Manager — Exception Repair"
+        data_source: "SYS-WWP throughput report joined to staffing roster"
+        escalation: >
+          Red sustained: HR Business Partner and Head of Wire Operations
+          for headcount remediation. Currently Red.
+      - metric_id: KRI-PR16-02-E
+        name: "Exception Type Cross-Training Coverage"
+        type: "Forward"
+        unit: "percent"
+        definition: >
+          Percent of operations staff certified to handle all 13 defined
+          exception types.
+        current_value: "60%"
+        thresholds:
+          green: "≥ 80%"
+          amber: "70% – 79%"
+          red: "< 70%"
+        frequency: "Monthly snapshot"
+        owner: "Head of Wire Operations with HR Business Partner"
+        data_source: "Training management system (SYS-LMS)"
+        escalation: >
+          Red sustained: HR Business Partner and Head of Banking
+          Operations. Currently Red.
+      - metric_id: KRI-PR16-02-F
+        name: "Aging-Dashboard Escalation Compliance"
+        type: "Spot"
+        unit: "percent of escalations on time"
+        definition: >
+          Percent of aging-amber items escalated within the 4-hour SLA
+          per C-PR16-02 escalation matrix.
+        current_value: "77% (Q1 2026 sample of 47 items; 11 missed)"
+        thresholds:
+          green: "≥ 95%"
+          amber: "85% – 94%"
+          red: "< 85%"
+        frequency: "Monthly sample testing"
+        owner: "Operational Risk Officer (independent assurance)"
+        data_source: "Sample testing memo; SYS-WWP aging dashboard"
+        escalation: >
+          Amber or Red sustained: ORC monthly report with control
+          remediation plan. Currently Red.
+
+    evidence_references:
+      - evidence_id: EV-PR16-02-001
+        description: "Q1-2026 customer-cutoff breach log with per-event remediation amounts"
+        retention: "7 years"
+        owner: "Customer Experience"
+      - evidence_id: EV-PR16-02-002
+        description: "Q1-2026 escalation compliance sample testing memo (47 items, 36 on-time)"
+        retention: "7 years"
+        owner: "Operational Risk Testing"
+      - evidence_id: EV-PR16-02-003
+        description: "April 2026 capacity vs. demand analysis with attrition impact"
+        retention: "5 years"
+        owner: "Head of Wire Operations"
+      - evidence_id: EV-PR16-02-004
+        description: "Q1-2026 ORC remediation status report"
+        retention: "10 years"
+        owner: "Operational Risk Committee Secretary"
+      - evidence_id: EV-PR16-02-005
+        description: "Cross-training coverage matrix (May 2026 snapshot)"
+        retention: "5 years"
+        owner: "HR Business Partner"
+
+    risk_appetite:
+      qualitative_statement: >
+        Material operational risks should sit at Medium-Low or below
+        following the application of designed controls. Customer harm
+        from process failure should be exceptional, not recurring.
+      quantitative_threshold_id: APP-OPSRES-PAY-02
+      quantitative_threshold: "$750,000 annual cap on customer remediation payments arising from payment-process failures"
+      current_position: "Outside Appetite (trailing 12-month: $1,402,300; over by $652,300)"
+      trend: "Worsening (Q4 2025 $1,205K → Q1 2026 $1,402K trailing)"
+
+    recommended_action: >
+      Active remediation under ORC oversight with three concurrent
+      workstreams: (1) capacity restoration — fill 4 senior-grade
+      vacancies and add 3 surge-capacity contractor seats by 2026-Q2;
+      (2) control-design closure — close ISS-PR16-002 and ISS-PR16-003
+      to restore designed escalation effectiveness; (3) cross-training
+      acceleration — reach 75% coverage by 2026-Q3, 85% by 2026-Q4.
+      Risk Owner reports monthly to ORC until residual returns within
+      appetite for two consecutive quarters.
+
+    action_plan:
+      - milestone_id: AP-PR16-02-M1
+        description: "Fill 4 senior-grade vacancies in Exception Repair function (recruiting + onboarding)"
+        owner: "Head of Wire Operations with HR Business Partner"
+        due_date: "2026-06-30"
+        status: "In progress (2 of 4 offers extended; 2 in interview)"
+        dependencies: []
+      - milestone_id: AP-PR16-02-M2
+        description: "Activate 3 surge-capacity contractor seats with 30-day call-in capability"
+        owner: "Head of Wire Operations"
+        due_date: "2026-05-31"
+        status: "In progress (vendor selected; onboarding paperwork in flight)"
+        dependencies: []
+      - milestone_id: AP-PR16-02-M3
+        description: "Close ISS-PR16-002 escalation distribution gaps"
+        owner: "Senior Manager — Exception Repair"
+        due_date: "2026-06-30"
+        status: "In progress (8 of 12 routing rules updated and tested)"
+        dependencies: []
+      - milestone_id: AP-PR16-02-M4
+        description: "Close ISS-PR16-003 — implement urgency tiering by customer cutoff type in aging dashboard"
+        owner: "Head of Banking Operations IT with Senior Manager — Exception Repair"
+        due_date: "2026-09-30"
+        status: "Design phase (requirements drafted; vendor estimate pending)"
+        dependencies: []
+      - milestone_id: AP-PR16-02-M5
+        description: "Reach 75% cross-training coverage on all 13 exception types"
+        owner: "Head of Wire Operations with HR Business Partner"
+        due_date: "2026-09-30"
+        status: "On track (current 60% → 68% projected by July)"
+        dependencies: ["AP-PR16-02-M1"]
+      - milestone_id: AP-PR16-02-M6
+        description: "Reach 85% cross-training coverage on all 13 exception types"
+        owner: "Head of Wire Operations with HR Business Partner"
+        due_date: "2026-12-31"
+        status: "Planned"
+        dependencies: ["AP-PR16-02-M5"]
+      - milestone_id: AP-PR16-02-M7
+        description: "Independent re-assessment of residual risk rating after 6 months of remediation"
+        owner: "Operational Risk Officer — Banking Operations"
+        due_date: "2026-12-31"
+        status: "Planned"
+        dependencies: ["AP-PR16-02-M3", "AP-PR16-02-M4", "AP-PR16-02-M5"]
+
+    review_challenge:
+      reviewer: "Chief Risk Officer"
+      reviewer_role: "Group Chief Risk Officer"
+      review_forum: "Operational Risk Committee — extraordinary session"
+      review_date: "2026-04-29"
+      challenge_summary: >
+        Reviewer challenged the Risk Owner directly on three points:
+        (1) whether the proposed Q4-2026 return-to-appetite timeline is
+        credible given the 18% trailing-12-month attrition rate and the
+        67-day average time-to-fill for senior-grade roles — reviewer
+        flagged execution risk on AP-PR16-02-M1; (2) whether the
+        cross-training coverage target of 85% is sufficient given that 5
+        of 13 exception types have fewer than 3 trained operators —
+        reviewer asked for a per-exception-type minimum-coverage
+        commitment; (3) whether the institution should consider a
+        temporary throttle on inbound complex-exception channels (e.g.,
+        cross-border SWIFT MT103 with non-standard reference data) to
+        protect baseline service while remediation completes.
+      management_response: >
+        Risk Owner committed to (1) provide a recovery contingency plan
+        in the May ORC if June month-end metrics show no improvement;
+        (2) revise AP-PR16-02-M5 and -M6 to include per-exception-type
+        minimum coverage of 4 trained operators (added as condition);
+        (3) declined the throttle option as commercially unacceptable but
+        committed to a 30-day customer-feedback campaign to encourage
+        upstream data quality improvements at top 20 commercial originators.
+      disposition: "Approved with monthly ORC reporting and contingent re-review"
+      next_review: "2026-05-31 ORC (monthly until back within appetite)"
+      notes: >
+        This is the single binding active risk in the PR-16 portfolio.
+        ORC has elevated reporting cadence to monthly. CRO has
+        personally requested visibility on AP-PR16-02-M1 progress.
+
+  # ---------------------------------------------------------------------------
+  # R-PR16-03 — Business Email Compromise (BEC) / fraudulent payment via
+  #              exception repair channel
+  # ---------------------------------------------------------------------------
+  - risk_id: R-PR16-03
+    title: "Successful business email compromise or fraudulent payment instruction via exception-repair channel"
+    taxonomy_node_id: RIB-EFR
+    taxonomy_path: "Operational Risk > External Fraud"
+    risk_owner: "Head of Wire Operations"
+    risk_owner_role_id: ROLE-WIRE-OPS-HEAD
+    second_line_owner: "Financial Crimes / BSA-AML Officer"
+    description: >
+      An external threat actor — most commonly via business email
+      compromise (BEC), but including SIM-swap, vendor-impersonation, and
+      compromised customer credentials — submits a fraudulent payment
+      instruction or alters a legitimate one. The exception-repair channel
+      is a high-value attack surface because (a) repair operators are under
+      time pressure and trained to be helpful, (b) callbacks may be skipped
+      or accepted via a compromised channel, and (c) repaired payments
+      often re-enter the workflow with reduced scrutiny once "investigated."
+      One BEC event in February 2026 succeeded for $187K net loss after
+      $63K recovery — the basis for elevated residual likelihood scoring.
+
+    risk_event: >
+      Release of one or more payments to a fraudulent beneficiary based on
+      external-attacker-induced instruction, typically (but not exclusively)
+      via the exception-repair channel after the attacker has compromised
+      an originator's email account or impersonated a known counterparty.
+
+    causes:
+      - cause_id: external.external_malicious_or_criminal_acts
+        category: External
+        classification: primary
+        rationale: >
+          The defining act is deliberate criminal misappropriation by an
+          external party. BEC remains the FBI's #1 reported business fraud
+          type by dollar loss (IC3 2024 Internet Crime Report), making this
+          a persistent, well-resourced, evolving threat landscape.
+      - cause_id: people.inadequate_knowledge_skills_or_training
+        category: People
+        classification: contributing
+        rationale: >
+          The February 2026 BEC event succeeded because the operator
+          accepted the customer's apparent confirmation via a reply-all
+          email rather than executing the documented out-of-band callback.
+          Subsequent training-needs assessment confirmed gaps in BEC
+          pattern-recognition for the affected operator cohort.
+      - cause_id: process.implementation_or_operating_failure
+        category: Process
+        classification: contributing
+        rationale: >
+          The callback control (C-PR16-03) is documented and trained but
+          Q1-2026 sample testing showed 4 instances of skipped verification
+          across 200 sampled events — implementation drift driven by
+          time-pressure on the repair queue.
+      - cause_id: technology.inadequate_system_design_or_development
+        category: Technology
+        classification: contributing
+        rationale: >
+          The exception-repair workflow does not currently force a
+          callback-completion attestation field before allowing release;
+          the field exists but is text-free-form rather than
+          structured/required, allowing operators to release without
+          documenting verification.
+
+    consequences:
+      financial:
+        - "Direct misappropriation loss at face value of fraudulent payment(s); recovery rates on BEC are highly variable (range 15-50%) and time-decaying — recovery probability falls sharply after T+24h."
+        - "Insurance recovery via cyber / crime policy possible but coverage of BEC is widely contested and frequently sublimited."
+      regulatory:
+        - "SAR filing within 30 days; coordination with FBI IC3 expected on losses ≥$50K."
+        - "If pattern emerges, regulator may seek evidence of FFIEC-aligned wire-fraud controls."
+      reputational:
+        - "Affected customer's confidence is materially damaged; word-of-mouth in commercial-customer networks is significant."
+        - "Industry-publication coverage of BEC events involving named institutions is common."
+      customer:
+        - "Originating customer suffers direct misappropriation; repayment under most agreements is the customer's loss unless institution-side control failure is established."
+      legal_litigation:
+        - "Customer may pursue claim under UCC Article 4A if institution failed to follow commercially reasonable security procedures — exposure depends heavily on facts of each case."
+
+    affected_stakeholders:
+      - "Originating customer (typically commercial)"
+      - "Beneficiary bank receiving fraudulent funds (recovery counterparty)"
+      - "FinCEN / FBI / law enforcement"
+      - "Customer's insurer (where customer carries cyber insurance)"
+      - "BSA-AML and Financial Crimes function"
+      - "Operational Risk Committee"
+
+    inherent_assessment:
+      impact_dimensions:
+        financial:
+          score: 4
+          rationale: >
+            BEC events at peer institutions in commercial banking commonly
+            run $250K–$2M per successful event; multi-event campaigns
+            against single-institution operations have produced $5M+
+            cumulative loss exposures. Recovery is materially uncertain.
+        regulatory:
+          score: 3
+          rationale: >
+            SAR and law-enforcement coordination required but standard;
+            regulator focus is on control adequacy rather than the event
+            itself unless pattern emerges.
+        reputational:
+          score: 3
+          rationale: >
+            Damages affected customer relationship and segment-level
+            reputation; industry coverage is common but rarely franchise-
+            threatening unless event is high-profile or pattern.
+        customer:
+          score: 4
+          rationale: >
+            Direct, severe customer harm; customer often pursues claim
+            against institution. Per-event customer impact is acute.
+        liquidity:
+          score: 1
+          rationale: "Negligible — single events are absorbable."
+      aggregate_impact_score: 4
+      aggregate_impact_method: "Maximum across dimensions"
+      aggregate_impact_band: "Major"
+      likelihood_score: 3
+      likelihood_band: "Likely"
+      likelihood_rationale: >
+        Without controls, BEC attack volume against the institution is
+        substantial — Q1-2026 SYS-RFE detected 47 attempted fraudulent
+        payment instructions matching BEC patterns (4 confirmed attempts
+        intercepted at callback; 1 succeeded). Inherent likelihood is
+        "Likely" reflecting the high-frequency / well-resourced nature
+        of the threat landscape.
+      inherent_rating:
+        score: 12
+        band: "High"
+        derivation: >
+          Aggregate impact (4 — Major) × likelihood (3 — Likely) = 12.
+          Score 12 = lower bound of High band.
+
+    control_mapping:
+      - control_id: C-PR16-03
+        coverage_role: primary_preventive
+        coverage_strength: strong
+        addresses_root_causes:
+          - external.external_malicious_or_criminal_acts
+          - process.implementation_or_operating_failure
+        rationale: >
+          Out-of-band beneficiary callback is the BEC industry-best-
+          practice gold-standard preventive control. Strength is "strong"
+          by design (recorded line, two-channel verification, scripted
+          questions) but operating effectiveness has shown drift —
+          Q1-2026 sample showed 4 skipped verifications. The February 2026
+          BEC event is direct evidence of operating failure of this
+          control.
+      - control_id: C-PR16-09
+        coverage_role: secondary_preventive_detective
+        coverage_strength: strong
+        addresses_root_causes:
+          - external.external_malicious_or_criminal_acts
+        rationale: >
+          Real-time fraud rules engine with anomaly detection caught
+          4 confirmed BEC attempts in Q1-2026 before release. Strong
+          design (60+ rules, ML-anomaly scoring) and consistent operating
+          performance.
+      - control_id: C-PR16-01
+        coverage_role: tertiary_preventive
+        coverage_strength: moderate
+        addresses_root_causes:
+          - process.implementation_or_operating_failure
+        rationale: >
+          Dual-approval at high-value threshold provides a second pair of
+          eyes on payment release. Moderate against BEC because the
+          attacker's instruction is often legitimate-looking on the
+          surface — second approver's catch-rate depends on detail-level
+          attention rather than systemic check.
+
+    control_environment:
+      overall_rating: "Adequate with material findings"
+      design_summary: >
+        Three-layer defense (callback + fraud rules + dual approval) is
+        consistent with FFIEC and FS-ISAC industry guidance for BEC
+        defense. Design is sound. Material design weakness is the
+        non-mandatory callback-completion attestation field in SYS-WWP,
+        which permits operating drift. Compensating control via SYS-RFE
+        anomaly detection partially mitigates this design gap.
+      operating_summary: >
+        Q1-2026 callback compliance was 96% (196 of 200 sampled events).
+        4 missed events drove 1 confirmed BEC loss ($187K net of $63K
+        recovery). Fraud rules engine performed well — 4 confirmed
+        intercepts, 2 internal anomaly flags. Operating effectiveness is
+        "Adequate" with clearly identified gap requiring closure.
+      open_issues:
+        - issue_id: ISS-PR16-009
+          summary: "Callback-completion attestation field in SYS-WWP is free-text rather than structured/required"
+          status: "Open — Design phase, Q3 close target"
+          severity: "High"
+        - issue_id: ISS-PR16-010
+          summary: "BEC pattern-recognition training refresh required for 11 operators following February 2026 incident root-cause analysis"
+          status: "In progress (8 of 11 completed)"
+          severity: "Medium"
+
+    residual_assessment:
+      impact_dimensions:
+        financial: 4
+        regulatory: 3
+        reputational: 3
+        customer: 4
+        liquidity: 1
+      aggregate_impact_score: 4
+      likelihood_score: 2
+      likelihood_band: "Unlikely"
+      likelihood_rationale: >
+        With three-layer defense functioning as designed and attestation
+        gap remediation in flight, residual likelihood is "Unlikely" —
+        Q1-2026 event-rate of 1 successful event per ~12,000 sampled
+        repair-channel events. Likelihood is not "Rare" because the
+        attestation gap remains open and the threat environment is
+        actively evolving.
+      residual_rating:
+        score: 8
+        band: "Medium"
+        derivation: >
+          Aggregate impact (4 — Major) × residual likelihood (2 —
+          Unlikely) = 8. Score 8 = lower bound of Medium band.
+      appetite_status: "Within with conditions"
+      appetite_status_rationale: >
+        Residual Medium is at the upper edge of stated appetite ("Material
+        external-fraud risks should be at Medium-Low or Low after
+        controls"). Status is "Within with conditions" because (a) one
+        successful BEC event in trailing 12 months consumes the appetite
+        for two confirmed events, and (b) the open attestation issue
+        (ISS-PR16-009) means residual could deteriorate without
+        remediation.
+      management_response: "Reduce — Targeted Remediation"
+      management_response_rationale: >
+        Per management_response_rules.yaml, residual at appetite boundary
+        with open issues warrants targeted reduction effort focused on
+        closing ISS-PR16-009 (structured attestation) and completing
+        ISS-PR16-010 training refresh. Re-score after both close.
+
+    exposure_metrics:
+      - metric_id: KRI-PR16-03-A
+        name: "Confirmed BEC / Fraudulent Instruction Loss Events"
+        type: "Spot"
+        unit: "count per quarter"
+        definition: >
+          Count of confirmed external-fraud loss events arising from
+          fraudulent payment instructions where institution funds were
+          released and not fully recovered.
+        current_value: "1 (trailing 4 quarters: Feb 2026 event, $187K net loss)"
+        thresholds:
+          green: "0 / quarter"
+          amber: "1 / quarter"
+          red: "≥ 2 / quarter"
+        frequency: "Continuous detection; quarterly reporting"
+        owner: "Financial Crimes / Fraud Operations"
+        data_source: "ORM event database; SYS-RFE post-event analysis"
+        escalation: >
+          Any non-zero: ORC notification within 5 business days; sustained
+          Amber or any Red: monthly ORC reporting plus Audit Committee
+          notification.
+      - metric_id: KRI-PR16-03-B
+        name: "Callback Compliance Rate"
+        type: "Spot"
+        unit: "percent"
+        definition: >
+          Percent of repair events requiring beneficiary callback per
+          C-PR16-03 trigger rules where callback was completed and
+          documented before payment release.
+        current_value: "96.0% (Q1 2026; 196 of 204 sampled triggers)"
+        thresholds:
+          green: "≥ 99%"
+          amber: "97% – 98.9%"
+          red: "< 97%"
+        frequency: "Monthly sample testing (n ≥ 50/month); quarterly aggregation"
+        owner: "Operational Risk Officer (independent assurance)"
+        data_source: "SYS-WWP callback log + sample testing memo"
+        escalation: >
+          Amber: monthly review with Head of Wire Operations; Red: ORC.
+      - metric_id: KRI-PR16-03-C
+        name: "Fraud Rules Engine BEC Pattern Intercepts"
+        type: "Forward"
+        unit: "count per quarter"
+        definition: >
+          Count of attempted fraudulent payment instructions matching
+          BEC patterns intercepted by SYS-RFE before release.
+        current_value: "4 (Q1 2026 confirmed intercepts; +43 medium-confidence flags resolved)"
+        thresholds:
+          green: "Reported as informational — no threshold (rising count is healthy as long as bypass count is zero)"
+          amber: "n/a"
+          red: "n/a"
+        frequency: "Continuous; quarterly summary"
+        owner: "Financial Crimes / Fraud Operations"
+        data_source: "SYS-RFE"
+        escalation: >
+          Trend monitoring; spike of >50% quarter-over-quarter triggers
+          threat-intelligence review with FS-ISAC.
+      - metric_id: KRI-PR16-03-D
+        name: "BEC Pattern-Recognition Training Currency"
+        type: "Forward"
+        unit: "percent of staff with current certification"
+        definition: >
+          Percent of payment-operations staff with BEC pattern-recognition
+          training completed within trailing 12 months.
+        current_value: "73% (post-incident remediation in progress)"
+        thresholds:
+          green: "≥ 95%"
+          amber: "85% – 94%"
+          red: "< 85%"
+        frequency: "Monthly snapshot"
+        owner: "HR Business Partner with Operational Risk"
+        data_source: "Training management system (SYS-LMS)"
+        escalation: >
+          Red sustained: ORM and HR Business Partner with remediation
+          plan. Currently Red — under remediation per ISS-PR16-010.
+      - metric_id: KRI-PR16-03-E
+        name: "Time from BEC Detection to Recall Initiation"
+        type: "Spot"
+        unit: "minutes"
+        definition: >
+          Median time from detection of a BEC-released payment to
+          initiation of Fedwire / SWIFT recall request.
+        current_value: "47 minutes (single confirmed event Feb 2026)"
+        thresholds:
+          green: "≤ 30 minutes"
+          amber: "31 – 60 minutes"
+          red: "> 60 minutes"
+        frequency: "Per-event measurement; trended"
+        owner: "Senior Manager — Exception Repair"
+        data_source: "Incident response log"
+        escalation: >
+          Each event: post-incident review with Operational Risk and
+          Financial Crimes; Red: process improvement plan within 30 days.
+
+    evidence_references:
+      - evidence_id: EV-PR16-03-001
+        description: "February 2026 BEC incident root-cause analysis (lessons-learned memo, distributed to ORC)"
+        retention: "10 years"
+        owner: "Operational Risk Officer"
+      - evidence_id: EV-PR16-03-002
+        description: "Q1-2026 callback compliance sample testing memo (n=204)"
+        retention: "7 years"
+        owner: "Operational Risk Testing"
+      - evidence_id: EV-PR16-03-003
+        description: "Q1-2026 SYS-RFE BEC-pattern intercept log"
+        retention: "7 years"
+        owner: "Financial Crimes / Fraud Operations"
+      - evidence_id: EV-PR16-03-004
+        description: "BEC pattern-recognition training completion roster (May 2026)"
+        retention: "7 years"
+        owner: "HR Business Partner"
+
+    risk_appetite:
+      qualitative_statement: >
+        Material external-fraud risks should sit at Medium-Low or Low
+        following application of designed controls. Confirmed BEC events
+        with net loss should be exceptional, not patterned.
+      quantitative_threshold_id: APP-FRAUD-EXT-02
+      quantitative_threshold: "≤ 2 confirmed BEC loss events per rolling 12 months AND ≤ $500K cumulative net loss"
+      current_position: "Within with conditions (1 event, $187K trailing 12 months)"
+      trend: "Stable"
+
+    recommended_action: >
+      Close ISS-PR16-009 (structured attestation) by 2026-Q3 to address
+      the dominant operating-drift mechanism. Complete ISS-PR16-010
+      training refresh by 2026-Q2. Conduct semi-annual BEC simulation
+      drill with Operations staff. Engage with FS-ISAC for sector threat
+      intelligence sharing.
+
+    action_plan:
+      - milestone_id: AP-PR16-03-M1
+        description: "Close ISS-PR16-009 — implement structured callback-completion attestation in SYS-WWP"
+        owner: "Head of Banking Operations IT"
+        due_date: "2026-09-30"
+        status: "Design phase (requirements approved; vendor SOW signed)"
+        dependencies: []
+      - milestone_id: AP-PR16-03-M2
+        description: "Complete ISS-PR16-010 — BEC training refresh for remaining 3 operators"
+        owner: "HR Business Partner"
+        due_date: "2026-06-15"
+        status: "In progress (8 of 11 complete)"
+        dependencies: []
+      - milestone_id: AP-PR16-03-M3
+        description: "Execute Q2 2026 BEC simulation drill"
+        owner: "Operational Risk Officer with Financial Crimes"
+        due_date: "2026-06-30"
+        status: "Planned"
+        dependencies: ["AP-PR16-03-M2"]
+      - milestone_id: AP-PR16-03-M4
+        description: "Execute Q4 2026 BEC simulation drill (semi-annual cadence)"
+        owner: "Operational Risk Officer with Financial Crimes"
+        due_date: "2026-12-31"
+        status: "Planned"
+        dependencies: []
+      - milestone_id: AP-PR16-03-M5
+        description: "Refresh FS-ISAC threat-intel feed integration with SYS-RFE rules tuning cadence"
+        owner: "Financial Crimes / Fraud Operations"
+        due_date: "2026-08-31"
+        status: "Planned"
+        dependencies: []
+
+    review_challenge:
+      reviewer: "Deputy CRO (Financial Crimes)"
+      reviewer_role: "Deputy Chief Risk Officer — Financial Crimes"
+      review_forum: "Operational Risk Committee"
+      review_date: "2026-04-29"
+      challenge_summary: >
+        Reviewer challenged whether residual likelihood "Unlikely" is
+        adequately conservative given (a) the open attestation issue
+        ISS-PR16-009 has a Q3 target which means another full quarter of
+        exposure, and (b) FS-ISAC indicators showed 23% YoY rise in BEC
+        attempts targeting US mid-tier banks. Reviewer also probed
+        whether the Q1 callback compliance of 96% reflects sample-size
+        adequacy — at 200 sampled events from a population of ~3,500
+        callback-trigger events per quarter, sampling gives ~6.5% margin
+        of error which the reviewer noted is wide for a control being
+        relied on for residual scoring.
+      management_response: >
+        Risk Owner (1) accepted recommendation to expand monthly sample
+        size from 50 to 100 (added to AP-PR16-03 governance — not a new
+        milestone but a continuous process improvement); (2) provided
+        FS-ISAC threat-feed reference and committed to semi-annual joint
+        threat review with Cyber Defense; (3) agreed that residual
+        likelihood will remain "Unlikely" only contingent on AP-PR16-03-M1
+        closure — if attestation issue slips past Q3, residual likelihood
+        re-scores to "Likely" and risk re-rates to High.
+      disposition: "Approved with monitoring conditions"
+      next_review: "2026-07-31 ORC (post Q2 BEC drill)"
+      notes: >
+        ORC noted the appetite-condition framing — one event consumes
+        half the annual budget — and asked Risk Owner to re-affirm
+        appetite calibration in 2026-Q4 risk appetite refresh cycle.
+
+  # ---------------------------------------------------------------------------
+  # R-PR16-04 — OFAC / sanctions screening miss on a repaired payment
+  # ---------------------------------------------------------------------------
+  - risk_id: R-PR16-04
+    title: "Sanctions-screening miss on a repaired payment results in OFAC violation"
+    taxonomy_node_id: RIB-COM
+    taxonomy_path: "Regulatory Compliance Risk > Sanctions / OFAC"
+    risk_owner: "BSA / AML Officer"
+    risk_owner_role_id: ROLE-BSA-AML-OFFICER
+    second_line_owner: "Chief Compliance Officer"
+    description: >
+      A payment held for sanctions review is repaired by Operations and
+      released without re-screening, OR the screening engine misses a
+      sanctions hit on the post-repair payment string. Either path results
+      in funds transferred to or for the benefit of an OFAC-listed person
+      or jurisdiction in violation of US economic sanctions, exposing the
+      institution to civil monetary penalties (currently up to $355K per
+      violation under the Federal Civil Penalties Inflation Adjustment
+      Act), criminal liability where willful, and significant reputational
+      harm. The risk is acute because Operations repairs frequently change
+      precisely the fields the screening engine evaluates (beneficiary
+      name, address, bank identifier).
+
+    risk_event: >
+      Release and settlement of a payment that, post-repair, contains a
+      sanctioned party or sanctioned jurisdiction reference, without
+      having been intercepted by the sanctions screening engine.
+
+    causes:
+      - cause_id: process.implementation_or_operating_failure
+        category: Process
+        classification: primary
+        rationale: >
+          The dominant failure mode is the "rerun screening on repair"
+          procedural step being skipped or not enforced — Operations
+          repairs the payment, the post-repair version goes directly to
+          release rather than back through the screening engine. Industry
+          OFAC enforcement actions consistently cite this as the leading
+          root cause in payment-screening failures.
+      - cause_id: technology.inadequate_change_release_deployment
+        category: Technology
+        classification: contributing
+        rationale: >
+          The standby sanctions screening engine (SSE-2) has shown periodic
+          drift in OFAC-list refresh timing — observed 47-minute lag in
+          February 2026 (ISS-PR16-004) following a list-update push. List
+          drift of even minutes can result in a missed hit.
+      - cause_id: people.human_error
+        category: People
+        classification: contributing
+        rationale: >
+          Operator errors during repair — for example, retaining a partial
+          beneficiary name string that fails fuzzy-match thresholds
+          post-repair — can generate false negatives in screening.
+      - cause_id: external.regulatory_or_legislative_change
+        category: External
+        classification: contributing
+        rationale: >
+          OFAC list updates are frequent and unpredictable; the SDN list
+          and sectoral sanctions identifications can update multiple times
+          per business day during geopolitical events. Speed-of-list-
+          ingestion is a sustained operational challenge.
+
+    consequences:
+      financial:
+        - "Civil monetary penalty per violation: up to $355,430 in 2026 per OFAC's annual inflation adjustment, or twice the value of the underlying transaction, whichever is greater."
+        - "Potential criminal exposure where violation is willful: up to $1M per count plus up to 20 years imprisonment for individuals."
+        - "Disgorgement of any benefit retained from the prohibited transaction."
+      regulatory:
+        - "OFAC enforcement action with mandatory remediation undertakings and potential public Settlement Agreement."
+        - "Federal Reserve / OCC Matters Requiring Attention (MRA) on BSA/sanctions compliance program."
+        - "Reporting obligations to OFAC: Apparent Violations within reasonable time of discovery (typically within 30 days where required by self-disclosure expectations under the OFAC Enforcement Guidelines)."
+      reputational:
+        - "Public OFAC settlement is published and indexed; effect on franchise is durable and frequently cited in subsequent regulatory examination."
+        - "Counterparty due-diligence consequences: respondent banks may demand enhanced screening attestations."
+      legal_litigation:
+        - "Potential follow-on litigation from harmed parties under various civil-recovery theories."
+      operational:
+        - "Mandatory program-wide remediation with regulator oversight; consultant engagement common; multi-year cost in $M-low-tens."
+
+    affected_stakeholders:
+      - "OFAC (US Treasury Department)"
+      - "Federal Reserve, OCC (BSA / sanctions supervision)"
+      - "FinCEN"
+      - "Originating customer (potential aiding-and-abetting concerns)"
+      - "Counterparty banks"
+      - "Board of Directors and Audit Committee"
+      - "External counsel and any monitor appointed under enforcement"
+
+    inherent_assessment:
+      impact_dimensions:
+        financial:
+          score: 4
+          rationale: >
+            Per-violation penalties, multiplied by potential transaction
+            value, plus mandatory remediation cost, can drive single-
+            event total exposure into $10M+. Pattern-of-violation
+            settlements at peers have reached $50M-$100M.
+        regulatory:
+          score: 4
+          rationale: >
+            Sanctions enforcement is a top-tier regulatory priority;
+            consequences reach formal enforcement, potential CDO-style
+            mandates, and personal accountability for senior officers
+            under Heightened Standards.
+        reputational:
+          score: 4
+          rationale: >
+            Public OFAC settlement is indexable, citable, and durably
+            damaging. Industry coverage is intense and persistent.
+        customer:
+          score: 2
+          rationale: >
+            Direct customer harm is bounded — the originating customer's
+            transaction is blocked or unwound; secondary effects are
+            relationship-based rather than financial.
+        liquidity:
+          score: 1
+          rationale: "Negligible direct liquidity consequence."
+      aggregate_impact_score: 4
+      aggregate_impact_method: "Maximum across dimensions"
+      aggregate_impact_band: "Major"
+      likelihood_score: 3
+      likelihood_band: "Likely"
+      likelihood_rationale: >
+        Without screening controls, OFAC violations would occur regularly
+        given the volume of cross-border payments (~3,200 daily SWIFT
+        outbound) and the frequency of OFAC list updates. Industry
+        statistics suggest OFAC hit-rate is approximately 0.04% of
+        cross-border payments — at the institution's volume, this implies
+        ~3 hits per business day requiring intervention.
+      inherent_rating:
+        score: 12
+        band: "High"
+        derivation: >
+          Aggregate impact (4 — Major) × likelihood (3 — Likely) = 12.
+          Sanctions risk is a top-quartile regulatory-compliance concern
+          for any institution conducting cross-border payments.
+
+    control_mapping:
+      - control_id: C-PR16-04
+        coverage_role: primary_preventive
+        coverage_strength: strong
+        addresses_root_causes:
+          - process.implementation_or_operating_failure
+          - external.regulatory_or_legislative_change
+        rationale: >
+          Real-time sanctions screening at payment release with dual-engine
+          architecture (primary SSE-1, standby SSE-2) and vendor-supplied
+          OFAC list refresh is the FFIEC-aligned best-practice control.
+          Strong by design — automated, gate-level, list-refresh-managed.
+          One open issue (ISS-PR16-004 standby engine list-refresh drift)
+          partially constrains "Strong" rating but compensating control
+          via primary-engine independence sustains effectiveness.
+      - control_id: C-PR16-06
+        coverage_role: detective
+        coverage_strength: moderate
+        addresses_root_causes:
+          - process.implementation_or_operating_failure
+        rationale: >
+          Daily nostro reconciliation provides backstop visibility — a
+          payment to a sanctioned beneficiary that cleared screening would
+          be visible in reconciliation outputs and could be detected via
+          downstream review even if released. Detective rather than
+          preventive, but provides defense-in-depth.
+
+    control_environment:
+      overall_rating: "Strong"
+      design_summary: >
+        The dual-engine architecture with vendor-provided OFAC list and
+        independent list-refresh validation is industry-leading design.
+        The "rerun on repair" procedural step is enforced via SYS-WWP
+        workflow (a repaired payment cannot be released without traversal
+        of the screening node). Design closes the dominant failure modes
+        identified in peer enforcement actions.
+      operating_summary: >
+        Q1-2026 operating performance was strong: 100% of cross-border
+        payments traversed screening; 14,200 hits generated; 14,193
+        cleared after L1 review (false positives or whitelist matches);
+        7 escalated to L2 BSA/AML review; 2 generated blocked-transaction
+        reports filed with OFAC. Zero sanctions violations identified in
+        trailing 24 months. One open issue: ISS-PR16-004 standby engine
+        list-refresh drift (47-min lag observed Feb 2026).
+      open_issues:
+        - issue_id: ISS-PR16-004
+          summary: "Standby sanctions screening engine (SSE-2) shows periodic OFAC list-refresh drift up to 47 minutes following list-update events"
+          status: "Open — Vendor patch pending, Q2 close target"
+          severity: "Medium"
+
+    residual_assessment:
+      impact_dimensions:
+        financial: 4
+        regulatory: 4
+        reputational: 4
+        customer: 2
+        liquidity: 1
+      aggregate_impact_score: 4
+      likelihood_score: 1
+      likelihood_band: "Rare"
+      likelihood_rationale: >
+        Strong dual-engine screening with workflow-enforced "rerun on
+        repair", combined with detective layer via reconciliation, drives
+        residual likelihood to "Rare". Zero confirmed violations in
+        trailing 24 months, against ~3 daily hits processed. Residual is
+        not "Improbable" because the open list-refresh drift issue
+        creates a narrow but real window of exposure.
+      residual_rating:
+        score: 4
+        band: "Medium-Low"
+        derivation: >
+          Aggregate impact (4 — Major) × residual likelihood (1 — Rare)
+          = 4. Score 4 = lower bound of Medium-Low. Note: per
+          management_response_rules.yaml, qualitative zero-tolerance
+          appetite for sanctions violations supersedes the numeric band
+          and elevates appetite status to "Within with conditions".
+      appetite_status: "Within with conditions"
+      appetite_status_rationale: >
+        Quantitative residual score sits at Medium-Low. However,
+        institutional appetite for sanctions violations is qualitatively
+        zero — any confirmed violation triggers automatic ORC and Audit
+        Committee escalation regardless of residual score. The "with
+        conditions" framing reflects (a) zero-tolerance qualitative
+        position and (b) the open ISS-PR16-004 issue. Position is "within"
+        because no confirmed violations have occurred and the open issue
+        is in active remediation.
+      management_response: "Sustain — Active Monitoring"
+      management_response_rationale: >
+        Per management_response_rules.yaml, residual within appetite with
+        zero-tolerance qualitative overlay warrants "Sustain" with active
+        monitoring rather than full reduction. Closure of ISS-PR16-004
+        will eliminate the residual condition driving the "with
+        conditions" framing.
+
+    exposure_metrics:
+      - metric_id: KRI-PR16-04-A
+        name: "Confirmed Sanctions Violations"
+        type: "Spot"
+        unit: "count, rolling 12 months"
+        definition: >
+          Count of confirmed OFAC sanctions violations identified through
+          internal review, OFAC self-disclosure, or external examination.
+        current_value: "0 (trailing 24 months)"
+        thresholds:
+          green: "0"
+          amber: "n/a — any non-zero is Red under zero-tolerance appetite"
+          red: "≥ 1"
+        frequency: "Continuous detection; immediate on event"
+        owner: "BSA / AML Officer"
+        data_source: "ORM event database; OFAC reporting log"
+        escalation: >
+          Any non-zero: immediate ORC and Audit Committee notification
+          within 24 hours; OFAC self-disclosure assessment within 14 days.
+      - metric_id: KRI-PR16-04-B
+        name: "OFAC List-Refresh Lag — Standby Engine"
+        type: "Spot"
+        unit: "minutes (maximum observed lag in period)"
+        definition: >
+          Maximum observed lag between OFAC list-update event and standby
+          sanctions screening engine (SSE-2) ingestion completion in a
+          measurement period.
+        current_value: "47 minutes (peak February 2026; current 8 minutes)"
+        thresholds:
+          green: "≤ 5 minutes"
+          amber: "6 – 15 minutes"
+          red: "> 15 minutes"
+        frequency: "Per-list-update measurement; monthly trending"
+        owner: "Head of Banking Operations IT"
+        data_source: "SYS-SSE list-refresh audit log"
+        escalation: >
+          Red: immediate vendor escalation and ORC awareness; sustained
+          Red: re-rate residual likelihood pending remediation.
+      - metric_id: KRI-PR16-04-C
+        name: "Sanctions Screening Coverage Rate"
+        type: "Spot"
+        unit: "percent"
+        definition: >
+          Percent of in-scope outbound cross-border and high-risk domestic
+          payments traversing the sanctions screening engine before
+          release.
+        current_value: "100.00% (Q1 2026)"
+        thresholds:
+          green: "100%"
+          amber: "n/a"
+          red: "< 100%"
+        frequency: "Daily measurement; continuous monitoring"
+        owner: "BSA / AML Officer"
+        data_source: "SYS-WWP workflow log joined to SYS-SSE traversal log"
+        escalation: >
+          Any < 100%: immediate ORC notification; root-cause within
+          24 hours; OFAC self-disclosure assessment if any unscreened
+          payment hit a sanctioned party.
+      - metric_id: KRI-PR16-04-D
+        name: "L2 Sanctions Hit Disposition Time"
+        type: "Spot"
+        unit: "hours (median)"
+        definition: >
+          Median time from L2 escalation of a sanctions hit to final
+          disposition (release, block, or seek-license).
+        current_value: "3.4 hours"
+        thresholds:
+          green: "≤ 4 hours"
+          amber: "4 – 8 hours"
+          red: "> 8 hours"
+        frequency: "Per-event measurement; monthly trending"
+        owner: "BSA / AML Officer"
+        data_source: "SYS-SSE escalation queue"
+        escalation: >
+          Sustained Amber: monthly review with BSA/AML; Red: ORC.
+      - metric_id: KRI-PR16-04-E
+        name: "Repair-then-Release without Re-screening"
+        type: "Spot"
+        unit: "count per quarter"
+        definition: >
+          Count of payments observed via SYS-WWP audit log to have been
+          repaired and released without traversal of the sanctions
+          screening node post-repair.
+        current_value: "0 (Q1 2026)"
+        thresholds:
+          green: "0"
+          amber: "n/a — any non-zero is Red"
+          red: "≥ 1"
+        frequency: "Continuous detection via workflow audit; quarterly attestation"
+        owner: "Operational Risk Officer (independent assurance)"
+        data_source: "SYS-WWP workflow audit log analytics"
+        escalation: >
+          Any non-zero: immediate Operational Risk and BSA/AML review;
+          ORC notification regardless of whether a sanctions hit occurred.
+
+    evidence_references:
+      - evidence_id: EV-PR16-04-001
+        description: "Q1-2026 sanctions screening operational performance report (coverage rate, hit volume, disposition timing)"
+        retention: "10 years (regulatory)"
+        owner: "BSA / AML Officer"
+      - evidence_id: EV-PR16-04-002
+        description: "Q1-2026 OFAC blocked-transaction filings (2 events)"
+        retention: "10 years (regulatory)"
+        owner: "BSA / AML Officer"
+      - evidence_id: EV-PR16-04-003
+        description: "ISS-PR16-004 root-cause analysis and vendor-engagement record (Feb 2026 list-refresh lag event)"
+        retention: "7 years"
+        owner: "Head of Banking Operations IT"
+      - evidence_id: EV-PR16-04-004
+        description: "2026 Annual Sanctions Compliance Program self-assessment"
+        retention: "10 years (regulatory)"
+        owner: "Chief Compliance Officer"
+
+    risk_appetite:
+      qualitative_statement: >
+        Zero tolerance for sanctions violations. Any confirmed OFAC
+        violation triggers immediate Operational Risk Committee and
+        Audit Committee escalation, root-cause analysis, OFAC
+        self-disclosure assessment, and remediation plan reported to
+        the Board.
+      quantitative_threshold_id: APP-COMP-OFAC-01
+      quantitative_threshold: "Zero confirmed sanctions violations per rolling 12 months"
+      current_position: "Within (24-month clean record)"
+      trend: "Stable"
+
+    recommended_action: >
+      Sustain current control environment. Close ISS-PR16-004 standby
+      engine list-refresh drift via vendor patch by 2026-Q2. Maintain
+      annual sanctions program self-assessment cadence. Conduct
+      semi-annual independent program review by Internal Audit.
+
+    action_plan:
+      - milestone_id: AP-PR16-04-M1
+        description: "Close ISS-PR16-004 — apply vendor patch for SSE-2 list-refresh timing; validate via pen-test with simulated list update"
+        owner: "Head of Banking Operations IT with BSA/AML"
+        due_date: "2026-06-30"
+        status: "In progress (vendor patch in QA)"
+        dependencies: []
+      - milestone_id: AP-PR16-04-M2
+        description: "Q2 2026 unannounced repair-without-re-screen test (independent assurance test by ORM)"
+        owner: "Operational Risk Officer"
+        due_date: "2026-06-30"
+        status: "Planned"
+        dependencies: []
+      - milestone_id: AP-PR16-04-M3
+        description: "Annual Sanctions Compliance Program self-assessment refresh"
+        owner: "Chief Compliance Officer"
+        due_date: "2026-09-30"
+        status: "Annual cadence"
+        dependencies: []
+      - milestone_id: AP-PR16-04-M4
+        description: "Internal Audit semi-annual sanctions program review"
+        owner: "Internal Audit Director — Compliance"
+        due_date: "2026-12-31"
+        status: "Planned (next cycle)"
+        dependencies: []
+
+    review_challenge:
+      reviewer: "Chief Compliance Officer"
+      reviewer_role: "Chief Compliance Officer"
+      review_forum: "Operational Risk Committee + Compliance Committee joint review"
+      review_date: "2026-04-29"
+      challenge_summary: >
+        Reviewer challenged: (1) whether residual likelihood "Rare" is
+        sufficiently conservative given the open ISS-PR16-004 list-refresh
+        drift issue creates a narrow exposure window during list-update
+        events; (2) whether KRI-PR16-04-E (repair-then-release without
+        re-screen) is being detected via continuous workflow audit or
+        only via periodic sample testing — reviewer wanted assurance
+        that the metric reflects real-time control posture rather than
+        sample-based assurance; (3) whether the "with conditions"
+        appetite framing should be elevated to "Outside with mitigation"
+        given the zero-tolerance qualitative position.
+      management_response: >
+        Risk Owner (1) confirmed list-refresh drift exposure is
+        compensated by primary engine independence (SSE-1 list-refresh
+        currently within 5 min of source event, verified daily); (2)
+        confirmed KRI-PR16-04-E is sourced from continuous SYS-WWP audit
+        analytics with quarterly attestation, not sample testing —
+        provided technical specification post-meeting; (3) declined to
+        re-frame appetite status because no confirmed violations have
+        occurred — clarified that "with conditions" reflects open issue
+        rather than position relative to threshold. CCO accepted with
+        commitment to revisit if ISS-PR16-004 slips past Q2.
+      disposition: "Approved with Q2 ORC re-confirmation"
+      next_review: "2026-07-31 ORC (post ISS-PR16-004 closure)"
+      notes: >
+        Risk has been at zero confirmed events for 24+ months. Strong
+        control environment. Primary attention is closure of standby-
+        engine list-refresh drift.
+
+# =============================================================================
+# CONTINUATION MARKER — partial fixture
+# -----------------------------------------------------------------------------
+# This delivery contains 4 of 8 planned risks for PR-16:
+#   ✓ R-PR16-01  Internal Fraud — unauthorized release by insider
+#   ✓ R-PR16-02  Business Process — aging exception backlog (BINDING ACTIVE)
+#   ✓ R-PR16-03  External Fraud — BEC / fraudulent payment instruction
+#   ✓ R-PR16-04  Regulatory Compliance — OFAC / sanctions screening miss
+#   … R-PR16-05  Operational Resilience — payment platform unavailability
+#   … R-PR16-06  Data Management — reconciliation break / GL misstatement
+#   … R-PR16-07  Cyber — privileged credential compromise
+#   … R-PR16-08  Talent — key-person concentration in exception team
+#
+# `executive_summary` section also pending.
+# =============================================================================

@@ -62,6 +62,9 @@ class MatrixConfigLoader:
     def taxonomy_crosswalk(self) -> dict[str, Any]:
         return self.load("risk_taxonomy_crosswalk.yaml")
 
+    def root_cause_taxonomy(self) -> dict[str, Any]:
+        return self.load("root_cause_taxonomy.yaml")
+
     def config_snapshot(self) -> dict[str, Any]:
         return {
             "impact_scales": self.impact_scales(),
@@ -72,4 +75,5 @@ class MatrixConfigLoader:
             "control_effectiveness_criteria": self.control_effectiveness_criteria(),
             "management_response_rules": self.management_response_rules(),
             "risk_taxonomy_crosswalk": self.taxonomy_crosswalk(),
+            "root_cause_taxonomy": self.root_cause_taxonomy(),
         }

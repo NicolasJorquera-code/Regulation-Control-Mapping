@@ -1,0 +1,782 @@
+version: 2.0.0
+processes:
+- process_id: PR-01
+  process_name: 'Strategic Planning & Capital Allocation'
+  bu_id: BU-01
+  supporting_bu_ids: [BU-09, BU-11, BU-13]
+  description: Enterprise strategy, capital allocation, financial planning assumptions, risk appetite alignment, and investment prioritization for the commercial bank.
+  owner: Strategy Planning Director
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly planning cycle with monthly forecast updates
+  criticality: High
+  related_systems: [Enterprise Planning Platform, Capital Planning Model, Board Reporting Portal]
+  event_triggers: [Annual strategic plan refresh, Capital allocation decision, Material forecast variance]
+  data_objects: [Strategic plan, Capital allocation memo, Forecast scenario, Risk appetite constraint]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '1.3.1 / 1.3.5', process_name: 'Strategic Planning & Capital Allocation', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-02
+  process_name: 'Risk Appetite & Limit Setting'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-01, BU-09, BU-12]
+  description: Definition, calibration, approval, monitoring, and escalation of enterprise risk appetite statements, limits, triggers, and tolerance thresholds.
+  owner: Enterprise Risk Appetite Lead
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly committee review with monthly limit monitoring
+  criticality: Critical
+  related_systems: [GRC Platform, Risk Appetite Dashboard, Finance Data Mart]
+  event_triggers: [Limit breach, New product or strategy change, Quarterly risk committee cycle]
+  data_objects: [Risk appetite statement, Limit threshold, Breach log, Committee approval]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '1.2.x / 11.1.1', process_name: 'Risk Appetite & Limit Setting', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-03
+  process_name: 'Board & Executive Governance Reporting'
+  bu_id: BU-01
+  supporting_bu_ids: [BU-11, BU-12, BU-09]
+  description: Preparation, review, approval, and distribution of board and executive governance reporting across strategy, risk, finance, regulatory, and issue themes.
+  owner: Corporate Governance Director
+  last_reviewed: '2026-04-30'
+  cadence: Monthly executive reporting and quarterly board cycle
+  criticality: High
+  related_systems: [Board Reporting Portal, GRC Platform, Financial Reporting Warehouse]
+  event_triggers: [Board package deadline, Material risk escalation, Executive committee request]
+  data_objects: [Board deck, Executive dashboard, Action item log, Attestation record]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '1.4.3 / 12.1.4', process_name: 'Board & Executive Governance Reporting', confidence: 0.83, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-04
+  process_name: Strategic Initiative Portfolio Selection
+  bu_id: BU-01
+  supporting_bu_ids: [BU-13, BU-09, BU-11, BU-02]
+  description: Intake, scoring, funding, prioritization, approval, and monitoring of strategic initiatives and transformation investments.
+  owner: Strategic Portfolio Director
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly portfolio selection with monthly status refresh
+  criticality: High
+  related_systems: [Portfolio Management Platform, Finance Planning Platform, GRC Platform]
+  event_triggers: [New initiative intake, Funding gate, Material delivery risk]
+  data_objects: [Business case, Portfolio scorecard, Funding approval, Delivery risk log]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '1.3.2 / 1.3.3', process_name: Strategic Initiative Portfolio Selection, confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-05
+  process_name: 'New Product Approval & Lifecycle Mgmt'
+  bu_id: BU-02
+  supporting_bu_ids: [BU-11, BU-08, BU-03]
+  description: Product concept intake, risk assessment, legal and compliance review, technology readiness, launch approval, and lifecycle monitoring.
+  owner: Product Governance Manager
+  last_reviewed: '2026-04-30'
+  cadence: Per product gate with quarterly lifecycle review
+  criticality: Critical
+  related_systems: [Product Governance Workflow, GRC Platform, Digital Product Catalog]
+  event_triggers: [New product proposal, Material product change, Lifecycle review due]
+  data_objects: [Product proposal, Risk assessment, Approval memo, Launch checklist]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '2.1.2', process_name: 'New Product Approval & Lifecycle Mgmt', confidence: 0.88, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-06
+  process_name: 'Product Pricing & Master Data Mgmt'
+  bu_id: BU-02
+  supporting_bu_ids: [BU-09, BU-03, BU-08]
+  description: Maintenance of product pricing, rate tables, fee schedules, product attributes, approval evidence, and downstream master data feeds.
+  owner: Product Data Governance Lead
+  last_reviewed: '2026-04-30'
+  cadence: Monthly pricing review and event-driven change approval
+  criticality: High
+  related_systems: [Product Master Platform, Pricing Engine, General Ledger Platform]
+  event_triggers: [Rate change, Fee schedule update, Product attribute exception]
+  data_objects: [Pricing table, Fee schedule, Product master record, Approval log]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '2.1.4 / 3.2.2', process_name: 'Product Pricing & Master Data Mgmt', confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-07
+  process_name: 'Patents, Copyrights & Regulatory Product Requirements'
+  bu_id: BU-02
+  supporting_bu_ids: [BU-12, BU-11]
+  description: Identification, review, and maintenance of intellectual property, regulatory product obligations, disclosures, restrictions, and approval requirements.
+  owner: Product Requirements Counsel
+  last_reviewed: '2026-04-30'
+  cadence: Event-driven with annual requirement certification
+  criticality: High
+  related_systems: [Legal Matter System, Product Governance Workflow, Obligation Inventory]
+  event_triggers: [New requirement, Product change, Legal review request]
+  data_objects: [Requirement record, Legal opinion, Product obligation, Approval evidence]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '2.1.3', process_name: 'Patents, Copyrights & Regulatory Product Requirements', confidence: 0.79, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-08
+  process_name: 'Marketing Content & Disclosure Approval'
+  bu_id: BU-03
+  supporting_bu_ids: [BU-11, BU-02, BU-12]
+  description: Creation, review, approval, archival, and monitoring of marketing content, offers, claims, disclosures, and channel-specific communications.
+  owner: Marketing Compliance Manager
+  last_reviewed: '2026-04-30'
+  cadence: Per campaign with monthly monitoring
+  criticality: High
+  related_systems: [Marketing Review Workflow, Digital Asset Repository, Compliance Approval Portal]
+  event_triggers: [Campaign launch, Disclosure update, Complaint trend]
+  data_objects: [Marketing asset, Disclosure checklist, Approval record, Campaign evidence]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '3.3.9', process_name: 'Marketing Content & Disclosure Approval', confidence: 0.87, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-09
+  process_name: 'Sales Practices, Suitability & Incentive Mgmt'
+  bu_id: BU-03
+  supporting_bu_ids: [BU-11, BU-06, BU-07, BU-02]
+  description: Sales conduct monitoring, suitability review, incentive plan governance, complaint feedback, and corrective action tracking.
+  owner: Sales Conduct Officer
+  last_reviewed: '2026-04-30'
+  cadence: Monthly surveillance with quarterly incentive review
+  criticality: High
+  related_systems: [Sales Surveillance Platform, Incentive Compensation System, Complaint Case Platform]
+  event_triggers: [Sales exception, Incentive plan change, Customer complaint escalation]
+  data_objects: [Sales activity record, Suitability review, Incentive plan, Conduct exception]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '3.5.7 / 3.5.9', process_name: 'Sales Practices, Suitability & Incentive Mgmt', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-10
+  process_name: 'Channel Strategy & Customer Acquisition'
+  bu_id: BU-03
+  supporting_bu_ids: [BU-06, BU-08, BU-02]
+  description: Channel strategy, acquisition planning, campaign targeting, lead management, digital funnel monitoring, and conversion performance oversight.
+  owner: Channel Strategy Lead
+  last_reviewed: '2026-04-30'
+  cadence: Monthly channel performance review
+  criticality: High
+  related_systems: [CRM Platform, Digital Analytics Platform, Campaign Management Tool]
+  event_triggers: [New acquisition campaign, Channel performance variance, Customer journey issue]
+  data_objects: [Lead record, Campaign segment, Conversion metric, Channel strategy memo]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '3.2.3 / 3.2.6', process_name: 'Channel Strategy & Customer Acquisition', confidence: 0.81, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-11
+  process_name: 'Third-Party Risk Mgmt & Vendor Onboarding'
+  bu_id: BU-04
+  supporting_bu_ids: [BU-08, BU-11, BU-09]
+  description: Vendor intake, inherent risk assessment, due diligence, contract readiness, risk acceptance, and onboarding approval for third parties.
+  owner: Third-Party Risk Manager
+  last_reviewed: '2026-04-30'
+  cadence: Per vendor onboarding with annual recertification
+  criticality: Critical
+  related_systems: [Vendor Management Platform, Due Diligence Portal, Contract Repository]
+  event_triggers: [New vendor request, Critical vendor classification, Due diligence exception]
+  data_objects: [Vendor profile, Risk tier, Due diligence evidence, Onboarding approval]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '4.1.3', process_name: 'Third-Party Risk Mgmt & Vendor Onboarding', confidence: 0.89, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-12
+  process_name: 'Procurement, Contract & Ongoing Vendor Mgmt'
+  bu_id: BU-04
+  supporting_bu_ids: [BU-09, BU-10, BU-11]
+  description: Procurement sourcing, contract negotiation support, purchase approval, vendor performance review, renewal tracking, and exit planning.
+  owner: Procurement Operations Lead
+  last_reviewed: '2026-04-30'
+  cadence: Per procurement event with quarterly vendor review
+  criticality: High
+  related_systems: [Procurement Platform, Contract Lifecycle Tool, Accounts Payable System]
+  event_triggers: [Purchase request, Contract renewal, Vendor SLA miss]
+  data_objects: [Purchase order, Contract record, SLA scorecard, Renewal approval]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '4.1.4 / 4.1.5', process_name: 'Procurement, Contract & Ongoing Vendor Mgmt', confidence: 0.85, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-13
+  process_name: 'Customer Account Opening & KYC'
+  bu_id: BU-05
+  supporting_bu_ids: [BU-11, BU-08, BU-06, BU-03, BU-02]
+  description: Deposit account opening, identity verification, CIP, KYC, OFAC disposition, beneficial ownership, approval, and account booking.
+  owner: Account Opening Operations Manager
+  last_reviewed: '2026-04-30'
+  cadence: Continuous account intake with monthly QA sampling
+  criticality: Critical
+  related_systems: [Digital Onboarding Platform, Identity Verification Service, Sanctions Screening Platform]
+  event_triggers: [New account application, Identity verification exception, OFAC potential match]
+  data_objects: [Customer profile, CIP evidence, OFAC disposition, Account opening approval]
+  apqc_crosswalk: {framework: APQC Banking PCF, version: FI v2 demo, process_id: '5.1.1', process_name: 'Customer Account Opening & KYC', confidence: 0.91, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-14
+  process_name: 'Account Maintenance & Customer Servicing'
+  bu_id: BU-05
+  supporting_bu_ids: [BU-06, BU-08, BU-09]
+  description: Account profile updates, maintenance requests, customer servicing actions, approval controls, documentation, and downstream system synchronization.
+  owner: Account Servicing Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily servicing queue with weekly quality review
+  criticality: High
+  related_systems: [Deposit Core Platform, Customer Service Platform, Document Repository]
+  event_triggers: [Customer maintenance request, Profile update exception, Downstream sync failure]
+  data_objects: [Maintenance request, Customer profile update, Approval log, Servicing evidence]
+  apqc_crosswalk: {framework: APQC Banking PCF, version: FI v2 demo, process_id: '5.1.2 / 5.1.5', process_name: 'Account Maintenance & Customer Servicing', confidence: 0.87, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-15
+  process_name: 'Account Closure & Customer Offboarding'
+  bu_id: BU-05
+  supporting_bu_ids: [BU-06, BU-09, BU-11]
+  description: Account closure request intake, balance disposition, restriction review, customer communication, offboarding checks, and closure evidence retention.
+  owner: Account Closure Operations Lead
+  last_reviewed: '2026-04-30'
+  cadence: Daily closure processing with monthly QA
+  criticality: High
+  related_systems: [Deposit Core Platform, Case Management Tool, General Ledger Platform]
+  event_triggers: [Closure request, Dormancy or restriction alert, Balance exception]
+  data_objects: [Closure request, Balance disposition, Restriction review, Closure notice]
+  apqc_crosswalk: {framework: APQC Banking PCF, version: FI v2 demo, process_id: '5.1.3', process_name: 'Account Closure & Customer Offboarding', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-16
+  process_name: Payment Processing and Settlement (Wire/ACH)
+  bu_id: BU-05
+  supporting_bu_ids: [BU-09, BU-08, BU-11]
+  description: Wire and ACH processing, payment exception repair, dual approval, release, settlement monitoring, recall handling, and reconciliation to ledger activity.
+  owner: Payment Operations Manager
+  last_reviewed: '2026-04-30'
+  cadence: Intraday release monitoring with daily close certification
+  criticality: Critical
+  related_systems: [Payment Exception Workflow, Wire Transfer Gateway, ACH Processing System, General Ledger Reconciliation Platform]
+  event_triggers: [High-value repaired wire ready for release, Payment file mismatch, Recall or return request, Unreconciled settlement item]
+  data_objects: [Payment instruction, Wire file, ACH batch, Approval log, Settlement break]
+  apqc_crosswalk: {framework: APQC Banking PCF, version: FI v2 demo, process_id: '5.1.6', process_name: Payment Processing and Settlement (Wire/ACH), confidence: 0.93, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-17
+  process_name: 'Branch Cash Mgmt & Operations'
+  bu_id: BU-05
+  supporting_bu_ids: [BU-09, BU-10, BU-11]
+  description: Branch cash ordering, vault balancing, teller cash controls, shipment monitoring, surprise counts, and cash exception escalation.
+  owner: Branch Operations Director
+  last_reviewed: '2026-04-30'
+  cadence: Daily cash balancing with monthly branch review
+  criticality: High
+  related_systems: [Branch Cash Platform, Teller System, General Ledger Platform]
+  event_triggers: [Cash variance, Shipment discrepancy, Vault limit breach]
+  data_objects: [Cash order, Teller balancing report, Vault count, Exception log]
+  apqc_crosswalk: {framework: APQC Banking PCF, version: FI v2 demo, process_id: '5.1.4', process_name: 'Branch Cash Mgmt & Operations', confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-18
+  process_name: Customer Complaint Management
+  bu_id: BU-06
+  supporting_bu_ids: [BU-11, BU-03, BU-12, BU-02]
+  description: Complaint intake, classification, routing, response drafting, root-cause tracking, regulatory coding, and closure evidence retention.
+  owner: Complaint Management Director
+  last_reviewed: '2026-04-30'
+  cadence: Daily complaint intake with weekly aging review
+  criticality: Critical
+  related_systems: [Complaint Case Platform, CRM Platform, Regulatory Reporting Portal]
+  event_triggers: [New complaint, Aging threshold breach, Regulatory complaint referral]
+  data_objects: [Complaint case, Response letter, Root-cause code, Closure evidence]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '6.4.5', process_name: Customer Complaint Management, confidence: 0.91, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-19
+  process_name: 'Customer Inquiry & Problem Resolution'
+  bu_id: BU-06
+  supporting_bu_ids: [BU-05, BU-08, BU-07]
+  description: Customer inquiry intake, service request triage, operational handoff, resolution communication, escalation, and service quality monitoring.
+  owner: Customer Resolution Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily queue management with weekly trend review
+  criticality: High
+  related_systems: [CRM Platform, Customer Service Platform, Knowledge Management Tool]
+  event_triggers: [Customer inquiry, SLA aging breach, Repeated contact]
+  data_objects: [Inquiry case, Resolution note, Escalation record, SLA metric]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '6.4.4', process_name: 'Customer Inquiry & Problem Resolution', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-20
+  process_name: 'Customer Appeals, Grievances & Disputes'
+  bu_id: BU-06
+  supporting_bu_ids: [BU-11, BU-03, BU-12]
+  description: Customer dispute intake, appeals review, investigation, provisional credit decisioning, response timing, and closure documentation.
+  owner: Service Recovery Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily dispute case intake with weekly aging review
+  criticality: Critical
+  related_systems: [Dispute Case Platform, Deposit Core Platform, Customer Communication Archive]
+  event_triggers: [Customer dispute filed, Deadline approaching, Documentation request]
+  data_objects: [Dispute case, Customer attestation, Transaction record, Closure notice]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '6.4.6', process_name: 'Customer Appeals, Grievances & Disputes', confidence: 0.89, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-21
+  process_name: 'Talent Acquisition & Regulatory Onboarding'
+  bu_id: BU-07
+  supporting_bu_ids: [BU-08, BU-11, BU-13]
+  description: Recruiting, background screening, regulatory registration intake, access pre-provisioning, onboarding attestation, and hiring control evidence.
+  owner: Talent Acquisition Director
+  last_reviewed: '2026-04-30'
+  cadence: Per hire with monthly onboarding QA
+  criticality: High
+  related_systems: [Applicant Tracking System, HRIS, Background Screening Portal]
+  event_triggers: [New hire request, Screening exception, Registration requirement]
+  data_objects: [Candidate profile, Background check, Registration evidence, Onboarding checklist]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '7.2.4', process_name: 'Talent Acquisition & Regulatory Onboarding', confidence: 0.83, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-22
+  process_name: 'Training & Mandatory Compliance Education'
+  bu_id: BU-07
+  supporting_bu_ids: [BU-11, BU-08, BU-13, BU-02]
+  description: Assignment, delivery, completion tracking, escalation, and refresh of mandatory compliance, conduct, product, and role-based training.
+  owner: Compliance Training Manager
+  last_reviewed: '2026-04-30'
+  cadence: Annual curriculum with monthly completion monitoring
+  criticality: High
+  related_systems: [Learning Management System, HRIS, GRC Platform]
+  event_triggers: [Annual training launch, Overdue assignment, Policy change]
+  data_objects: [Training course, Completion record, Escalation notice, Attestation]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '7.3.4', process_name: 'Training & Mandatory Compliance Education', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-23
+  process_name: 'Performance, Compensation & Incentive Mgmt'
+  bu_id: BU-07
+  supporting_bu_ids: [BU-09, BU-11, BU-01]
+  description: Performance evaluation, compensation planning, incentive plan controls, conduct risk review, payroll handoff, and approval evidence.
+  owner: Compensation Governance Lead
+  last_reviewed: '2026-04-30'
+  cadence: Annual cycle with quarterly incentive monitoring
+  criticality: High
+  related_systems: [Performance Management System, Incentive Compensation System, Payroll Platform]
+  event_triggers: [Annual compensation cycle, Incentive plan change, Conduct exception]
+  data_objects: [Performance rating, Incentive plan, Compensation approval, Conduct review]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '7.3.2 / 7.5.1', process_name: 'Performance, Compensation & Incentive Mgmt', confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-24
+  process_name: 'Employee Relations & Misconduct Investigation'
+  bu_id: BU-07
+  supporting_bu_ids: [BU-11, BU-12, BU-08]
+  description: Employee relations case intake, misconduct investigation, evidence collection, legal review, disciplinary action, and reporting.
+  owner: Employee Relations Director
+  last_reviewed: '2026-04-30'
+  cadence: Event-driven with monthly case governance
+  criticality: High
+  related_systems: [Employee Relations Case Platform, Legal Matter System, HRIS]
+  event_triggers: [Misconduct allegation, Whistleblower referral, Investigation aging breach]
+  data_objects: [Investigation case, Interview record, Evidence file, Disciplinary decision]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '7.4.4', process_name: 'Employee Relations & Misconduct Investigation', confidence: 0.85, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-25
+  process_name: 'Payroll & Benefits Administration'
+  bu_id: BU-07
+  supporting_bu_ids: [BU-09, BU-08]
+  description: Payroll processing, benefits enrollment, deduction validation, employee data feeds, payment approval, and exception resolution.
+  owner: Payroll Operations Manager
+  last_reviewed: '2026-04-30'
+  cadence: Biweekly payroll with monthly reconciliation
+  criticality: High
+  related_systems: [Payroll Platform, HRIS, Benefits Administration System, General Ledger Platform]
+  event_triggers: [Payroll run, Deduction exception, Benefits eligibility change]
+  data_objects: [Payroll register, Benefits election, Deduction file, Reconciliation report]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '7.5.4 / 7.5.2', process_name: 'Payroll & Benefits Administration', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-26
+  process_name: 'Workforce Separation & Off-boarding'
+  bu_id: BU-07
+  supporting_bu_ids: [BU-08, BU-11, BU-10]
+  description: Employee separation intake, access removal, asset return, exit documentation, regulatory notification, and final pay coordination.
+  owner: Workforce Administration Manager
+  last_reviewed: '2026-04-30'
+  cadence: Per separation with weekly exception review
+  criticality: High
+  related_systems: [HRIS, Access Governance Platform, Asset Inventory Platform]
+  event_triggers: [Separation event, Access removal overdue, Asset return exception]
+  data_objects: [Separation record, Access removal ticket, Asset return log, Final pay record]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '7.6.2', process_name: 'Workforce Separation & Off-boarding', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-27
+  process_name: 'IT Access Mgmt & Recertification'
+  bu_id: BU-08
+  supporting_bu_ids: [BU-09, BU-11, BU-07]
+  description: Access request approval, privileged access governance, periodic recertification, role-change removal, emergency access review, and evidence retention.
+  owner: Identity Governance Manager
+  last_reviewed: '2026-04-30'
+  cadence: Monthly certification with weekly exception aging
+  criticality: Critical
+  related_systems: [Access Governance Platform, Privileged Access Management Platform, Service Desk Platform]
+  event_triggers: [Certification launch, Role change, Emergency access activation]
+  data_objects: [Entitlement record, Certification decision, Removal ticket, Session log]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '8.3.8', process_name: 'IT Access Mgmt & Recertification', confidence: 0.9, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-28
+  process_name: 'IT Change & Release Mgmt'
+  bu_id: BU-08
+  supporting_bu_ids: [BU-09, BU-11, BU-13]
+  description: Technology change intake, impact assessment, approval, testing evidence, release coordination, rollback readiness, and post-implementation review.
+  owner: Change Management Lead
+  last_reviewed: '2026-04-30'
+  cadence: Weekly change window with monthly governance review
+  criticality: Critical
+  related_systems: [Change Management Platform, CI/CD Pipeline, Configuration Inventory]
+  event_triggers: [Production change, Emergency release, Failed implementation]
+  data_objects: [Change ticket, Test evidence, Approval record, Rollback plan]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '8.6.3 / 8.6.4', process_name: 'IT Change & Release Mgmt', confidence: 0.89, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-29
+  process_name: 'IT Security, Privacy & Data Protection'
+  bu_id: BU-08
+  supporting_bu_ids: [BU-11, BU-04, BU-06]
+  description: Cyber control monitoring, privacy safeguards, data loss prevention, vulnerability triage, security incident support, and protection evidence.
+  owner: Cybersecurity Operations Director
+  last_reviewed: '2026-04-30'
+  cadence: Continuous monitoring with weekly remediation governance
+  criticality: Critical
+  related_systems: [Security Information and Event Management, Vulnerability Management Platform, DLP Platform]
+  event_triggers: [Critical alert, Privacy incident, Vulnerability SLA breach]
+  data_objects: [Security alert, Privacy incident record, Vulnerability finding, Risk acceptance]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '8.3.5', process_name: 'IT Security, Privacy & Data Protection', confidence: 0.92, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-30
+  process_name: 'IT Continuity & Disaster Recovery'
+  bu_id: BU-08
+  supporting_bu_ids: [BU-11, BU-05, BU-10]
+  description: Technology recovery planning, disaster recovery testing, system recovery objective validation, dependency mapping, and corrective action tracking.
+  owner: IT Resiliency Manager
+  last_reviewed: '2026-04-30'
+  cadence: Semiannual testing with quarterly plan refresh
+  criticality: Critical
+  related_systems: [Resiliency Planning Platform, Configuration Inventory, Incident Management Tool]
+  event_triggers: [DR test cycle, System outage, Recovery plan change]
+  data_objects: [Recovery plan, Test evidence, RTO/RPO metric, Corrective action]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '8.3.4 / 8.3.7', process_name: 'IT Continuity & Disaster Recovery', confidence: 0.88, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-31
+  process_name: 'IT Service Delivery & User Support'
+  bu_id: BU-08
+  supporting_bu_ids: [BU-05, BU-06, BU-11]
+  description: Service request intake, incident triage, user support, problem management, SLA monitoring, and operational communication.
+  owner: IT Service Delivery Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily service operations with monthly SLA review
+  criticality: High
+  related_systems: [Service Desk Platform, Monitoring Platform, Knowledge Management Tool]
+  event_triggers: [Major incident, SLA breach, Recurring service issue]
+  data_objects: [Service ticket, Incident record, SLA report, Problem ticket]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '8.7.6 / 8.7.8', process_name: 'IT Service Delivery & User Support', confidence: 0.83, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-32
+  process_name: 'Financial Close & Reporting'
+  bu_id: BU-09
+  supporting_bu_ids: [BU-08, BU-11, BU-12]
+  description: Close calendar management, journal processing, reconciliations, consolidation, financial reporting, disclosure support, and certification evidence.
+  owner: Financial Close Director
+  last_reviewed: '2026-04-30'
+  cadence: Monthly and quarterly close
+  criticality: Critical
+  related_systems: [General Ledger Platform, Close Management Tool, Financial Reporting Warehouse]
+  event_triggers: [Month-end close, Material reconciling item, Reporting adjustment]
+  data_objects: [Journal entry, Reconciliation, Close certification, Financial statement schedule]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '9.3.3 / 9.3.6', process_name: 'Financial Close & Reporting', confidence: 0.91, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-33
+  process_name: 'Accounts Payable & Vendor Payment Disbursement'
+  bu_id: BU-09
+  supporting_bu_ids: [BU-04, BU-08, BU-11]
+  description: Invoice intake, three-way match, approval routing, vendor payment disbursement, exception handling, and payment reconciliation.
+  owner: Accounts Payable Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily invoice processing with weekly payment run
+  criticality: High
+  related_systems: [Accounts Payable Platform, Procurement Platform, Payment Gateway]
+  event_triggers: [Payment run, Invoice exception, Vendor master change]
+  data_objects: [Invoice, Purchase order, Payment instruction, Approval record]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '9.6.1', process_name: 'Accounts Payable & Vendor Payment Disbursement', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-34
+  process_name: 'Treasury, Cash & Liquidity Mgmt'
+  bu_id: BU-09
+  supporting_bu_ids: [BU-01, BU-11, BU-05]
+  description: Cash positioning, liquidity stress monitoring, funding execution, securities settlement visibility, escalation, and governance reporting.
+  owner: Treasury Operations Lead
+  last_reviewed: '2026-04-30'
+  cadence: Daily liquidity close with weekly governance review
+  criticality: Critical
+  related_systems: [Treasury Workstation, Liquidity Monitoring Platform, General Ledger Platform]
+  event_triggers: [Daily liquidity close, Stress trigger breach, Large cash outflow]
+  data_objects: [Cash position, Liquidity scenario, Funding source, Escalation memo]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '9.7.2 / 9.7.4', process_name: 'Treasury, Cash & Liquidity Mgmt', confidence: 0.9, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-35
+  process_name: 'SOX Internal Controls Operation & Reporting'
+  bu_id: BU-09
+  supporting_bu_ids: [BU-08, BU-11, BU-13]
+  description: SOX scoping, control operation, testing coordination, deficiency assessment, management certification, and reporting.
+  owner: SOX Controls Director
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly testing with annual management assessment
+  criticality: Critical
+  related_systems: [SOX Compliance Platform, GRC Platform, Evidence Repository]
+  event_triggers: [Quarterly test cycle, Control deficiency, Management certification]
+  data_objects: [Control test, Evidence artifact, Deficiency record, Certification]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '9.8.1 / 9.8.2', process_name: 'SOX Internal Controls Operation & Reporting', confidence: 0.9, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-36
+  process_name: 'Tax Compliance & Reporting'
+  bu_id: BU-09
+  supporting_bu_ids: [BU-12, BU-11]
+  description: Tax data collection, calculation, review, filing, provision support, regulatory reporting, and issue response.
+  owner: Tax Reporting Manager
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly provision and annual filing cycle
+  criticality: High
+  related_systems: [Tax Reporting Platform, General Ledger Platform, Regulatory Filing Portal]
+  event_triggers: [Tax filing due, Tax law update, Provision variance]
+  data_objects: [Tax calculation, Filing package, Provision support, Review sign-off]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '9.9.2', process_name: 'Tax Compliance & Reporting', confidence: 0.83, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-37
+  process_name: 'Fixed Asset & Lease Accounting'
+  bu_id: BU-09
+  supporting_bu_ids: [BU-10, BU-04]
+  description: Fixed asset capitalization, depreciation, lease accounting, asset master maintenance, reconciliation, and disclosure support.
+  owner: Fixed Asset Accounting Manager
+  last_reviewed: '2026-04-30'
+  cadence: Monthly close with quarterly lease review
+  criticality: High
+  related_systems: [Fixed Asset Platform, Lease Accounting System, General Ledger Platform]
+  event_triggers: [New asset, Lease modification, Depreciation exception]
+  data_objects: [Asset record, Lease schedule, Depreciation run, Reconciliation]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '9.3.4', process_name: 'Fixed Asset & Lease Accounting', confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-38
+  process_name: 'Capital Expenditure & Construction Mgmt'
+  bu_id: BU-10
+  supporting_bu_ids: [BU-01, BU-09, BU-04, BU-11]
+  description: Capital project intake, budget approval, construction oversight, change order control, vendor coordination, capitalization, and closeout evidence.
+  owner: Capital Projects Director
+  last_reviewed: '2026-04-30'
+  cadence: Monthly project governance with event-driven approvals
+  criticality: High
+  related_systems: [Project Portfolio Platform, Procurement Platform, Fixed Asset Platform]
+  event_triggers: [Capital request, Budget variance, Change order]
+  data_objects: [Project budget, Construction contract, Change order, Capitalization support]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '10.2.1 / 10.2.4', process_name: 'Capital Expenditure & Construction Mgmt', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-39
+  process_name: 'Facilities Operations & Workspace Mgmt'
+  bu_id: BU-10
+  supporting_bu_ids: [BU-08, BU-11, BU-07]
+  description: Workspace management, facilities service requests, occupancy planning, safety checks, vendor coordination, and service-level monitoring.
+  owner: Facilities Operations Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily facilities operations with monthly service review
+  criticality: High
+  related_systems: [Facilities Work Order Platform, Space Management Tool, Vendor Management Platform]
+  event_triggers: [Service request, Safety exception, Occupancy change]
+  data_objects: [Work order, Inspection checklist, Space plan, SLA metric]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '10.1.3 / 10.1.4', process_name: 'Facilities Operations & Workspace Mgmt', confidence: 0.81, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-40
+  process_name: 'Physical Security & Premises Access Control'
+  bu_id: BU-10
+  supporting_bu_ids: [BU-08, BU-11, BU-07]
+  description: Premises access provisioning, badge administration, visitor controls, alarm monitoring, incident response, and physical security evidence.
+  owner: Physical Security Manager
+  last_reviewed: '2026-04-30'
+  cadence: Daily monitoring with monthly access review
+  criticality: Critical
+  related_systems: [Physical Access Control System, Visitor Management Platform, Security Incident Tool]
+  event_triggers: [Access exception, Security incident, Terminated employee access alert]
+  data_objects: [Badge record, Visitor log, Alarm event, Incident report]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '10.1.x', process_name: 'Physical Security & Premises Access Control', confidence: 0.8, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-41
+  process_name: 'Real Estate Portfolio & Lease Mgmt'
+  bu_id: BU-10
+  supporting_bu_ids: [BU-09, BU-04, BU-11]
+  description: Real estate portfolio strategy, lease negotiation support, lease renewal tracking, occupancy analysis, and accounting handoff.
+  owner: Real Estate Portfolio Manager
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly portfolio review with event-driven lease approvals
+  criticality: High
+  related_systems: [Lease Management System, Space Management Tool, Contract Repository]
+  event_triggers: [Lease renewal, New site request, Portfolio occupancy variance]
+  data_objects: [Lease record, Occupancy metric, Renewal approval, Portfolio analysis]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '10.1.1', process_name: 'Real Estate Portfolio & Lease Mgmt', confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-42
+  process_name: 'Asset Maintenance, Inspection & Decommissioning'
+  bu_id: BU-10
+  supporting_bu_ids: [BU-09, BU-04, BU-11]
+  description: Maintenance scheduling, inspection evidence, asset condition tracking, remediation, retirement, disposal, and decommissioning controls.
+  owner: Asset Maintenance Manager
+  last_reviewed: '2026-04-30'
+  cadence: Monthly maintenance cycle with annual inspection
+  criticality: High
+  related_systems: [Asset Management Platform, Facilities Work Order Platform, Fixed Asset Platform]
+  event_triggers: [Inspection due, Maintenance exception, Asset retirement]
+  data_objects: [Maintenance record, Inspection checklist, Asset condition, Decommissioning approval]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '10.3.x / 10.4.x', process_name: 'Asset Maintenance, Inspection & Decommissioning', confidence: 0.8, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-43
+  process_name: 'Enterprise Risk Assessment & Reporting'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-01, BU-09, BU-12]
+  description: Enterprise risk identification, assessment, scoring, aggregation, reporting, challenge, approval, and risk committee governance.
+  owner: Enterprise Risk Assessment Director
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly assessment with monthly risk reporting
+  criticality: Critical
+  related_systems: [GRC Platform, Risk Reporting Dashboard, Issue Management Tool]
+  event_triggers: [Quarterly RCSA cycle, Emerging risk event, Committee reporting deadline]
+  data_objects: [Risk assessment, Risk rating, Committee report, Challenge log]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '11.1.1 / 11.1.3', process_name: 'Enterprise Risk Assessment & Reporting', confidence: 0.91, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-44
+  process_name: 'Operational Risk Mgmt & RCSA'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-05, BU-06, BU-07, BU-08, BU-02]
+  description: Operational risk taxonomy maintenance, RCSA execution, control assessment, operational event capture, issue linkage, and management action tracking.
+  owner: Operational Risk Manager
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly RCSA with monthly operational event monitoring
+  criticality: Critical
+  related_systems: [GRC Platform, Operational Event Database, Control Testing Tool]
+  event_triggers: [RCSA cycle, Operational loss event, Control weakness]
+  data_objects: [RCSA record, Operational event, Control assessment, Management action]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '11.1.4', process_name: 'Operational Risk Mgmt & RCSA', confidence: 0.92, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-45
+  process_name: 'Financial Risk Mgmt (Credit/Market/Liquidity)'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-09, BU-05, BU-01]
+  description: Credit, market, and liquidity risk monitoring, risk rating review, stress testing, limit management, escalation, and governance reporting.
+  owner: Financial Risk Director
+  last_reviewed: '2026-04-30'
+  cadence: Daily monitoring with monthly risk committee review
+  criticality: Critical
+  related_systems: [Credit Risk Dashboard, Market Risk Platform, Liquidity Monitoring Platform]
+  event_triggers: [Limit breach, Rating override, Stress scenario breach]
+  data_objects: [Risk metric, Limit utilization, Risk rating, Stress result]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '11.1.5', process_name: 'Financial Risk Mgmt (Credit/Market/Liquidity)', confidence: 0.91, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-46
+  process_name: 'Compliance Testing & Issues Remediation'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-12, BU-08, BU-05, BU-02]
+  description: Compliance monitoring, testing, issue identification, remediation planning, validation, closure evidence, and regulatory reporting.
+  owner: Compliance Testing Director
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly testing plan with monthly issue remediation review
+  criticality: Critical
+  related_systems: [Compliance Testing Tool, Issue Management Platform, GRC Platform]
+  event_triggers: [Testing plan cycle, Issue aging breach, Regulatory finding]
+  data_objects: [Test script, Finding, Remediation plan, Validation evidence]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '11.2.2 / 11.3.1', process_name: 'Compliance Testing & Issues Remediation', confidence: 0.91, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-47
+  process_name: 'Business Continuity Planning & Testing'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-08, BU-05, BU-10]
+  description: Business continuity plan maintenance, impact analysis, recovery strategy, tabletop testing, exercise evidence, and corrective action tracking.
+  owner: Business Continuity Manager
+  last_reviewed: '2026-04-30'
+  cadence: Annual testing with quarterly plan refresh
+  criticality: Critical
+  related_systems: [Continuity Planning Platform, Resiliency Dashboard, Issue Management Tool]
+  event_triggers: [BCP test cycle, Business disruption, Plan owner change]
+  data_objects: [Continuity plan, Business impact analysis, Test result, Corrective action]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '11.4.2 / 11.4.3', process_name: 'Business Continuity Planning & Testing', confidence: 0.9, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-48
+  process_name: 'Crisis & Incident Management'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-08, BU-12, BU-01]
+  description: Crisis intake, incident command activation, executive communication, regulatory notification coordination, resolution tracking, and post-incident review.
+  owner: Incident Response Director
+  last_reviewed: '2026-04-30'
+  cadence: Event-driven with quarterly exercise
+  criticality: Critical
+  related_systems: [Incident Management Tool, Crisis Communications Platform, GRC Platform]
+  event_triggers: [Major incident, Crisis declaration, Regulatory notification trigger]
+  data_objects: [Incident record, Situation report, Decision log, Post-incident review]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '11.4.x', process_name: 'Crisis & Incident Management', confidence: 0.87, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-49
+  process_name: 'Model Risk Mgmt & Validation'
+  bu_id: BU-11
+  supporting_bu_ids: [BU-09, BU-08, BU-13]
+  description: Model inventory, model risk tiering, validation, performance monitoring, issue remediation, change control, and governance reporting.
+  owner: Model Risk Officer
+  last_reviewed: '2026-04-30'
+  cadence: Annual validation with quarterly monitoring
+  criticality: Critical
+  related_systems: [Model Inventory Platform, Validation Workflow, Analytics Repository]
+  event_triggers: [New model, Validation due, Performance threshold breach]
+  data_objects: [Model inventory record, Validation report, Monitoring metric, Remediation plan]
+  apqc_crosswalk: {framework: SR 11-7, version: FI v2 demo, process_id: 'SR 11-7', process_name: 'Model Risk Mgmt & Validation', confidence: 0.94, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-50
+  process_name: 'Regulatory Examination & Inquiry Response'
+  bu_id: BU-12
+  supporting_bu_ids: [BU-11, BU-09, BU-01]
+  description: Examination planning, request intake, evidence collection, response coordination, management review, submission, and commitment tracking.
+  owner: Regulatory Affairs Director
+  last_reviewed: '2026-04-30'
+  cadence: Event-driven with weekly exam status governance
+  criticality: Critical
+  related_systems: [Regulatory Request Portal, Document Repository, Issue Management Platform]
+  event_triggers: [Exam request, Supervisory inquiry, Response deadline]
+  data_objects: [Exam request, Evidence package, Response letter, Commitment tracker]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '12.3.1 / 12.3.2', process_name: 'Regulatory Examination & Inquiry Response', confidence: 0.9, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-51
+  process_name: 'Regulatory Filings & Public Disclosure'
+  bu_id: BU-12
+  supporting_bu_ids: [BU-09, BU-11]
+  description: Regulatory filing preparation, data certification, legal and risk review, public disclosure coordination, submission, and retention.
+  owner: Regulatory Reporting Counsel
+  last_reviewed: '2026-04-30'
+  cadence: Monthly, quarterly, and annual filing calendars
+  criticality: Critical
+  related_systems: [Regulatory Filing Portal, Financial Reporting Warehouse, Disclosure Management Tool]
+  event_triggers: [Filing deadline, Disclosure update, Data certification exception]
+  data_objects: [Filing package, Disclosure draft, Certification, Submission receipt]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '12.3.1', process_name: 'Regulatory Filings & Public Disclosure', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-52
+  process_name: 'Government, Industry & Community Relations'
+  bu_id: BU-12
+  supporting_bu_ids: [BU-01, BU-11, BU-03]
+  description: Government affairs, industry association coordination, community relations, CRA-relevant engagement, stakeholder messaging, and response tracking.
+  owner: Public Affairs Director
+  last_reviewed: '2026-04-30'
+  cadence: Monthly stakeholder review with event-driven updates
+  criticality: High
+  related_systems: [Stakeholder Management Platform, Communications Archive, CRA Reporting Repository]
+  event_triggers: [Government inquiry, Community engagement, Industry consultation]
+  data_objects: [Stakeholder contact, Engagement record, Position memo, Community impact evidence]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '12.2.x / 12.5.1', process_name: 'Government, Industry & Community Relations', confidence: 0.8, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-53
+  process_name: 'Investor & Analyst Relations'
+  bu_id: BU-12
+  supporting_bu_ids: [BU-01, BU-09, BU-11]
+  description: Investor communication, analyst materials, earnings support, Q&A preparation, disclosure controls, and relationship tracking.
+  owner: Investor Relations Director
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly earnings cycle with event-driven updates
+  criticality: High
+  related_systems: [Investor Relations CRM, Disclosure Management Tool, Financial Reporting Warehouse]
+  event_triggers: [Earnings release, Analyst inquiry, Market event]
+  data_objects: [Investor presentation, Q&A log, Disclosure review, Analyst contact]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '12.1.1 / 12.1.2', process_name: 'Investor & Analyst Relations', confidence: 0.81, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-54
+  process_name: 'Legal Affairs, Litigation & Contract Negotiation'
+  bu_id: BU-12
+  supporting_bu_ids: [BU-11, BU-04, BU-02]
+  description: Legal matter intake, litigation management, legal hold coordination, contract negotiation, advice tracking, and outside counsel management.
+  owner: Legal Operations Counsel
+  last_reviewed: '2026-04-30'
+  cadence: Event-driven with monthly legal matter review
+  criticality: High
+  related_systems: [Legal Matter System, Contract Repository, eDiscovery Platform]
+  event_triggers: [New legal matter, Contract negotiation, Legal hold event]
+  data_objects: [Legal matter, Contract draft, Legal opinion, Litigation reserve support]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '12.4.7 / 12.4.8 / 12.4.9', process_name: 'Legal Affairs, Litigation & Contract Negotiation', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-55
+  process_name: 'Media & Corporate Communications'
+  bu_id: BU-12
+  supporting_bu_ids: [BU-01, BU-11, BU-03]
+  description: Media inquiry intake, corporate messaging, executive communications, crisis communications support, approval, publication, and archive.
+  owner: Corporate Communications Director
+  last_reviewed: '2026-04-30'
+  cadence: Event-driven with weekly communications review
+  criticality: High
+  related_systems: [Communications Approval Workflow, Media Monitoring Platform, Corporate Website CMS]
+  event_triggers: [Media inquiry, Corporate announcement, Crisis communication]
+  data_objects: [Media response, Talking points, Approval record, Publication evidence]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '12.5.2 / 12.5.4', process_name: 'Media & Corporate Communications', confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-56
+  process_name: 'Project & Program Portfolio Mgmt'
+  bu_id: BU-13
+  supporting_bu_ids: [BU-08, BU-11, BU-01]
+  description: Program intake, prioritization, delivery governance, dependency management, benefits tracking, risk escalation, and portfolio reporting.
+  owner: EPMO Director
+  last_reviewed: '2026-04-30'
+  cadence: Monthly portfolio governance
+  criticality: High
+  related_systems: [Portfolio Management Platform, Project Delivery Tool, Risk Issue Dependency Log]
+  event_triggers: [New program intake, Milestone slippage, Dependency risk]
+  data_objects: [Program charter, Portfolio status, Dependency log, Benefits case]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '13.2.1 / 13.2.2 / 13.2.3', process_name: 'Project & Program Portfolio Mgmt', confidence: 0.86, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-57
+  process_name: Enterprise Change Management
+  bu_id: BU-13
+  supporting_bu_ids: [BU-08, BU-07, BU-11, BU-02]
+  description: Change impact assessment, readiness planning, stakeholder engagement, communications, training handoff, adoption measurement, and risk escalation.
+  owner: Enterprise Change Lead
+  last_reviewed: '2026-04-30'
+  cadence: Per change release with monthly adoption review
+  criticality: High
+  related_systems: [Change Portfolio Platform, Learning Management System, Communications Workflow]
+  event_triggers: [Transformation release, Adoption metric miss, Stakeholder readiness gap]
+  data_objects: [Change impact assessment, Readiness plan, Adoption metric, Communication plan]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '13.4.x', process_name: Enterprise Change Management, confidence: 0.82, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-58
+  process_name: 'Data Governance & Quality (BCBS 239)'
+  bu_id: BU-13
+  supporting_bu_ids: [BU-08, BU-09, BU-11]
+  description: Data ownership, data quality rules, lineage, controls, issue remediation, certification, and risk data aggregation governance.
+  owner: Data Governance Director
+  last_reviewed: '2026-04-30'
+  cadence: Monthly data quality review with quarterly governance forum
+  criticality: Critical
+  related_systems: [Data Governance Platform, Data Quality Engine, Enterprise Data Warehouse]
+  event_triggers: [Data quality threshold breach, Critical data element change, Lineage exception]
+  data_objects: [Critical data element, Data quality rule, Lineage record, Data issue]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '13.x / 8.4.x', process_name: 'Data Governance & Quality (BCBS 239)', confidence: 0.88, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-59
+  process_name: 'Process Management & Continuous Improvement'
+  bu_id: BU-13
+  supporting_bu_ids: [BU-11, BU-05, BU-08]
+  description: Process documentation, performance diagnostics, improvement opportunity intake, control-aware redesign, implementation tracking, and benefits measurement.
+  owner: Process Excellence Manager
+  last_reviewed: '2026-04-30'
+  cadence: Quarterly process review with event-driven improvement intake
+  criticality: High
+  related_systems: [Process Repository, Workflow Analytics Platform, Improvement Backlog]
+  event_triggers: [Process defect trend, Improvement idea, Control redesign request]
+  data_objects: [Process map, Improvement backlog item, Control impact assessment, Benefits metric]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '13.1.x / 13.6.x', process_name: 'Process Management & Continuous Improvement', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}
+- process_id: PR-60
+  process_name: 'Quality Mgmt & Performance Measurement'
+  bu_id: BU-13
+  supporting_bu_ids: [BU-11, BU-06, BU-05]
+  description: Quality standards, performance metric definition, quality monitoring, service-level reporting, root-cause analysis, and corrective action oversight.
+  owner: Quality Management Lead
+  last_reviewed: '2026-04-30'
+  cadence: Monthly performance review with weekly quality monitoring
+  criticality: High
+  related_systems: [Performance Measurement Platform, Quality Monitoring Tool, Issue Management Platform]
+  event_triggers: [Quality threshold breach, Performance variance, Corrective action due]
+  data_objects: [Quality scorecard, Performance metric, Root-cause analysis, Corrective action]
+  apqc_crosswalk: {framework: APQC PCF, version: FI v2 demo, process_id: '13.3.x', process_name: 'Quality Mgmt & Performance Measurement', confidence: 0.84, rationale: Optional normalization metadata for demo scope selection.}

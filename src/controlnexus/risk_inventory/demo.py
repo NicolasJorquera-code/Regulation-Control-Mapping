@@ -52,7 +52,14 @@ from controlnexus.risk_inventory.models import (
     RiskTaxonomyLevel1,
     RootCauseTaxonomyEntry,
 )
-from controlnexus.risk_inventory.taxonomy import find_applicable_nodes, load_risk_inventory_taxonomy
+from controlnexus.risk_inventory.taxonomy import (
+    find_applicable_nodes,
+    load_risk_inventory_taxonomy,
+    load_root_cause_taxonomy,
+    normalize_root_cause_names,
+    risk_statement_with_root_cause_selection,
+    root_cause_entries_from_payload,
+)
 from controlnexus.risk_inventory.validator import RiskInventoryValidator
 
 
@@ -64,13 +71,444 @@ def default_demo_fixture_path() -> Path:
     return resolve_project_root() / "sample_data" / "risk_inventory_demo" / "payment_exception_handling.yaml"
 
 
+_V2_DIMENSION_MAP = {
+    "financial": "financial_impact",
+    "regulatory": "regulatory_impact",
+    "reputational": "reputational_impact",
+}
+
+_CONTROL_RATING_ALIASES = {
+    "needs improvement": "Improvement Needed",
+    "improvement needed": "Improvement Needed",
+    "needs refresh": "Improvement Needed",
+    "satisfactory": "Satisfactory",
+    "strong": "Strong",
+    "inadequate": "Inadequate",
+    "weak": "Inadequate",
+}
+
+
+def _is_v2_fixture(payload: dict[str, Any]) -> bool:
+    if isinstance(payload.get("fixture_metadata"), dict):
+        return True
+    for risk in payload.get("risks") or []:
+        if isinstance(risk, dict) and isinstance(risk.get("inherent_assessment"), dict):
+            return True
+    return False
+
+
+def _normalize_v2_control_rating(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "Satisfactory"
+    return _CONTROL_RATING_ALIASES.get(text.lower(), text)
+
+
+def _humanize_root_cause(token: str) -> str:
+    if not token:
+        return ""
+    if "." in token:
+        category, slug = token.split(".", 1)
+        category = category.replace("_", " ").strip().title()
+        slug = slug.replace("_", " ").strip()
+        if category and slug:
+            return f"{category} — {slug}"
+        return slug or category
+    return token.replace("_", " ").strip()
+
+
+def _flatten_v2_consequences(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        result: list[str] = []
+        for category, items in value.items():
+            label = str(category).replace("_", " ").strip().title()
+            for item in items or []:
+                text = str(item).strip()
+                if text:
+                    result.append(f"{label}: {text}" if label else text)
+        return result
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return []
+
+
+def _v2_scenario_systems(systems: Any) -> list[str]:
+    result: list[str] = []
+    for entry in systems or []:
+        if isinstance(entry, dict):
+            name = entry.get("name") or entry.get("system_id") or ""
+            if name:
+                result.append(str(name))
+        elif entry:
+            result.append(str(entry))
+    return result
+
+
+def _v2_scenario_stakeholders(stakeholders: Any) -> list[str]:
+    if isinstance(stakeholders, dict):
+        out: list[str] = []
+        for group in ("internal", "external"):
+            for item in stakeholders.get(group, []) or []:
+                text = str(item).strip()
+                if text:
+                    out.append(text)
+        return out
+    if isinstance(stakeholders, list):
+        return [str(item).strip() for item in stakeholders if str(item).strip()]
+    return []
+
+
+def _v2_risk_appetite(value: Any) -> dict[str, Any]:
+    raw = value if isinstance(value, dict) else {}
+    position = str(raw.get("current_position", "")).lower()
+    status = "outside" if "outside" in position else "within"
+    return {
+        "threshold": raw.get("quantitative_threshold") or "Medium or below",
+        "statement": str(raw.get("qualitative_statement") or "").strip(),
+        "status": status,
+        "category": str(raw.get("quantitative_threshold_id") or ""),
+    }
+
+
+def _v2_review_block(value: Any) -> dict[str, Any]:
+    raw = value if isinstance(value, dict) else {}
+    disposition = str(raw.get("disposition") or "").lower()
+    if "approved" in disposition:
+        approval = "Approved"
+        review_status = "Approved"
+    elif "rejected" in disposition:
+        approval = "Rejected"
+        review_status = "Challenged"
+    else:
+        approval = "Draft"
+        review_status = "Challenged"
+    return {
+        "review_status": review_status,
+        "reviewer": raw.get("reviewer", "Reviewer"),
+        "challenge_comments": str(raw.get("challenge_summary") or "").strip(),
+        "challenged_fields": ["impact_score", "likelihood_score", "control_mapping"],
+        "ai_original_value": "",
+        "reviewer_adjusted_value": str(raw.get("disposition") or "")[:200],
+        "reviewer_rationale": str(raw.get("management_response") or "").strip(),
+        "approval_status": approval,
+    }
+
+
+def _v2_action_plan(items: Any, status: str) -> list[dict[str, Any]]:
+    plan: list[dict[str, Any]] = []
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        plan.append(
+            {
+                "action": item.get("description") or item.get("action", ""),
+                "owner": item.get("owner", ""),
+                "due_date": str(item.get("due_date", "")),
+                "status": item.get("status", "Planned"),
+                "priority": "High" if status == "outside" else "Medium",
+            }
+        )
+    return plan
+
+
+def _v2_exposure_metrics(items: Any) -> list[dict[str, Any]]:
+    metrics: list[dict[str, Any]] = []
+    for entry in items or []:
+        if not isinstance(entry, dict):
+            continue
+        metrics.append(
+            {
+                "metric_name": entry.get("name") or entry.get("metric_id") or "",
+                "metric_value": str(entry.get("current_value", "")),
+                "metric_unit": entry.get("unit", ""),
+                "description": str(entry.get("definition", "")).strip(),
+                "source": entry.get("data_source", "v2 fixture"),
+                "supports": ["likelihood", "impact"],
+            }
+        )
+    return metrics
+
+
+def _v2_evidence_references(items: Any) -> list[dict[str, Any]]:
+    refs: list[dict[str, Any]] = []
+    for entry in items or []:
+        if not isinstance(entry, dict):
+            continue
+        refs.append(
+            {
+                "evidence_id": entry.get("evidence_id", ""),
+                "evidence_type": entry.get("evidence_type") or "Operational evidence",
+                "description": str(entry.get("description", "")).strip(),
+                "source": entry.get("owner") or entry.get("retention") or "Operational Risk",
+            }
+        )
+    return refs
+
+
+def _v2_open_issues(items: Any) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    for issue in items or []:
+        if not isinstance(issue, dict):
+            continue
+        issues.append(
+            {
+                "issue_id": issue.get("issue_id", ""),
+                "description": issue.get("title")
+                or issue.get("summary")
+                or issue.get("description", ""),
+                "severity": issue.get("severity", "Medium"),
+                "age_days": int(issue.get("age_days", 0) or 0),
+                "owner": issue.get("owner", ""),
+                "status": issue.get("status", "Open"),
+            }
+        )
+    return issues
+
+
+def _adapt_v2_fixture_payload(payload: dict[str, Any], fixture_path: Path) -> dict[str, Any]:
+    """Translate a v2 process risk inventory fixture into the legacy v1 dict shape."""
+    metadata = payload.get("fixture_metadata") if isinstance(payload.get("fixture_metadata"), dict) else {}
+    fixture_id = str(metadata.get("fixture_id") or fixture_path.stem)
+    v2_scenario = payload.get("scenario") if isinstance(payload.get("scenario"), dict) else {}
+    v2_controls = list(payload.get("controls") or [])
+    v2_risks = list(payload.get("risks") or [])
+
+    risk_to_node = {
+        risk.get("risk_id", ""): risk.get("taxonomy_node_id", "")
+        for risk in v2_risks
+        if isinstance(risk, dict)
+    }
+
+    new_scenario = {
+        "run_id": f"DEMO-{fixture_id}",
+        "tenant_id": str(metadata.get("authored_by") or "demo-fi-v2").split(",")[0],
+        "process_id": v2_scenario.get("process_id", ""),
+        "process_name": v2_scenario.get("process_name", ""),
+        "product": v2_scenario.get("product_service") or v2_scenario.get("product", ""),
+        "business_unit": v2_scenario.get("business_unit_name") or v2_scenario.get("business_unit", ""),
+        "description": (
+            v2_scenario.get("scenario_description")
+            or v2_scenario.get("materiality_statement")
+            or v2_scenario.get("description")
+            or ""
+        ),
+        "systems": _v2_scenario_systems(v2_scenario.get("systems")),
+        "stakeholders": _v2_scenario_stakeholders(v2_scenario.get("stakeholders")),
+        "source_documents": [f"v2 fixture: {fixture_path.name}"],
+    }
+
+    # ---- Controls ----
+    new_controls: list[dict[str, Any]] = []
+    for ctl in v2_controls:
+        if not isinstance(ctl, dict):
+            continue
+        control_id = ctl.get("control_id", "")
+        coverage_by_risk: dict[str, str] = {}
+        mapped_root_causes_per_risk: dict[str, list[str]] = {}
+        risk_mitigations: dict[str, str] = {}
+        for risk in v2_risks:
+            if not isinstance(risk, dict):
+                continue
+            mapping = next(
+                (
+                    m
+                    for m in risk.get("control_mapping") or []
+                    if isinstance(m, dict) and m.get("control_id") == control_id
+                ),
+                None,
+            )
+            if not mapping:
+                continue
+            node_id = risk.get("taxonomy_node_id", "")
+            if not node_id:
+                continue
+            strength = str(mapping.get("coverage_strength") or "partial").lower()
+            coverage_by_risk[node_id] = "strong" if "strong" in strength else "partial"
+            root_causes = mapping.get("addresses_root_causes") or ctl.get("addresses_root_causes") or []
+            mapped_root_causes_per_risk[node_id] = [
+                _humanize_root_cause(str(rc)) for rc in root_causes if rc
+            ][:3]
+            rationale = str(mapping.get("rationale") or "").strip()
+            if rationale:
+                risk_mitigations[node_id] = rationale
+
+        design = ctl.get("design_assessment") if isinstance(ctl.get("design_assessment"), dict) else {}
+        operating = ctl.get("operating_assessment") if isinstance(ctl.get("operating_assessment"), dict) else {}
+
+        new_controls.append(
+            {
+                "control_id": control_id,
+                "control_name": ctl.get("name") or ctl.get("control_name", ""),
+                "control_type": ctl.get("control_type", ""),
+                "description": str(ctl.get("description", "")).strip(),
+                "design_rating": _normalize_v2_control_rating(design.get("rating")),
+                "operating_rating": _normalize_v2_control_rating(operating.get("rating")),
+                "design_rationale": str(design.get("narrative") or "").strip(),
+                "operating_rationale": str(operating.get("narrative") or "").strip(),
+                "coverage_by_risk": coverage_by_risk,
+                "mapped_root_causes_per_risk": mapped_root_causes_per_risk,
+                "risk_mitigations": risk_mitigations,
+                "open_issues": _v2_open_issues(ctl.get("open_issues")),
+                "evidence_quality": {
+                    "rating": "Adequate"
+                    if _normalize_v2_control_rating(operating.get("rating")) != "Improvement Needed"
+                    else "Needs Refresh",
+                    "last_tested": str(metadata.get("last_validated") or "2026-04-30"),
+                    "sample_size": 0,
+                    "exceptions_noted": len(ctl.get("open_issues") or []),
+                    "notes": str(operating.get("narrative") or "")[:240],
+                },
+            }
+        )
+
+    # ---- Risks ----
+    new_risks: list[dict[str, Any]] = []
+    for risk in v2_risks:
+        if not isinstance(risk, dict):
+            continue
+        inherent = risk.get("inherent_assessment") if isinstance(risk.get("inherent_assessment"), dict) else {}
+        impact_dims = inherent.get("impact_dimensions") if isinstance(inherent.get("impact_dimensions"), dict) else {}
+        impact_scores: dict[str, int] = {}
+        impact_rationales: dict[str, str] = {}
+        for v2_key, v1_key in _V2_DIMENSION_MAP.items():
+            data = impact_dims.get(v2_key)
+            if isinstance(data, dict):
+                try:
+                    impact_scores[v1_key] = int(data.get("score", 1))
+                except (TypeError, ValueError):
+                    impact_scores[v1_key] = 1
+                rationale = str(data.get("rationale") or "").strip()
+                if rationale:
+                    impact_rationales[v1_key] = rationale
+            elif isinstance(data, (int, float)):
+                impact_scores[v1_key] = int(data)
+        if not impact_scores:
+            impact_scores = {"financial_impact": 2, "regulatory_impact": 2, "reputational_impact": 2}
+
+        causes_v2 = risk.get("causes")
+        causes: list[str] = []
+        if isinstance(causes_v2, list):
+            for cause in causes_v2:
+                if isinstance(cause, dict):
+                    cid = str(cause.get("cause_id") or "")
+                    label = _humanize_root_cause(cid)
+                    if not label:
+                        label = str(cause.get("category") or "").strip()
+                    if label:
+                        causes.append(label)
+                elif isinstance(cause, str) and cause.strip():
+                    causes.append(cause.strip())
+
+        mapped_controls = [
+            m.get("control_id")
+            for m in risk.get("control_mapping") or []
+            if isinstance(m, dict) and m.get("control_id")
+        ]
+
+        appetite = _v2_risk_appetite(risk.get("risk_appetite"))
+
+        # Coverage gaps drawn from control_environment open issues
+        env = risk.get("control_environment") if isinstance(risk.get("control_environment"), dict) else {}
+        coverage_gaps: list[str] = []
+        for issue in env.get("open_issues") or []:
+            if not isinstance(issue, dict):
+                continue
+            text = issue.get("title") or issue.get("summary") or issue.get("description", "")
+            if text:
+                coverage_gaps.append(str(text).strip())
+
+        try:
+            overall_impact = int(inherent.get("aggregate_impact_score") or max(impact_scores.values(), default=1))
+        except (TypeError, ValueError):
+            overall_impact = max(impact_scores.values(), default=1)
+        try:
+            likelihood = int(inherent.get("likelihood_score") or 2)
+        except (TypeError, ValueError):
+            likelihood = 2
+        likelihood = min(max(likelihood, 1), 4)
+        overall_impact = min(max(overall_impact, 1), 4)
+
+        new_risks.append(
+            {
+                "taxonomy_node_id": risk.get("taxonomy_node_id", ""),
+                "risk_id": risk.get("risk_id", ""),
+                "risk_description": str(risk.get("description") or "").strip(),
+                "risk_event": str(risk.get("risk_event") or "").strip(),
+                "applicability_rationale": (
+                    f"{risk.get('title') or risk.get('risk_id', '')} is in scope because the process inventory "
+                    f"documents this risk for {new_scenario['process_name']}."
+                ),
+                "confidence": 0.92,
+                "causes": causes[:5],
+                "consequences": _flatten_v2_consequences(risk.get("consequences"))[:8],
+                "affected_stakeholders": [
+                    str(item) for item in risk.get("affected_stakeholders") or [] if str(item).strip()
+                ],
+                "impact_scores": impact_scores,
+                "impact_rationales": impact_rationales,
+                "overall_impact_score": overall_impact,
+                "overall_impact_rationale": str(inherent.get("aggregate_impact_method") or "").strip()
+                or f"Aggregate impact rating of {overall_impact} reflects the highest material dimension.",
+                "likelihood_score": likelihood,
+                "likelihood_rating": str(inherent.get("likelihood_band") or _likelihood_label(likelihood)),
+                "likelihood_rationale": str(inherent.get("likelihood_rationale") or "").strip(),
+                "assumptions": [],
+                "mapped_controls": mapped_controls,
+                "exposure_metrics": _v2_exposure_metrics(risk.get("exposure_metrics")),
+                "evidence_references": _v2_evidence_references(risk.get("evidence_references")),
+                "risk_appetite": appetite,
+                "recommended_action": str(risk.get("recommended_action") or "").strip(),
+                "action_plan": _v2_action_plan(risk.get("action_plan"), appetite["status"]),
+                "coverage_gaps": coverage_gaps[:5],
+                "review": _v2_review_block(risk.get("review_challenge")),
+            }
+        )
+
+    # ---- Executive summary ----
+    executive_summary = payload.get("executive_summary") if isinstance(payload.get("executive_summary"), dict) else {}
+    if not executive_summary:
+        outside_count = sum(1 for r in new_risks if r["risk_appetite"]["status"] == "outside")
+        executive_summary = {
+            "headline": (
+                f"{new_scenario['process_name']} risk inventory: "
+                f"{len(new_risks)} reviewed risks, {outside_count} currently outside appetite."
+            )
+            if new_risks
+            else "Risk inventory ready for executive review.",
+            "key_messages": [
+                (r.get("risk_event") or r.get("risk_id", "")).split("\n")[0][:200]
+                for r in new_risks[:4]
+                if r.get("risk_event") or r.get("risk_id")
+            ],
+            "top_residual_risks": [],
+            "recommended_actions": [
+                r["recommended_action"].split(".")[0][:200]
+                for r in new_risks
+                if r.get("recommended_action")
+            ][:5],
+        }
+
+    return {
+        "version": "v2-adapted",
+        "scenario_basis": payload.get("scenario_basis", []),
+        "risk_appetite_framework": payload.get("risk_appetite_framework", {}),
+        "scenario": new_scenario,
+        "controls": new_controls,
+        "risks": new_risks,
+        "executive_summary": executive_summary,
+    }
+
+
 def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun:
     """Load the deterministic Payment Exception Handling demo run."""
     fixture_path = Path(path) if path else default_demo_fixture_path()
     payload = read_yaml(fixture_path)
+    if _is_v2_fixture(payload):
+        payload = _adapt_v2_fixture_payload(payload, fixture_path)
     scenario = payload["scenario"]
     controls = {control["control_id"]: control for control in payload.get("controls", [])}
     taxonomy = {node.id: node for node in load_risk_inventory_taxonomy()}
+    root_cause_taxonomy = load_root_cause_taxonomy()
 
     loader = MatrixConfigLoader()
     inherent_calc = InherentRiskCalculator(loader.inherent_matrix())
@@ -139,7 +577,7 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
             rationale=f"Calculated from the configured inherent risk matrix for {impact.overall_impact_score} impact and {likelihood.likelihood_score} likelihood.",
         )
         mappings = [
-            _build_control_mapping(controls[control_id], node)
+            _build_control_mapping(controls[control_id], node, root_cause_taxonomy)
             for control_id in spec.get("mapped_controls", [])
             if control_id in controls
         ]
@@ -209,6 +647,17 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
             approval_status_enum = ApprovalStatus(approval_status_value)
         except ValueError:
             approval_status_enum = ApprovalStatus.DRAFT
+        causes = normalize_root_cause_names(
+            spec.get("causes") or node.typical_root_causes[:3],
+            root_cause_taxonomy,
+            node=node,
+            max_items=3,
+        )
+        risk_description = risk_statement_with_root_cause_selection(
+            spec.get("risk_description") or _risk_description(node, context),
+            causes,
+            root_cause_taxonomy,
+        )
         record = RiskInventoryRecord(
             risk_id=spec["risk_id"],
             process_id=context.process_id,
@@ -229,10 +678,10 @@ def load_demo_risk_inventory(path: Path | str | None = None) -> RiskInventoryRun
                 evidence_refs=evidence_references,
             ),
             risk_statement=RiskStatement(
-                risk_description=(spec.get("risk_description") or _risk_description(node, context)).strip(),
+                risk_description=risk_description,
                 risk_event=spec.get("risk_event")
                 or (node.example_risk_statements[0] if node.example_risk_statements else _risk_description(node, context)),
-                causes=spec.get("causes") or node.typical_root_causes[:3],
+                causes=causes,
                 consequences=spec.get("consequences")
                 or [
                     "financial loss or rework",
@@ -333,6 +782,11 @@ def _risk_description(node: Any, context: ProcessContext) -> str:
         f"{node.level_2_category} in {context.process_name} may result in {node.definition[0].lower()}"
         f"{node.definition[1:] if len(node.definition) > 1 else ''}"
     )
+
+
+def _with_root_cause_verbiage(description: str, root_causes: list[str]) -> str:
+    """Append root-cause context without adding UI-specific labels to the statement."""
+    return risk_statement_with_root_cause_selection(description, root_causes)
 
 
 def _review_value(value: Any) -> str:
@@ -472,7 +926,11 @@ def _build_exposure_metrics(spec: dict[str, Any], node: Any, idx: int) -> list[E
     ]
 
 
-def _build_control_mapping(control: dict[str, Any], node: Any) -> ControlMapping:
+def _build_control_mapping(
+    control: dict[str, Any],
+    node: Any,
+    root_cause_taxonomy: list[RootCauseTaxonomyEntry] | None = None,
+) -> ControlMapping:
     design_rating = ControlEffectivenessRating(control.get("design_rating", "Satisfactory"))
     operating_rating = ControlEffectivenessRating(control.get("operating_rating", "Satisfactory"))
     risk_mitigations = control.get("risk_mitigations", {})
@@ -521,8 +979,11 @@ def _build_control_mapping(control: dict[str, Any], node: Any) -> ControlMapping
         if isinstance(eq, dict)
         else None
     )
-    mapped_root_causes = control.get("mapped_root_causes_per_risk", {}).get(
-        node.id, node.typical_root_causes[:2]
+    mapped_root_causes = normalize_root_cause_names(
+        control.get("mapped_root_causes_per_risk", {}).get(node.id, node.typical_root_causes[:2]),
+        root_cause_taxonomy,
+        node=node,
+        max_items=3,
     )
     return ControlMapping(
         control_id=control["control_id"],
@@ -595,6 +1056,15 @@ def _demo_metric_value(metric: str, idx: int) -> str:
 
 def default_workspace_fixture_path() -> Path:
     return resolve_project_root() / "sample_data" / "risk_inventory_demo" / "workspace.yaml"
+
+
+def financial_institution_demo_fixture_path() -> Path:
+    return (
+        resolve_project_root()
+        / "sample_data"
+        / "risk_inventory_demo"
+        / "workspace_financial_institution_v2.yaml"
+    )
 
 
 def load_knowledge_pack(path: Path | str | None = None) -> RiskInventoryWorkspace:
@@ -689,7 +1159,18 @@ def _build_workspace_from_payload(fixture_path: Path, payload: dict[str, Any]) -
         for item in payload.get("processes", payload.get("procedures", []))
     ]
     if active_bu_ids:
-        processes = [process for process in processes if process.bu_id in active_bu_ids]
+        active_bu_process_ids = {
+            process_id
+            for bu in bus
+            for process_id in bu.process_ids
+        }
+        processes = [
+            process
+            for process in processes
+            if process.bu_id in active_bu_ids
+            or active_bu_ids.intersection(process.supporting_bu_ids)
+            or process.process_id in active_bu_process_ids
+        ]
     if process_filter:
         processes = [process for process in processes if process.process_id in process_filter]
     active_process_ids = {process.process_id for process in processes}
@@ -707,7 +1188,10 @@ def _build_workspace_from_payload(fixture_path: Path, payload: dict[str, Any]) -
         ]
     risk_l1 = [RiskTaxonomyLevel1.model_validate(item) for item in payload.get("risk_taxonomy_l1", [])]
     control_tax = [ControlTaxonomyEntry.model_validate(item) for item in payload.get("control_taxonomy", [])]
-    root_cause_tax = [RootCauseTaxonomyEntry.model_validate(item) for item in payload.get("root_cause_taxonomy", [])]
+    configured_root_cause_tax = load_root_cause_taxonomy()
+    root_cause_tax = root_cause_entries_from_payload(payload.get("root_cause_taxonomy"))
+    if len(root_cause_tax) < len(configured_root_cause_tax):
+        root_cause_tax = configured_root_cause_tax
     issues = [
         IssueRecord.model_validate(_normalize_issue_record(item))
         for item in payload.get("issues", [])
@@ -753,14 +1237,27 @@ def _build_workspace_from_payload(fixture_path: Path, payload: dict[str, Any]) -
 
     runs: list[RiskInventoryRun] = []
     aggregated_controls: dict[str, dict[str, Any]] = {}
+    process_lookup = {process.process_id: process for process in processes}
+    bu_lookup = {bu.bu_id: bu.bu_name for bu in bus}
     for entry in payload.get("run_fixtures", []):
         run_path = _run_fixture_path(fixture_path.parent, entry)
         run = load_demo_risk_inventory(run_path)
+        target_process_id = _run_fixture_process_id(entry) or run.input_context.process_id
+        target_process = process_lookup.get(target_process_id)
+        if target_process:
+            run = _remap_run_to_process(
+                run,
+                target_process,
+                bu_lookup.get(target_process.bu_id, target_process.bu_id),
+                _run_fixture_run_id(entry),
+            )
         if active_process_ids and run.input_context.process_id not in active_process_ids:
             continue
         runs.append(run)
         # also collect controls for the bank-wide knowledge-base view
         run_payload = read_yaml(run_path)
+        if _is_v2_fixture(run_payload):
+            run_payload = _adapt_v2_fixture_payload(run_payload, run_path)
         for control in run_payload.get("controls", []):
             aggregated_controls.setdefault(control["control_id"], control)
 
@@ -819,6 +1316,13 @@ def _build_workspace_from_payload(fixture_path: Path, payload: dict[str, Any]) -
     kri_prefix_filter = tuple(str(prefix) for prefix in payload.get("_kri_id_prefix_filter", ()))
     if kri_prefix_filter:
         kris = [kri for kri in kris if kri.kri_id.startswith(kri_prefix_filter)]
+    aggregated_controls = _enrich_control_inventory_records(
+        aggregated_controls,
+        processes,
+        bus,
+        runs,
+        evidence_artifacts,
+    )
     control_inventory = [
         ControlInventoryEntry.model_validate(control)
         for control in aggregated_controls.values()
@@ -868,6 +1372,68 @@ def _run_fixture_path(base_path: Path, entry: Any) -> Path:
     return base_path / str(relative_path)
 
 
+def _run_fixture_process_id(entry: Any) -> str:
+    return str(entry.get("process_id", "")).strip() if isinstance(entry, dict) else ""
+
+
+def _run_fixture_run_id(entry: Any) -> str:
+    return str(entry.get("run_id", "")).strip() if isinstance(entry, dict) else ""
+
+
+def _remap_run_to_process(
+    run: RiskInventoryRun,
+    process: Process,
+    business_unit_name: str,
+    run_id: str = "",
+) -> RiskInventoryRun:
+    """Mount a curated fixture under a broader enterprise process template."""
+    original_context = run.input_context
+    source_documents = list(original_context.source_documents)
+    source_documents.append(
+        f"mapped to demo scope process {process.process_id}: {process.process_name}"
+    )
+    context = original_context.model_copy(
+        update={
+            "process_id": process.process_id,
+            "process_name": process.process_name,
+            "business_unit": business_unit_name,
+            "description": process.description or original_context.description,
+            "systems": process.related_systems or original_context.systems,
+            "stakeholders": [
+                process.owner or "Business Process Owner",
+                business_unit_name,
+                "Second Line Risk Partner",
+            ],
+            "source_documents": source_documents,
+        }
+    )
+    records = [
+        record.model_copy(
+            update={
+                "process_id": process.process_id,
+                "process_name": process.process_name,
+            }
+        )
+        for record in run.records
+    ]
+    manifest = {
+        **run.run_manifest,
+        "source_fixture_process_id": original_context.process_id,
+        "source_fixture_process_name": original_context.process_name,
+        "mapped_process_id": process.process_id,
+        "mapped_process_name": process.process_name,
+        "mapped_business_unit": business_unit_name,
+    }
+    return run.model_copy(
+        update={
+            "run_id": run_id or run.run_id,
+            "input_context": context,
+            "records": records,
+            "run_manifest": manifest,
+        }
+    )
+
+
 def _normalize_issue_record(item: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(item)
     normalized.setdefault("title", normalized.get("description", normalized.get("issue_id", "Issue")))
@@ -903,6 +1469,209 @@ def _normalize_kri_record(item: dict[str, Any]) -> dict[str, Any]:
     normalized.setdefault("metric_definition", normalized.get("description", "Demo KRI definition"))
     normalized.setdefault("thresholds", {})
     return normalized
+
+
+def _enrich_control_inventory_records(
+    controls: dict[str, dict[str, Any]],
+    processes: list[Process],
+    business_units: list[BusinessUnit],
+    runs: list[RiskInventoryRun],
+    evidence_artifacts: list[EvidenceArtifact],
+) -> dict[str, dict[str, Any]]:
+    """Project demo controls into the canonical 19-column inventory shape."""
+    process_lookup = {process.process_id: process for process in processes}
+    bu_lookup = {bu.bu_id: bu for bu in business_units}
+    control_links: dict[str, list[tuple[RiskInventoryRun, RiskInventoryRecord, ControlMapping]]] = {}
+    for run in runs:
+        for record in run.records:
+            for mapping in record.control_mappings:
+                control_links.setdefault(mapping.control_id, []).append((run, record, mapping))
+
+    enriched_controls: dict[str, dict[str, Any]] = {}
+    for control_id, control in controls.items():
+        enriched = dict(control)
+        links = control_links.get(control_id, [])
+        process_ids = _control_process_ids(enriched, links)
+        taxonomy_ids = _control_taxonomy_ids(enriched, links)
+        process = next((process_lookup[process_id] for process_id in process_ids if process_id in process_lookup), None)
+        business_unit = bu_lookup.get(process.bu_id) if process else None
+
+        enriched.setdefault("process_ids", process_ids)
+        enriched.setdefault("taxonomy_node_ids", taxonomy_ids)
+        enriched.setdefault("evidence_ids", _control_evidence_ids(control_id, evidence_artifacts))
+        enriched.setdefault("hierarchy_id", process.apqc_crosswalk.get("process_id", process.process_id) if process else "")
+        enriched.setdefault("leaf_name", process.process_name if process else enriched.get("control_name", control_id))
+        enriched.setdefault("full_description", enriched.get("description", ""))
+        enriched.setdefault("selected_level_1", _control_level_1(enriched.get("control_type", "")))
+        enriched.setdefault("selected_level_2", enriched.get("control_type", ""))
+        enriched.setdefault("business_unit_id", process.bu_id if process else "")
+        enriched.setdefault("business_unit_name", business_unit.bu_name if business_unit else "")
+        enriched.setdefault("who", enriched.get("owner", "Control Owner"))
+        enriched.setdefault("what", _control_what(enriched))
+        enriched.setdefault("when", _control_when(enriched.get("frequency", "")))
+        enriched.setdefault("where", _control_where(enriched, process, evidence_artifacts))
+        enriched.setdefault("why", _control_why(enriched, links))
+        enriched.setdefault("quality_rating", _control_quality_rating(enriched))
+        enriched.setdefault("validator_passed", _control_validator_passed(enriched))
+        enriched.setdefault("validator_retries", 0 if enriched["validator_passed"] else 1)
+        enriched.setdefault("validator_failures", _control_validator_failures(enriched))
+        enriched.setdefault("evidence", _control_evidence(control_id, enriched, evidence_artifacts))
+        enriched_controls[control_id] = enriched
+
+    return enriched_controls
+
+
+def _control_process_ids(
+    control: dict[str, Any],
+    links: list[tuple[RiskInventoryRun, RiskInventoryRecord, ControlMapping]],
+) -> list[str]:
+    existing = [str(item) for item in control.get("process_ids", []) if item]
+    linked = [run.input_context.process_id for run, _, _ in links if run.input_context.process_id]
+    return list(dict.fromkeys(existing + linked))
+
+
+def _control_taxonomy_ids(
+    control: dict[str, Any],
+    links: list[tuple[RiskInventoryRun, RiskInventoryRecord, ControlMapping]],
+) -> list[str]:
+    existing = [str(item) for item in control.get("taxonomy_node_ids", []) if item]
+    linked = [record.taxonomy_node.id for _, record, _ in links if record.taxonomy_node.id]
+    return list(dict.fromkeys(existing + linked))
+
+
+def _control_evidence_ids(control_id: str, artifacts: list[EvidenceArtifact]) -> list[str]:
+    return [artifact.evidence_id for artifact in artifacts if artifact.control_id == control_id]
+
+
+def _control_level_1(control_type: str) -> str:
+    control_type_lower = control_type.lower()
+    if any(term in control_type_lower for term in ("reconciliation", "reporting", "monitoring", "review", "audit", "assessment", "verification", "validation", "checks")):
+        return "Detective"
+    if any(term in control_type_lower for term in ("corrective", "recall", "recovery", "remediation", "incident response")):
+        return "Corrective"
+    if any(term in control_type_lower for term in ("policy", "training", "awareness", "governance")):
+        return "Directive"
+    return "Preventive"
+
+
+def _control_what(control: dict[str, Any]) -> str:
+    name = str(control.get("control_name", "")).strip()
+    description = str(control.get("description", "")).strip()
+    if name and description:
+        return f"{name}: {description}"
+    return name or description
+
+
+def _control_when(frequency: str) -> str:
+    clean = frequency.strip()
+    if not clean:
+        return "During the defined control execution cadence"
+    lower = clean.lower()
+    if lower.startswith("per "):
+        return clean[0].upper() + clean[1:]
+    if "daily" in lower or "intraday" in lower or "end-of-day" in lower:
+        return "During daily operations and close monitoring"
+    if "monthly" in lower:
+        return "During the monthly control cycle"
+    if "quarterly" in lower:
+        return "During the quarterly governance cycle"
+    if "annual" in lower:
+        return "During the annual review cycle"
+    return clean
+
+
+def _control_where(
+    control: dict[str, Any],
+    process: Process | None,
+    artifacts: list[EvidenceArtifact],
+) -> str:
+    artifact = next((item for item in artifacts if item.control_id == control.get("control_id")), None)
+    if artifact and artifact.source_system:
+        return artifact.source_system
+    if process and process.related_systems:
+        return " / ".join(process.related_systems[:2])
+    return "Process workflow and evidence repository"
+
+
+def _control_why(
+    control: dict[str, Any],
+    links: list[tuple[RiskInventoryRun, RiskInventoryRecord, ControlMapping]],
+) -> str:
+    mitigations = control.get("risk_mitigations")
+    if isinstance(mitigations, dict) and mitigations:
+        return " ".join(str(value).strip() for value in mitigations.values() if str(value).strip())
+    rationales = [mapping.mitigation_rationale for _, _, mapping in links if mapping.mitigation_rationale]
+    if rationales:
+        return " ".join(dict.fromkeys(rationales[:3]))
+    return "To reduce mapped residual risk exposure and support evidence-based control evaluation."
+
+
+def _control_quality_rating(control: dict[str, Any]) -> str:
+    ratings = {
+        str(control.get("design_rating", "")).strip(),
+        str(control.get("operating_rating", "")).strip(),
+    }
+    if "Inadequate" in ratings:
+        return "Inadequate"
+    if "Improvement Needed" in ratings:
+        return "Improvement Needed"
+    if ratings == {"Strong"}:
+        return "Strong"
+    if ratings.intersection({"Strong", "Satisfactory"}):
+        return "Effective"
+    return "Satisfactory"
+
+
+def _control_validator_passed(control: dict[str, Any]) -> bool:
+    ratings = {
+        str(control.get("design_rating", "")).strip(),
+        str(control.get("operating_rating", "")).strip(),
+    }
+    if ratings.intersection({"Improvement Needed", "Inadequate"}):
+        return False
+    evidence_quality = control.get("evidence_quality") or {}
+    if isinstance(evidence_quality, dict) and evidence_quality.get("rating") not in {None, "", "Adequate"}:
+        return False
+    return not bool(control.get("open_issues"))
+
+
+def _control_validator_failures(control: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    for field in ("design_rating", "operating_rating"):
+        rating = str(control.get(field, "")).strip()
+        if rating in {"Improvement Needed", "Inadequate"}:
+            failures.append(f"{field}: {rating}")
+    evidence_quality = control.get("evidence_quality") or {}
+    if isinstance(evidence_quality, dict):
+        rating = str(evidence_quality.get("rating", "")).strip()
+        notes = str(evidence_quality.get("notes", "")).strip()
+        if rating and rating != "Adequate":
+            failures.append(f"evidence_quality: {rating}")
+        if notes and rating != "Adequate":
+            failures.append(notes)
+    for issue in control.get("open_issues", []) or []:
+        if isinstance(issue, dict):
+            issue_id = issue.get("issue_id", "Issue")
+            description = issue.get("description", "")
+            failures.append(f"{issue_id}: {description}".strip())
+    return failures
+
+
+def _control_evidence(
+    control_id: str,
+    control: dict[str, Any],
+    artifacts: list[EvidenceArtifact],
+) -> str:
+    matched = [artifact for artifact in artifacts if artifact.control_id == control_id]
+    if matched:
+        return "; ".join(
+            f"{artifact.name} ({artifact.artifact_type}) from {artifact.source_system}"
+            for artifact in matched[:3]
+        )
+    evidence_quality = control.get("evidence_quality") or {}
+    if isinstance(evidence_quality, dict) and evidence_quality.get("notes"):
+        return str(evidence_quality["notes"])
+    return "Control execution record with owner sign-off, exception log, and retained support."
 
 
 def _build_synthetic_process_run(

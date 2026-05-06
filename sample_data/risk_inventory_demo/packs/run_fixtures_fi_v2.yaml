@@ -1,0 +1,32 @@
+version: 2.0.0
+run_fixtures:
+- run_id: DEMO-FI-PR16-PAYEXC-001
+  process_id: PR-16
+  fixture_path: payment_exception_handling2.yaml
+- run_id: DEMO-FI-PR32-PAYREC-001
+  process_id: PR-32
+  fixture_path: end_of_day_wire_reconciliation.yaml
+- run_id: DEMO-FI-PR13-CUSTONB-001
+  process_id: PR-13
+  fixture_path: customer_onboarding.yaml
+- run_id: DEMO-FI-PR20-DISP-001
+  process_id: PR-20
+  fixture_path: retail_deposit_disputes.yaml
+- run_id: DEMO-FI-PR45-CLUW-001
+  process_id: PR-45
+  fixture_path: commercial_loan_underwriting.yaml
+- run_id: DEMO-FI-PR44-COVMON-001
+  process_id: PR-44
+  fixture_path: commercial_covenant_monitoring.yaml
+- run_id: DEMO-FI-PR34-LIQ-001
+  process_id: PR-34
+  fixture_path: liquidity_stress_monitoring.yaml
+- run_id: DEMO-FI-PR33-SECSET-001
+  process_id: PR-33
+  fixture_path: securities_trade_settlement.yaml
+- run_id: DEMO-FI-PR27-ACCESS-001
+  process_id: PR-27
+  fixture_path: privileged_access_recertification.yaml
+- run_id: DEMO-FI-PR29-VULN-001
+  process_id: PR-29
+  fixture_path: critical_vulnerability_remediation.yaml

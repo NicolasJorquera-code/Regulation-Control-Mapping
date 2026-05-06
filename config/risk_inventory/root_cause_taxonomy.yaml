@@ -1,0 +1,177 @@
+version: "1.0.0"
+name: "Root Cause Taxonomy"
+purpose: >
+  Classify why an operational risk event occurred, separate from what happened
+  and how much impact it created. Use with the Impact Taxonomy and Operational
+  Risk Event Taxonomy to support bow-tie analysis, aggregation, remediation,
+  and comparable risk reporting across a financial institution.
+scope: >
+  Applies to business units, functional groups, outsourced functions, and legal
+  entities. Subsidiaries and joint ventures operating autonomously should align
+  local taxonomies to this framework where applicable.
+primary_cause_selection: >
+  When multiple causes contribute, designate the primary cause based on which
+  cause, if remediated, would most directly have prevented the event. Tag
+  secondary contributing causes for trend analysis.
+categories:
+  - category: External
+    cause_origin: "Originates outside the institution"
+    definition: "Causes originating outside the institution and outside the institution's direct operational control."
+    causes:
+      - code: RC-EXT-01
+        name: Third-Party Service Failure
+        definition: Breakdown, performance failure, or service disruption originating from external vendors, suppliers, partners, or service providers where the failure would not have been detected through standard third-party risk management oversight.
+        selection_criteria: Select when the event is driven by a vendor, supplier, partner, or service provider breakdown, performance failure, or service disruption outside normal third-party oversight detection.
+        examples:
+          - A critical SaaS provider experiences a multi-hour outage that halts customer-facing transaction processing.
+      - code: RC-EXT-02
+        name: Client Conduct or Error
+        definition: Customer misunderstanding, mistaken action, or non-malicious adverse activity that creates loss or operational impact for the institution.
+        selection_criteria: Select when customer misunderstanding, mistaken customer action, or non-malicious client activity creates loss or operational impact.
+        examples:
+          - A retail customer initiates a duplicate wire transfer believing the original had failed, generating reconciliation effort and customer remediation.
+      - code: RC-EXT-03
+        name: Competitor or Market Behaviour
+        definition: Competitor actions, market dynamics, or industry shifts that create adverse operational pressure on the firm.
+        selection_criteria: Select when competitor actions, market dynamics, or industry shifts create adverse operational pressure on the institution.
+        examples:
+          - A peer institution dramatically reduces deposit rates, triggering accelerated customer attrition that exceeds capacity of the retention process.
+      - code: RC-EXT-04
+        name: External Malicious or Criminal Acts
+        definition: Wilful malicious, fraudulent, or criminal activity by external parties, including customers, counterparties, vendors, organized threat actors, and physical attacks or terrorism targeting the institution. Cyber-attacks are classified separately under Technology where applicable.
+        selection_criteria: Select when an external party commits wilful malicious, fraudulent, or criminal activity, including fraud, physical attack, terrorism, or other criminal conduct.
+        examples:
+          - A customer submits falsified income documentation to obtain a loan they would not otherwise qualify for.
+          - A coordinated armed robbery targets a branch location.
+      - code: RC-EXT-05
+        name: Natural Disaster or Environmental Disruption
+        definition: Adverse events arising from the natural environment, public infrastructure, or physical environment surrounding the institution, including severe weather, seismic events, pandemics, transit disruption, and utility failures unrelated to the firm.
+        selection_criteria: Select when natural environment, public infrastructure, severe weather, pandemic, transit, utility, or surrounding physical-environment disruption drives the event.
+        examples:
+          - A regional power grid outage renders a primary data centre unavailable.
+          - A pandemic restricts workforce access to offices for an extended period.
+      - code: RC-EXT-06
+        name: Geopolitical, Economic, or Social Instability
+        definition: Adverse changes in the macro political, economic, or social environment in which the institution operates.
+        selection_criteria: Select when macro political, economic, or social instability in an operating environment creates the event driver.
+        examples:
+          - Civil unrest in a key operating jurisdiction forces mandatory branch closures and prolonged business interruption.
+      - code: RC-EXT-07
+        name: Regulatory or Legislative Change
+        definition: New, amended, or repealed regulations, laws, or supervisory expectations that disrupt existing products, processes, or controls.
+        selection_criteria: Select when new, amended, or repealed laws, regulations, or supervisory expectations disrupt existing products, processes, or controls.
+        examples:
+          - A regulator publishes a new disclosure rule with a 90-day implementation window, requiring rapid re-tooling of customer-facing materials and training.
+  - category: People
+    cause_origin: "Originates with employees, contingent workers, or workforce management"
+    definition: "Causes related to the actions, capabilities, or management of the institution's employees and contingent workers."
+    causes:
+      - code: RC-PPL-01
+        name: Inadequate Knowledge, Skills, or Training
+        definition: Team members lack the expertise, technical proficiency, or current training required to perform their role correctly.
+        selection_criteria: Select when team members lack the expertise, technical proficiency, or current role-based training required to perform correctly.
+        examples:
+          - A newly onboarded analyst executes a control step incorrectly because the relevant role-based training module had not yet been completed.
+      - code: RC-PPL-02
+        name: Inadequate Workforce Management & Resourcing
+        definition: Failures in workforce planning, performance management, succession, compensation design, role clarity, or staffing levels leading to capacity gaps, misaligned incentives, or unmet operational obligations.
+        selection_criteria: Select when workforce planning, performance management, succession, compensation design, role clarity, or staffing levels create capacity gaps, misaligned incentives, or unmet obligations.
+        examples:
+          - Staffing in a payment operations team falls below the level required to meet daily settlement deadlines, causing chronic backlog.
+          - A poorly designed sales incentive plan rewards volume over suitability, encouraging unsuitable recommendations.
+      - code: RC-PPL-03
+        name: Cultural or Conduct Weakness
+        definition: Pervasive beliefs, norms, or behaviours that conflict with internal expectations, regulatory standards, or customer interests, including environments that discourage candid escalation or whistleblowing.
+        selection_criteria: Select when beliefs, norms, behaviours, pressure, or escalation culture conflict with internal expectations, regulatory standards, or customer interests.
+        examples:
+          - Front-line staff withhold concerns about a flawed product launch because they fear adverse career consequences for raising issues.
+      - code: RC-PPL-04
+        name: Internal Malicious Acts
+        definition: Deliberate harmful, fraudulent, or unauthorized acts by team members, including theft, sabotage, fraud, collusion, or wilful policy violation.
+        selection_criteria: Select when team members deliberately commit harmful, fraudulent, unauthorized, collusive, or wilful policy-violating acts.
+        examples:
+          - An operations clerk colludes with a counterpart at a vendor to redirect vendor payments to a personal account.
+      - code: RC-PPL-05
+        name: Human Error
+        definition: Non-deliberate accidents, misinterpretations, or mistakes by team members that are not attributable to inadequate resourcing, training, or workforce management.
+        selection_criteria: Select when a non-deliberate accident, misinterpretation, or mistake by a team member is not attributable to resourcing, training, or workforce management.
+        examples:
+          - A team member transposes digits when manually entering a wire transfer amount, requiring same-day reversal and reconciliation.
+  - category: Process
+    cause_origin: "Originates in the design or operation of internal procedures, controls, or policies"
+    definition: "Causes related to the design or operation of internal procedures, controls, or policies."
+    causes:
+      - code: RC-PRC-01
+        name: Missing Control, Process, or Policy
+        definition: A required control, documented process, or governing policy is absent because the relevant risk has not been identified or covered.
+        selection_criteria: Select when a required control, documented process, or governing policy is absent and the relevant risk is not identified or covered.
+        examples:
+          - A new product is launched without a corresponding suitability assessment process, leaving the sales activity for that product line ungoverned.
+      - code: RC-PRC-02
+        name: Design Failure (Process, Control, or Policy)
+        definition: A control, process, or policy exists but is inadequately designed, with wrong granularity, missing review steps, ambiguous criteria, or insufficient coverage of the underlying risk.
+        selection_criteria: Select when a control, process, or policy exists but has wrong granularity, missing review steps, ambiguous criteria, or insufficient risk coverage.
+        examples:
+          - A secondary review control over journal entries inspects the dollar amount but not the offsetting account, allowing posting errors to bypass detection.
+      - code: RC-PRC-03
+        name: Implementation or Operating Failure
+        definition: A control, process, or policy is adequately designed but is not executed, operated, or evidenced in practice as designed.
+        selection_criteria: Select when an adequately designed control, process, or policy is not executed, operated, or evidenced in practice as designed.
+        examples:
+          - A quarterly access recertification control is performed annually rather than quarterly, with no compensating documentation retained.
+      - code: RC-PRC-04
+        name: Lack of Clarity or Ownership
+        definition: Processes, controls, or policies lack clear ownership, accountability, governance forums, or unambiguous direction, including missing decision-rights structures.
+        selection_criteria: Select when process, control, or policy ownership, accountability, governance forums, direction, or decision rights are unclear.
+        examples:
+          - No documented owner is assigned to a critical reconciliation process, leading to inconsistent execution as staff turn over and no governance body to escalate issues to.
+      - code: RC-PRC-05
+        name: Change & Project Mismanagement
+        definition: Inadequate planning, communication, training, or oversight of organizational change, regulatory implementation, or project delivery.
+        selection_criteria: Select when organizational change, regulatory implementation, or project delivery has inadequate planning, communication, training, or oversight.
+        examples:
+          - A regulatory implementation project deploys a new control without communicating the change to operating teams, causing widespread non-compliance with the new requirement.
+  - category: Technology
+    cause_origin: "Originates in internal applications, systems, or infrastructure"
+    definition: "Causes related to inadequacies or failures in internal applications, systems, or infrastructure."
+    causes:
+      - code: RC-TEC-01
+        name: Inadequate System Design or Development
+        definition: Applications, systems, or infrastructure are designed or built inadequately to meet functional, non-functional, or secure-coding requirements.
+        selection_criteria: Select when applications, systems, or infrastructure are inadequately designed or built for functional, non-functional, or secure-coding requirements.
+        examples:
+          - A customer-facing transfer function is designed without idempotency, causing duplicate transactions when network connectivity is intermittent.
+      - code: RC-TEC-02
+        name: Inadequate Testing
+        definition: Insufficient functional, non-functional, regression, or user acceptance testing prior to release, including missing volume, security, or edge-case coverage.
+        selection_criteria: Select when pre-release functional, non-functional, regression, user acceptance, volume, security, or edge-case testing is insufficient.
+        examples:
+          - A payment platform release passes unit testing but lacks volume testing, and fails under peak end-of-month transaction load.
+      - code: RC-TEC-03
+        name: Inadequate Change, Release, or Deployment Practices
+        definition: Insufficient discipline in scoping, approving, deploying, rolling back, or documenting application or infrastructure changes.
+        selection_criteria: Select when application or infrastructure change scoping, approval, deployment, rollback, or documentation discipline is insufficient.
+        examples:
+          - A misconfigured production deployment overwrites the active release, taking a downstream customer servicing application offline for several hours.
+      - code: RC-TEC-04
+        name: Inadequate Maintenance or Capacity
+        definition: Failures in patching, version currency, hardware refresh, end-of-life management, or capacity scaling, including running unsupported infrastructure or insufficient throughput to meet demand.
+        selection_criteria: Select when patching, version currency, hardware refresh, end-of-life management, capacity scaling, unsupported infrastructure, or throughput is inadequate.
+        examples:
+          - An out-of-support database server reaches end-of-life without migration, causing repeated outages.
+          - Network bandwidth is undersized for remote-work loads, intermittently locking out a portion of the workforce.
+      - code: RC-TEC-05
+        name: Inadequate Data Storage, Retention & Destruction
+        definition: Insufficient management of data storage architecture, backups, retention schedules, archival integrity, or secure destruction practices.
+        selection_criteria: Select when data storage architecture, backups, retention schedules, archival integrity, or secure destruction practices are insufficient.
+        examples:
+          - A backup process silently fails for thirty days, and a partial database corruption then requires recovery from an older snapshot, losing intervening customer transaction history.
+application_notes:
+  - "A failed control is not itself a root cause; classify why the control failed."
+  - "Where an external cyber-attack succeeds because of an internal technology weakness, classify the primary cause under Technology and the secondary cause under External Malicious or Criminal Acts."
+  - "Where an external cyber-attack would have succeeded regardless of internal posture, classify the primary cause under External Malicious or Criminal Acts."
+  - "Use a People cause for procedure non-compliance only if the procedure itself was sound; use Process when the procedure was unclear or poorly designed."
+governance:
+  review_frequency: "At least annually"
+  owner: "Operational Risk Management"
+  approval_body: "Risk Committee"

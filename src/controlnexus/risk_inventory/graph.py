@@ -41,7 +41,12 @@ from controlnexus.risk_inventory.models import (
     RiskInventoryRun,
     RiskStatement,
 )
-from controlnexus.risk_inventory.taxonomy import find_applicable_nodes, load_risk_inventory_taxonomy
+from controlnexus.risk_inventory.taxonomy import (
+    find_applicable_nodes,
+    load_risk_inventory_taxonomy,
+    normalize_root_cause_names,
+    risk_statement_with_root_cause_selection,
+)
 from controlnexus.risk_inventory.validator import RiskInventoryValidator
 
 
@@ -109,7 +114,11 @@ def risk_statement_generation_node(state: RiskInventoryState) -> dict[str, Any]:
             ),
             confidence=0.72,
         )
-        statement_text = _process_specific_risk_statement(context, node)
+        causes = normalize_root_cause_names(node.typical_root_causes[:3], node=node, max_items=3)
+        statement_text = risk_statement_with_root_cause_selection(
+            _process_specific_risk_statement(context, node, causes),
+            causes,
+        )
         records.append(
             {
                 "risk_id": f"RI-{idx:03d}",
@@ -121,7 +130,7 @@ def risk_statement_generation_node(state: RiskInventoryState) -> dict[str, Any]:
                 "risk_statement": RiskStatement(
                     risk_description=statement_text,
                     risk_event=statement_text,
-                    causes=node.typical_root_causes[:3],
+                    causes=causes,
                     consequences=_contextual_consequences(context, node),
                     affected_stakeholders=context.stakeholders,
                 ).model_dump(),
@@ -426,15 +435,19 @@ def _mapping_from_control(control: dict[str, Any], node: Any) -> ControlMapping:
         control_type=control_type,
         control_description=description,
         mitigation_rationale=f"{name} mitigates {node.level_2_category} based on control type and description matching.",
-        mapped_root_causes=node.typical_root_causes[:2],
+        mapped_root_causes=normalize_root_cause_names(node.typical_root_causes[:2], node=node, max_items=2),
         coverage_assessment="partial",
         design_effectiveness=design,
         operating_effectiveness=operating,
     )
 
 
-def _process_specific_risk_statement(context: ProcessContext, node: Any) -> str:
-    root_cause = node.typical_root_causes[0].lower() if node.typical_root_causes else "process breakdowns"
+def _process_specific_risk_statement(
+    context: ProcessContext,
+    node: Any,
+    causes: list[str] | None = None,
+) -> str:
+    root_cause = (causes or node.typical_root_causes or ["process breakdowns"])[0].lower()
     consequence = _contextual_consequences(context, node)[0].lower()
     product = f" for {context.product}" if context.product else ""
     return (
