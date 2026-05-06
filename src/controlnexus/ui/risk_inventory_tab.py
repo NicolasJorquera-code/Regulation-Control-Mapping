@@ -3243,8 +3243,6 @@ def _render_user_knowledge_base_intro() -> None:
 
 
 def _render_input_and_maybe_run() -> RiskInventoryRun | None:
-    _render_user_knowledge_base_intro()
-
     st.markdown(
         '<div class="ri-section-title">Knowledge Base On File</div>',
         unsafe_allow_html=True,
