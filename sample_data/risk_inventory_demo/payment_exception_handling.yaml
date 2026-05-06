@@ -345,9 +345,13 @@ controls:
 risks:
 - taxonomy_node_id: RIB-BPR
   risk_id: RISK-PAYEXC-001
-  risk_description: High-value payment repairs may be released with an amount, beneficiary population, or payment purpose
-    that does not match the approved instruction. The exposure arises when release approval is not supported by a retained
-    tie-out of the exception case, payment notice, loan-agency instruction, and final wire file.
+  risk_description: >-
+    High-value payment repairs may be released with an amount, beneficiary population, value date, or payment purpose that
+    does not match the approved loan-agency or customer instruction. The risk is most acute when the exception case, payment
+    notice, generated wire file, and release approval are treated as separate artifacts instead of a single evidentiary chain.
+    If the checker cannot see and retain the final wire detail used for release, maker/checker approval may confirm workflow
+    completion without proving payment intent. A failure at this point can create immediate cash exposure, disputed return
+    rights, legal escalation, and senior management reporting obligations.
   risk_event: A repaired wire is released with principal, duplicate proceeds, or an incorrect beneficiary set rather than
     the approved exception amount.
   applicability_rationale: The process repairs and releases high-value wires through manual exception decisions, maker/checker
@@ -457,9 +461,13 @@ risks:
     approval_status: Draft
 - taxonomy_node_id: RIB-DM
   risk_id: RISK-PAYEXC-002
-  risk_description: Payment advice, exception workflow, wire-file, and accounting data may diverge during repair processing.
-    If those data sets are not reconciled before release, the process can send the wrong amount, payment component, beneficiary
-    set, or duplicate instruction.
+  risk_description: >-
+    Payment advice, exception workflow, wire-file, and accounting records may diverge during repair processing, particularly
+    when upstream notices, case edits, and batch-generated wire details are not reconciled before release. The process depends
+    on multiple authoritative data objects, and a mismatch in amount, beneficiary, principal/interest allocation, internal
+    account, or payment purpose can move from a data-quality issue to an actual funds-transfer error. If reconciliation occurs
+    only after release, the bank may detect the break after settlement has occurred, weakening recovery options and delaying
+    management visibility into suspense, nostro, GL, and recall exposure.
   risk_event: The generated wire file contains payment fields that do not match the approved notice or loan-agency calculation
     at the point of release.
   applicability_rationale: 'The process depends on multiple authoritative data objects: payment notice, loan-agency calculation,
@@ -564,9 +572,13 @@ risks:
     approval_status: Draft
 - taxonomy_node_id: RIB-CYB
   risk_id: RISK-PAYEXC-003
-  risk_description: Excessive or stale privileged access to payment setup can weaken high-value payment validation. Users
-    with access to routing defaults, release queues, templates, or override parameters could introduce unauthorized configuration
-    changes before independent review detects them.
+  risk_description: >-
+    Excessive, stale, or poorly monitored privileged access to payment setup can undermine the integrity of high-value payment
+    validation. Users with access to routing defaults, release queues, payment templates, or override parameters can change
+    how a repaired payment is generated, routed, or presented for approval before a second reviewer sees the transaction.
+    When emergency access closure, sensitive-role recertification, and production configuration review are not linked, the
+    bank may be unable to prove that release behavior was authorized at the time of payment. The exposure is both operational
+    and cyber-related because one configuration change can affect multiple high-value releases.
   risk_event: A privileged user changes payment-routing, template, or high-value release settings without timely approval,
     recertification, or closure of emergency access.
   applicability_rationale: The payment workflow includes sensitive configuration for internal account treatment, release queues,
@@ -667,9 +679,13 @@ risks:
     approval_status: Draft
 - taxonomy_node_id: RIB-ORS
   risk_id: RISK-PAYEXC-004
-  risk_description: Payment Operations may not execute recall, hold, counterparty outreach, internal escalation, and accounting
-    actions quickly enough after a suspected erroneous high-value release. Delay at this stage extends recovery uncertainty
-    after funds have left the bank.
+  risk_description: >-
+    Payment Operations may not execute recall, hold, counterparty outreach, internal escalation, and accounting actions quickly
+    enough after a suspected erroneous high-value release. Once funds have left the bank, recovery depends on disciplined
+    same-day execution of the recall playbook, accurate external contacts, legal and treasury coordination, and clear ownership
+    of open exposure. Delay or incomplete documentation at this stage can extend cash uncertainty, complicate return negotiations,
+    and leave Finance without a reliable view of potential loss. The risk is heightened near cutoff times, during surge volumes,
+    and when exception ownership moves between operations, legal, treasury, and second-line teams.
   risk_event: A suspected erroneous release is detected near or after cutoff and recall actions are delayed, incomplete, or
     inconsistently documented.
   applicability_rationale: The process includes same-day wire release, recall notices, correspondent-bank communication, legal
@@ -764,9 +780,13 @@ risks:
     approval_status: Approved
 - taxonomy_node_id: RIB-TPR
   risk_id: RISK-PAYEXC-005
-  risk_description: Correspondent banks, custodians, or recipient institutions may not act promptly on recall, hold, or return
-    requests. The bank remains exposed when recovery depends on external parties after an erroneous high-value payment has
-    settled.
+  risk_description: >-
+    Correspondent banks, custodians, or recipient institutions may not act promptly or consistently on recall, hold, or return
+    requests after an erroneous high-value payment has settled. The bank can send notices and escalate through relationship
+    channels, but it does not fully control the recipient institution's response time, documentation standard, legal position,
+    or willingness to hold funds. Stale contact records, ambiguous acknowledgement evidence, and cross-border operating hours
+    can make recovery dependent on external parties during the period of greatest exposure. This creates third-party performance
+    risk even when the original release failure occurred inside the bank.
   risk_event: A counterparty delays or disputes action on a recall or hold request after funds leave the bank.
   applicability_rationale: Recovery after release depends on external financial institutions, recipient response, recall-message
     handling, and timely contact escalation.
@@ -853,9 +873,13 @@ risks:
     approval_status: Approved
 - taxonomy_node_id: RIB-RR
   risk_id: RISK-PAYEXC-006
-  risk_description: A material erroneous-payment event may not be classified, escalated, or reported consistently across Operations,
-    Legal, Compliance, Finance, and second-line risk. Ambiguity in ownership, threshold, or timing can delay executive notification
-    and regulatory-reporting assessment.
+  risk_description: >-
+    A material erroneous-payment event may not be classified, escalated, or reported consistently across Operations, Legal,
+    Compliance, Finance, and second-line risk. The process requires rapid judgment on materiality, customer and counterparty
+    impact, recoverability, operational-loss capture, and potential regulatory-reporting or supervisory communication obligations.
+    If thresholds, owners, and escalation clocks are not codified before an event occurs, functions may wait for each other
+    while exposure remains unresolved. That delay can weaken executive decision-making, produce inconsistent incident records,
+    and leave the bank unable to evidence timely governance over a significant payment-control failure.
   risk_event: Incident materiality, reporting ownership, or notification timing is interpreted inconsistently after a suspected
     material payment-control failure.
   applicability_rationale: The process can create material operational loss, recovery uncertainty, customer or counterparty
@@ -955,9 +979,13 @@ risks:
     approval_status: Draft
 - taxonomy_node_id: RIB-IFR
   risk_id: RISK-PAYEXC-007
-  risk_description: Override authority, emergency access, or weak maker/checker evidence may permit a high-value payment exception
-    to be released without effective independent challenge. The key exposure is not only unauthorized release, but the inability
-    to prove that approval was based on source-document review.
+  risk_description: >-
+    Override authority, emergency access, or weak maker/checker evidence may permit a high-value payment exception to be released
+    without effective independent challenge. The exposure is not limited to unauthorized release; it also includes the inability
+    to prove that the approver reviewed the payment notice, source calculation, beneficiary detail, and final wire output before
+    approval. Time pressure, senior-client sensitivity, or workflow status cues can cause reviewers to approve the case narrative
+    rather than the actual payment instruction. Where approval notes, entitlement monitoring, and release evidence are not joined,
+    internal fraud, conduct, and override indicators may be missed until after funds move.
   risk_event: A preparer, privileged user, or pressured approver releases a high-value exception without reviewing source
     evidence or following required approval segregation.
   applicability_rationale: The process uses manual preparation, release approval, privileged workflow functions, and high-value
@@ -1059,9 +1087,12 @@ risks:
     approval_status: Draft
 - taxonomy_node_id: RIB-DM
   risk_id: RISK-PAYEXC-008
-  risk_description: GL, suspense, nostro, and recall records may remain disconnected after a payment release. Without a linked
-    close view, unrecovered funds, duplicate accounting entries, or aged breaks tied to payment exceptions can remain unresolved
-    or underreported.
+  risk_description: >-
+    GL, suspense, nostro, recall, and exception-workflow records may remain disconnected after a high-value payment release.
+    Without a linked close view, unrecovered funds, duplicate accounting entries, recall status, and aged breaks can be tracked
+    by different owners using different identifiers. The bank may therefore close the operational case while Finance still has
+    unresolved exposure, or certify the accounting break without understanding the underlying payment-control event. This weakens
+    loss-event capture, daily close discipline, and senior management reporting for material payment exceptions.
   risk_event: An unrecovered payment, recall case, or duplicate accounting entry remains open because accounting breaks are
     reconciled separately from the payment exception workflow.
   applicability_rationale: The process depends on post-release reconciliation to confirm final cash movement, suspense status,
@@ -1086,7 +1117,7 @@ risks:
     reputational_impact: Delayed close certification and unclear recovery status can weaken confidence in payment operations
       oversight.
   overall_impact_score: 3
-  overall_impact_rationale: Impact is Severe because accounting breaks can hide unresolved recovery exposure and impair management
+  overall_impact_rationale: Impact is High because accounting breaks can hide unresolved recovery exposure and impair management
     reporting after a material payment event.
   likelihood_score: 4
   likelihood_rating: High

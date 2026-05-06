@@ -265,6 +265,16 @@ class TestRiskInventoryDemoAndGraph:
         assert any("occ.gov" in source for source in run.input_context.source_documents)
         assert any("law.justia.com" in source for source in run.input_context.source_documents)
 
+    def test_payment_demo_risk_statements_are_executive_grade(self):
+        run = load_demo_risk_inventory()
+
+        for record in run.records:
+            statement = record.risk_statement.risk_description
+            assert len(statement.split()) >= 55
+            assert statement.count(".") >= 3
+            assert "Root-cause lens" not in statement
+            assert "may be released" not in statement[:45] or len(statement.split()) > 70
+
     def test_demo_workspace_is_single_payment_exception_process(self):
         workspace = load_demo_workspace()
         assert workspace.bank_name == "Enterprise Payment Operations"
@@ -279,6 +289,9 @@ class TestRiskInventoryDemoAndGraph:
         assert all(workspace.run_for_process(process.process_id) for process in workspace.processes)
         assert all(run.records for run in workspace.runs)
         assert workspace.processes[0].apqc_crosswalk
+        assert workspace.kri_library
+        assert all(kri.kri_id.startswith("KRI-PAYEXC-") for kri in workspace.kri_library)
+        assert all("generic" not in kri.metric_definition.lower() for kri in workspace.kri_library)
 
     def test_knowledge_pack_loader_alias(self):
         workspace = load_knowledge_pack()
@@ -381,12 +394,13 @@ class TestRiskInventoryControlMappingUiHelpers:
             "Gap Analysis",
         ]
         assert risk_inventory_tab.USER_RISK_INVENTORY_TABS == [
-            "Overview",
-            "Input / Upload",
+            "Knowledge Base",
             "Risk Inventory",
             "Control Mapping",
             "Gap Analysis",
         ]
+        assert "Overview" not in risk_inventory_tab.USER_RISK_INVENTORY_TABS
+        assert "Input / Upload" not in risk_inventory_tab.USER_RISK_INVENTORY_TABS
         assert "Control Gap Lab" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
         assert "Process Map" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
         assert "Residual Risk" not in risk_inventory_tab.DEMO_RISK_INVENTORY_TABS
@@ -404,6 +418,27 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert "Evidence" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
         assert "Issues" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
         assert "Obligations" not in risk_inventory_tab.KNOWLEDGE_BASE_TABS
+
+    def test_user_knowledge_base_intro_uses_plain_header_and_structured_io_cards(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+        intro_source = source.split("def _render_user_knowledge_base_intro", 1)[1].split(
+            "def _render_input_and_maybe_run", 1
+        )[0]
+
+        assert "Production Knowledge Base" not in intro_source
+        assert "End-to-end output" not in intro_source
+        assert "ri-kb-hero" not in source
+        assert "ri-kb-page-title" in intro_source
+        assert "Start with source evidence. Finish with a reviewer-ready risk inventory." in intro_source
+        assert "Input data" in intro_source
+        assert "What the workflow consumes" in intro_source
+        assert "Deliverables" in intro_source
+        assert "What the workflow produces" in intro_source
+        assert "Why it helps" in intro_source
+        assert "Operating context" in intro_source
+        assert "Reviewer package" in intro_source
+        assert "Executive-ready output" in intro_source
+        assert ".ri-kb-io-card ul" not in source
 
     def test_knowledge_base_profile_options_are_single_process(self):
         from controlnexus.ui import risk_inventory_tab
@@ -497,11 +532,14 @@ class TestRiskInventoryControlMappingUiHelpers:
             "Business Unit",
             "Process",
             "Risk Subcategory",
+            "Risk Statement",
             "Enterprise Risk Category",
             "Impact",
             "Frequency",
-            "Inherent Risk",
         ]
+        assert list(rows[0])[8] == "Inherent Risk"
+        assert all(row["Risk Statement"] for row in rows)
+        assert all(len(row["Risk Statement"].split()) >= 55 for row in rows)
         assert all("Frequency" in row for row in rows)
         assert all("Inherent Risk" in row for row in rows)
         assert all("Residual Risk" not in row for row in rows)
@@ -666,7 +704,7 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert "_render_inherent_risk_summary(record)" in center_source
         assert "_render_compact_kri_panel" not in center_source
         assert "compact_kri_rows" not in center_source
-        assert "_render_selected_risk_kri_cards(selected_record, workspace)" not in center_source
+        assert "_render_selected_risk_kri_cards(record, workspace)" in center_source
         assert "Linked KRI Program" not in center_source
 
     def test_selected_risk_kri_rows_are_full_width_card_ready(self):
@@ -684,8 +722,6 @@ class TestRiskInventoryControlMappingUiHelpers:
             "KRI ID",
             "KRI",
             "Definition",
-            "Formula",
-            "Unit",
             "Owner",
             "Frequency",
             "Source",
@@ -700,7 +736,7 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert all(row["Rationale"] for row in rows)
         assert all(row["Escalation Path"] for row in rows)
 
-    def test_selected_risk_kri_cards_use_compact_grid_without_formula_block(self):
+    def test_selected_risk_kri_cards_use_compact_grid_without_formula(self):
         source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
 
         assert 'st.columns(2, gap="medium")' in source
@@ -709,6 +745,17 @@ class TestRiskInventoryControlMappingUiHelpers:
         assert "ri-selected-kri-formula" not in source
         assert "ri-selected-kri-thresholds" not in source
         assert "ri-selected-kri-grid" not in source
+
+    def test_risk_inventory_browser_shows_wrapped_risk_statement_column(self):
+        source = Path("src/controlnexus/ui/risk_inventory_tab.py").read_text(encoding="utf-8")
+        browser_source = source.split("def _render_risk_inventory_browser", 1)[1].split(
+            "def _render_risk_command_center", 1
+        )[0]
+
+        assert '"Risk Subcategory": row["Risk Subcategory"]' in browser_source
+        assert '"Risk Statement": row["Risk Statement"]' in browser_source
+        assert "row_height = max(156, _table_row_height(browser_rows))" in browser_source
+        assert "height=min(760, 64 + len(browser_rows) * row_height)" in browser_source
 
     def test_selected_risk_scoring_rationale_is_concise_and_metric_backed(self):
         from controlnexus.ui import risk_inventory_tab

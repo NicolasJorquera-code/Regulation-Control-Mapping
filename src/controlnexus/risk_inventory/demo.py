@@ -638,6 +638,7 @@ def _default_single_process_demo_payload(payload: dict[str, Any]) -> dict[str, A
     narrowed["process_ids"] = [DEFAULT_DEMO_PROCESS_ID]
     narrowed["_business_unit_filter"] = {DEFAULT_DEMO_BUSINESS_UNIT_ID}
     narrowed["_process_filter"] = {DEFAULT_DEMO_PROCESS_ID}
+    narrowed["_kri_id_prefix_filter"] = ("KRI-PAYEXC-",)
     narrowed["auto_generate_missing_runs"] = False
     manifest = dict(narrowed.get("knowledge_pack", {}))
     manifest["description"] = "Single-process payment exception risk inventory."
@@ -815,6 +816,9 @@ def _build_workspace_from_payload(fixture_path: Path, payload: dict[str, Any]) -
             for record in run.records
         }
         kris = [kri for kri in kris if kri.risk_taxonomy_id in active_taxonomy_ids]
+    kri_prefix_filter = tuple(str(prefix) for prefix in payload.get("_kri_id_prefix_filter", ()))
+    if kri_prefix_filter:
+        kris = [kri for kri in kris if kri.kri_id.startswith(kri_prefix_filter)]
     control_inventory = [
         ControlInventoryEntry.model_validate(control)
         for control in aggregated_controls.values()

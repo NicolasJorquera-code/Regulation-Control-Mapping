@@ -8,10 +8,9 @@ Front-end-only experience that supports two storylines:
 2. **User workflow:** Non-demo mode lets the user upload process documents and
    run the deterministic graph as before.
 
-In non-demo mode, the user uploads process documents and runs the
-deterministic graph as before — the Input / Upload tab now also exposes the
-multi-table format for business units, controls, taxonomies, and processes
-the user already has on file.
+In non-demo mode, the Knowledge Base tab starts the workflow: the user can
+review bank source tables, upload process/control evidence, and run the
+deterministic graph from one intake surface.
 """
 
 from __future__ import annotations
@@ -66,8 +65,7 @@ DEMO_RISK_INVENTORY_TABS = [
 ]
 
 USER_RISK_INVENTORY_TABS = [
-    "Overview",
-    "Input / Upload",
+    "Knowledge Base",
     "Risk Inventory",
     "Control Mapping",
     "Gap Analysis",
@@ -217,61 +215,18 @@ def _render_user_workflow() -> None:
     tabs = st.tabs(USER_RISK_INVENTORY_TABS)
 
     with tabs[0]:
-        _render_overview_user(run)
-    with tabs[1]:
         _render_input_and_maybe_run()
-    with tabs[2]:
+    with tabs[1]:
         _render_risk_inventory_combined(run, None) if run else _render_empty_panel(
-            "Risk records will appear after you run the workflow."
+            "Risk records will appear after you run the workflow from Knowledge Base."
+        )
+    with tabs[2]:
+        _render_control_mapping(run) if run else _render_empty_panel(
+            "Control mappings will appear after inventory creation from Knowledge Base."
         )
     with tabs[3]:
-        _render_control_mapping(run) if run else _render_empty_panel(
-            "Control mappings will appear after inventory creation."
-        )
-    with tabs[4]:
         _render_control_gap_lab(run, None, None) if run else _render_empty_panel(
-            "Gap analysis will appear after inventory creation."
-        )
-
-
-# ---------------------------------------------------------------------------
-# Overview tab (user mode only — empty-state guidance per requirements)
-# ---------------------------------------------------------------------------
-
-
-def _render_overview_user(run: RiskInventoryRun | None) -> None:
-    if run is None:
-        _render_empty_state()
-        return
-
-    _render_summary_metrics(run)
-    st.markdown('<div class="ri-section-title">Pipeline</div>', unsafe_allow_html=True)
-    st.markdown('<div class="ri-flow">', unsafe_allow_html=True)
-    for stage in [
-        "Understand Process",
-        "Identify Applicable Risks",
-        "Assess Inherent Risk",
-        "Map Controls",
-        "Evaluate Controls",
-        "Determine Residual Risk",
-    ]:
-        st.markdown(f"<span>{html.escape(stage)}</span>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    left, right = st.columns([1.25, 1])
-    with left:
-        st.markdown('<div class="ri-section-title">Executive Takeaway</div>', unsafe_allow_html=True)
-        st.write(run.executive_summary.headline)
-        for message in run.executive_summary.key_messages:
-            st.markdown(f"- {message}")
-    with right:
-        st.markdown('<div class="ri-section-title">Residual Risk Distribution</div>', unsafe_allow_html=True)
-        distribution = Counter(record.residual_risk.residual_rating.value for record in run.records)
-        _render_table(
-            [
-                {"Residual Risk Rating": rating, "Record Count": distribution.get(rating, 0)}
-                for rating in ["Low", "Medium", "High", "Critical"]
-            ],
+            "Gap analysis will appear after inventory creation from Knowledge Base."
         )
 
 
@@ -894,20 +849,21 @@ def risk_inventory_workbench_rows(
         validation = required_validation_level(record, workspace)
         rows.append(
             {
-            "Risk Record ID": record.risk_id,
-            "Business Unit": _business_unit_for_record(record, workspace) or run.input_context.business_unit,
-            "Process": record.process_name,
-            "Risk Subcategory": record.taxonomy_node.level_2_category,
-            "Enterprise Risk Category": record.taxonomy_node.level_1_category,
-            "Impact": int(record.impact_assessment.overall_impact_score),
-            "Frequency": int(record.likelihood_assessment.likelihood_score),
-            "Inherent Risk": record.inherent_risk.inherent_rating.value,
-            "Controls": len(record.control_mappings),
-            "Gaps": len(build_control_gaps(record)),
-            "KRIs": len(workspace.kris_for_taxonomy(record.taxonomy_node.id)) if workspace else 0,
-            "Validation Level": validation["validation_level"],
-            "Required Reviewer": validation["required_reviewer"],
-            "Review": record.review_challenges[0].review_status.value if record.review_challenges else "",
+                "Risk Record ID": record.risk_id,
+                "Business Unit": _business_unit_for_record(record, workspace) or run.input_context.business_unit,
+                "Process": record.process_name,
+                "Risk Subcategory": record.taxonomy_node.level_2_category,
+                "Risk Statement": _risk_statement_display(record),
+                "Enterprise Risk Category": record.taxonomy_node.level_1_category,
+                "Impact": int(record.impact_assessment.overall_impact_score),
+                "Frequency": int(record.likelihood_assessment.likelihood_score),
+                "Inherent Risk": record.inherent_risk.inherent_rating.value,
+                "Controls": len(record.control_mappings),
+                "Gaps": len(build_control_gaps(record)),
+                "KRIs": len(workspace.kris_for_taxonomy(record.taxonomy_node.id)) if workspace else 0,
+                "Validation Level": validation["validation_level"],
+                "Required Reviewer": validation["required_reviewer"],
+                "Review": record.review_challenges[0].review_status.value if record.review_challenges else "",
             }
         )
     return rows
@@ -1064,6 +1020,7 @@ def _render_risk_inventory_browser(rows: list[dict[str, Any]], selected_id: str)
             "Process": row["Process"],
             "Enterprise Category": row["Enterprise Risk Category"],
             "Risk Subcategory": row["Risk Subcategory"],
+            "Risk Statement": row["Risk Statement"],
             "Inherent Risk": row["Inherent Risk"],
             "Impact": row["Impact"],
             "Frequency": row["Frequency"],
@@ -1079,12 +1036,13 @@ def _render_risk_inventory_browser(rows: list[dict[str, Any]], selected_id: str)
         (idx for idx, row in enumerate(browser_rows) if row["Risk ID"] == selected_id),
         0,
     )
+    row_height = max(156, _table_row_height(browser_rows))
     event = st.dataframe(
         browser_rows,
         hide_index=True,
         width="stretch",
-        height=min(360, 64 + len(browser_rows) * 44),
-        row_height=42,
+        height=min(760, 64 + len(browser_rows) * row_height),
+        row_height=row_height,
         selection_mode="single-row",
         on_select="rerun",
         key="ri_inventory_browser_table",
@@ -1117,26 +1075,15 @@ def _render_risk_command_center(
     _render_chip_group("Root causes", list(detail["root_causes"]))
     _render_chip_group("Affected stakeholders", record.risk_statement.affected_stakeholders)
     _render_inherent_risk_summary(record)
+    _render_selected_risk_kri_cards(record, workspace)
 
 
 def _render_risk_command_review_summary(
     record: RiskInventoryRecord,
     workspace: RiskInventoryWorkspace | None,
 ) -> None:
-    validation = required_validation_level(record, workspace)
     gaps = build_control_gaps(record)
     kris = workspace.kris_for_taxonomy(record.taxonomy_node.id) if workspace else []
-    st.markdown(
-        f"""
-        <div class="ri-validation-card">
-            <span>Required Validation</span>
-            <b>{html.escape(validation["validation_level"])}</b>
-            <p>{html.escape(validation["required_reviewer"])}</p>
-            <small>{html.escape(validation["validation_basis"])}</small>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
     _render_fact_block(
         {
             "Controls": str(len(record.control_mappings)),
@@ -1250,8 +1197,6 @@ def selected_risk_kri_rows(
             "KRI ID": kri.kri_id,
             "KRI": kri.kri_name,
             "Definition": kri.metric_definition,
-            "Formula": kri.formula,
-            "Unit": kri.unit,
             "Owner": kri.owner,
             "Frequency": kri.measurement_frequency,
             "Source": kri.data_source,
@@ -2318,11 +2263,6 @@ def _render_kri_recommendations(
     )
 
     for kri in candidates:
-        formula_block = (
-            f'<div class="ri-kri-formula"><code>{html.escape(kri.formula)}</code> ({html.escape(kri.unit)})</div>'
-            if kri.formula
-            else ""
-        )
         st.markdown(
             f"""
             <div class="ri-kri-card">
@@ -2338,7 +2278,6 @@ def _render_kri_recommendations(
                     </div>
                 </div>
                 <div class="ri-kri-definition"><b>Definition.</b> {html.escape(kri.metric_definition)}</div>
-                {formula_block}
                 <div class="ri-kri-thresholds">
                     <div class="ri-kri-threshold ri-low"><span>Green</span><b>{html.escape(kri.thresholds.green)}</b></div>
                     <div class="ri-kri-threshold ri-medium"><span>Amber</span><b>{html.escape(kri.thresholds.amber)}</b></div>
@@ -2872,31 +2811,121 @@ def _render_executive(run: RiskInventoryRun, workspace: RiskInventoryWorkspace |
 
 
 # ---------------------------------------------------------------------------
-# User Input / Upload tab
+# User Knowledge Base tab
 # ---------------------------------------------------------------------------
 
 
-def _render_input_and_maybe_run() -> RiskInventoryRun | None:
-    st.markdown('<div class="ri-section-title">Institution Data Intake</div>', unsafe_allow_html=True)
-    st.caption(
-        "Upload or review source data for a production workspace. Demo Mode opens the focused Payment Exception Handling example."
+def _render_user_knowledge_base_intro() -> None:
+    input_items = [
+        ("Operating context", "Business units, process owners, products, systems, and material obligations."),
+        ("Process evidence", "Policy, procedure, PDF, Markdown, or TXT files used to extract control and risk cues."),
+        ("Control baseline", "Existing controls with owners, frequency, expected evidence, and test results."),
+        ("Risk framework", "Risk taxonomy, control taxonomy, KRI library, appetite, and scoring rules."),
+    ]
+    output_items = [
+        ("Risk inventory", "Risk records with executive-quality statements, taxonomy placement, root causes, and impact drivers."),
+        ("Scoring record", "Impact, frequency, inherent risk, control score, residual rating, and rationale."),
+        ("Control coverage", "Risk-to-control mapping with coverage strength, evidence needs, and open gaps."),
+        ("Reviewer package", "KRI monitoring, synthetic control statements, validation prompts, and Excel-ready export."),
+    ]
+    benefit_items = [
+        ("Faster review", "Starts from evidence already on file instead of blank risk forms."),
+        ("Cleaner challenge", "Keeps rationale, evidence, KRIs, and reviewer questions tied to each risk."),
+        ("Executive-ready output", "Produces workbench views and exports that support management review."),
+    ]
+    flow_steps = [
+        ("01", "Load Knowledge", "Review source tables and add new evidence."),
+        ("02", "Extract Context", "Confirm process facts before scoring."),
+        ("03", "Run Workflow", "Classify, score, map controls, and identify gaps."),
+        ("04", "Use Outputs", "Review workbenches and export the risk inventory."),
+    ]
+    input_html = "".join(_knowledge_base_io_item_html(title, description) for title, description in input_items)
+    output_html = "".join(_knowledge_base_io_item_html(title, description) for title, description in output_items)
+    benefit_html = "".join(
+        (
+            '<div class="ri-kb-benefit">'
+            f"<b>{html.escape(title)}</b>"
+            f"<p>{html.escape(description)}</p>"
+            "</div>"
+        )
+        for title, description in benefit_items
+    )
+    flow_html = "".join(
+        (
+            '<div class="ri-kb-flow-step">'
+            f"<span>{html.escape(number)}</span>"
+            f"<b>{html.escape(title)}</b>"
+            f"<p>{html.escape(description)}</p>"
+            "</div>"
+        )
+        for number, title, description in flow_steps
+    )
+    st.markdown(
+        f"""
+        <div class="ri-kb-page-heading">
+            <span>Knowledge Base</span>
+            <div class="ri-kb-page-title">Start with source evidence. Finish with a reviewer-ready risk inventory.</div>
+            <p>
+                Review the institution data already on file, add process evidence, and run the workflow to produce
+                risk records, control mapping, KRIs, gap analysis, and exportable reviewer materials.
+            </p>
+        </div>
+        <div class="ri-kb-io-grid">
+            <div class="ri-kb-io-card ri-kb-input-card">
+                <div class="ri-kb-card-head">
+                    <span>Input data</span>
+                    <b>What the workflow consumes</b>
+                </div>
+                <div class="ri-kb-item-list">{input_html}</div>
+            </div>
+            <div class="ri-kb-io-card ri-kb-output-card">
+                <div class="ri-kb-card-head">
+                    <span>Deliverables</span>
+                    <b>What the workflow produces</b>
+                </div>
+                <div class="ri-kb-item-list">{output_html}</div>
+            </div>
+        </div>
+        <div class="ri-kb-benefit-band">
+            <span>Why it helps</span>
+            <div>{benefit_html}</div>
+        </div>
+        <div class="ri-kb-flow">{flow_html}</div>
+        """,
+        unsafe_allow_html=True,
     )
 
+
+def _knowledge_base_io_item_html(title: str, description: str) -> str:
+    return (
+        '<div class="ri-kb-io-item">'
+        f"<b>{html.escape(title)}</b>"
+        f"<p>{html.escape(description)}</p>"
+        "</div>"
+    )
+
+
+def _render_input_and_maybe_run() -> RiskInventoryRun | None:
+    _render_user_knowledge_base_intro()
+
     st.markdown(
-        '<div class="ri-section-title">Existing Bank Knowledge Base</div>',
+        '<div class="ri-section-title">Knowledge Base On File</div>',
         unsafe_allow_html=True,
     )
     st.caption(
-        "Review the data already on file (business units, controls, risk taxonomy, control taxonomy, "
-        "processes, and KRIs). Use the upload area further down to add or replace any of it."
+        "Review the source tables that can inform the run. Empty tables are placeholders for your institution's "
+        "business units, processes, controls, taxonomies, and KRIs."
     )
     _render_user_existing_knowledge_tables()
 
     st.markdown(
-        '<div class="ri-section-title">Add or Replace Data — Process Document</div>',
+        '<div class="ri-section-title">Add Process Evidence</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Upload a PDF, TXT, or Markdown process document. The builder extracts process context and analysis cues.")
+    st.caption(
+        "Upload a PDF, TXT, or Markdown procedure. The builder extracts process context, obligations, risk cues, "
+        "control cues, systems, and stakeholders before the run."
+    )
 
     analysis = _document_upload()
     structured_context = _structured_context_upload()
@@ -2941,11 +2970,11 @@ def _render_input_and_maybe_run() -> RiskInventoryRun | None:
         _render_document_analysis(analysis)
     _render_control_preview(controls)
 
-    st.markdown('<div class="ri-section-title">Run Deterministic Workflow</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ri-section-title">Run Risk Inventory Workflow</div>', unsafe_allow_html=True)
     run_cols = st.columns([2, 1])
     with run_cols[0]:
         st.write(
-            "The graph will apply two-tier taxonomy matching, draft risk records, map controls, and calculate scores."
+            "The graph applies two-tier taxonomy matching, drafts risk records, maps controls, scores inherent and residual risk, and prepares the downstream workbenches."
         )
     with run_cols[1]:
         run_clicked = st.button("Run Risk Inventory Workflow", type="primary", width="stretch", key="ri_run")
@@ -3040,7 +3069,6 @@ def _render_user_existing_knowledge_tables() -> None:
             "KRI ID",
             "KRI",
             "Definition",
-            "Formula",
             "Source",
             "Frequency",
             "Owner",
@@ -3245,22 +3273,6 @@ def _starter_controls() -> list[dict[str, Any]]:
     return list(payload.get("controls", []))
 
 
-def _render_empty_state() -> None:
-    st.markdown(
-        """
-        <div class="ri-empty">
-            <h3>Start with evidence, not a blank form</h3>
-            <p>
-                Go to Input / Upload and add a process document PDF. The app will extract process context,
-                likely risk categories, control cues, obligations, and exposure signals before it runs the graph.
-            </p>
-            <p>Or enable <b>Demo Mode</b> in the top-right corner to explore the Payment Exception Handling example.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 def _render_empty_panel(message: str) -> None:
     st.markdown(f'<div class="ri-empty-small">{html.escape(message)}</div>', unsafe_allow_html=True)
 
@@ -3459,6 +3471,8 @@ def _table_column_config(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _table_column_width(column: str, values: list[Any]) -> int:
     name = column.lower()
+    if "risk statement" in name or name.endswith(" statement"):
+        return 520
     if any(term in name for term in ("description", "rationale", "summary", "message", "action", "definition")):
         return 420
     if any(term in name for term in ("risk profile", "regulatory relevance", "systems", "comments", "findings")):
@@ -3812,6 +3826,82 @@ def _inject_risk_inventory_css() -> None:
     st.markdown(
         """
         <style>
+        .ri-kb-page-heading {
+            border-left: 4px solid #0f62fe; padding: 0.15rem 0 0.25rem 1rem;
+            margin: 0.35rem 0 1rem 0; max-width: 1180px;
+        }
+        .ri-kb-page-heading span, .ri-kb-card-head span, .ri-kb-benefit-band > span, .ri-kb-flow-step span {
+            display: block; color: #0f62fe; font-size: 0.78rem; font-weight: 800;
+            text-transform: uppercase; margin-bottom: 0.35rem;
+        }
+        .ri-kb-page-title {
+            color: #161616; font-size: 1.8rem; line-height: 1.18; margin: 0 0 0.45rem 0;
+            max-width: 920px; font-weight: 800;
+        }
+        .ri-kb-page-heading p {
+            color: #525252; line-height: 1.48; margin: 0; max-width: 980px; font-size: 1rem;
+        }
+        .ri-kb-io-grid {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem;
+            margin: 0 0 0.75rem 0;
+        }
+        .ri-kb-io-card {
+            background: #ffffff; border: 1px solid #c6c6c6; padding: 0.95rem;
+            min-height: 260px; border-top: 4px solid #0f62fe;
+        }
+        .ri-kb-output-card { border-top-color: #24a148; }
+        .ri-kb-output-card .ri-kb-card-head span { color: #198038; }
+        .ri-kb-card-head {
+            border-bottom: 1px solid #e0e0e0; padding-bottom: 0.55rem; margin-bottom: 0.65rem;
+        }
+        .ri-kb-card-head b {
+            display: block; color: #161616; font-size: 1.12rem; line-height: 1.25;
+        }
+        .ri-kb-item-list { display: grid; gap: 0.55rem; }
+        .ri-kb-io-item {
+            background: #f4f4f4; border: 1px solid #e0e0e0; padding: 0.62rem 0.7rem;
+            border-left: 3px solid #0f62fe;
+        }
+        .ri-kb-output-card .ri-kb-io-item { border-left-color: #24a148; }
+        .ri-kb-io-item b {
+            display: block; color: #161616; font-size: 0.94rem; margin-bottom: 0.2rem;
+        }
+        .ri-kb-io-item p {
+            color: #393939; line-height: 1.38; margin: 0 !important; font-size: 0.9rem;
+        }
+        .ri-kb-benefit-band {
+            background: #f4f4f4; border: 1px solid #c6c6c6; padding: 0.85rem;
+            margin: 0 0 0.75rem 0;
+        }
+        .ri-kb-benefit-band > span { color: #525252; margin-bottom: 0.5rem; }
+        .ri-kb-benefit-band > div {
+            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.55rem;
+        }
+        .ri-kb-benefit {
+            background: #ffffff; border: 1px solid #e0e0e0; padding: 0.65rem;
+        }
+        .ri-kb-benefit b {
+            display: block; color: #161616; font-size: 0.95rem; margin-bottom: 0.2rem;
+        }
+        .ri-kb-benefit p {
+            color: #525252; margin: 0 !important; line-height: 1.36; font-size: 0.88rem;
+        }
+        .ri-kb-flow {
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem;
+            margin: 0 0 1rem 0;
+        }
+        .ri-kb-flow-step {
+            background: #f4f4f4; border: 1px solid #c6c6c6; padding: 0.75rem; min-height: 126px;
+        }
+        .ri-kb-flow-step span {
+            color: #0f62fe; margin-bottom: 0.28rem;
+        }
+        .ri-kb-flow-step b {
+            display: block; color: #161616; font-size: 0.98rem; margin-bottom: 0.25rem;
+        }
+        .ri-kb-flow-step p {
+            color: #525252; line-height: 1.36; margin: 0; font-size: 0.86rem;
+        }
         .ri-hero { background: #f4f4f4; border-left: 4px solid #0f62fe; padding: 1rem 1.25rem; margin-bottom: 1rem; }
         .ri-hero h1 { font-size: 1.85rem; margin: 0.15rem 0 0.35rem 0; line-height: 1.2; }
         .ri-hero p { color: #525252; margin: 0; max-width: 920px; }
@@ -4174,7 +4264,6 @@ def _inject_risk_inventory_css() -> None:
         .ri-kri-meta { display: grid; grid-template-columns: auto auto; gap: 0.15rem 0.85rem; font-size: 0.82rem; text-align: right; min-width: 280px; }
         .ri-kri-meta span { color: #525252; }
         .ri-kri-definition { margin-bottom: 0.45rem; color: #161616; }
-        .ri-kri-formula { font-family: 'IBM Plex Mono', monospace; background: #f4f4f4; padding: 0.4rem 0.6rem; margin-bottom: 0.55rem; font-size: 0.85rem; }
         .ri-kri-thresholds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-bottom: 0.65rem; }
         .ri-kri-threshold { padding: 0.55rem 0.7rem; border: 1px solid #e0e0e0; }
         .ri-kri-threshold span { display: block; font-size: 0.74rem; text-transform: uppercase; font-weight: 700; }
@@ -4211,7 +4300,9 @@ def _inject_risk_inventory_css() -> None:
             display: block; color: #525252; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
         }
         .ri-selected-kri-meta b { display: block; margin-top: 0.12rem; font-size: 0.82rem; overflow-wrap: anywhere; }
-        .ri-selected-kri-definition { color: #393939; line-height: 1.45; margin: 0.45rem 0 !important; }
+        .ri-selected-kri-definition {
+            color: #393939; line-height: 1.45; margin: 0.45rem 0 !important;
+        }
         .ri-selected-kri-threshold-line {
             display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.55rem 0;
         }
@@ -4224,6 +4315,7 @@ def _inject_risk_inventory_css() -> None:
         }
         .ri-selected-kri-note { margin: 0.38rem 0 0 0 !important; color: #393939; line-height: 1.42; }
         @media (max-width: 900px) {
+            .ri-kb-io-grid, .ri-kb-benefit-band > div, .ri-kb-flow { grid-template-columns: 1fr; }
             .ri-scope-lens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .ri-source-grid, .ri-bu-diff-grid, .ri-why-grid, .ri-neutral-summary, .ri-residual-calc-strip, .ri-dossier-meta, .ri-control-detail-grid, .ri-control-score-grid, .ri-control-assessment-grid, .ri-inherent-metrics, .ri-inherent-rationale-grid, .ri-selected-kri-meta { grid-template-columns: 1fr; }
             .ri-risk-header, .ri-control-head, .ri-kri-header, .ri-bu-header, .ri-selected-kri-header, .ri-inherent-rating-row {

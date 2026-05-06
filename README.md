@@ -119,7 +119,7 @@ The demo UI opens directly into the selected process workbench: choose a risk fr
 
 The Excel export is a focused scenario artifact with a cover tab, process risk inventory, control gaps, synthetic control recommendations, KRI dashboard, reviewer decision log, source trace, and config snapshot.
 
-The Input / Upload view also supports local ingestion of PDF, TXT, and Markdown policy or process documents. Uploaded documents are parsed into process context, risk-category cues, control cues, exposure signals, obligations, systems, and stakeholders before the deterministic graph runs.
+The non-demo Knowledge Base view supports local ingestion of PDF, TXT, and Markdown policy or process documents. Uploaded documents are parsed into process context, risk-category cues, control cues, exposure signals, obligations, systems, and stakeholders before the deterministic graph runs.
 
 APQC crosswalk metadata is optional and used only for process normalization and source trace. It does not generate risk statements, controls, or ratings.
 

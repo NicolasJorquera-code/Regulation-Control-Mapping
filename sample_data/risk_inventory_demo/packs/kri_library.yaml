@@ -3,18 +3,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-BPR-001
   kri_name: High-Value Repair Validation Exception Rate
   risk_taxonomy_id: RIB-BPR
-  metric_definition: Percentage of sampled high-value repaired wires with missing payment-intent or amount-validation evidence.
-  formula: validation exceptions / sampled high-value repairs * 100
+  metric_definition: Percentage of sampled high-value repaired wires where the approval package does not evidence independent
+    validation of payment intent, amount, beneficiary, value date, and final generated wire detail before release.
+  formula: sampled releases with missing or incomplete intent-validation evidence / sampled high-value repaired releases * 100
   unit: '%'
   measurement_frequency: Weekly
-  data_source: QA testing workbook
+  data_source: Payment Exception Workflow QA sample and release approval evidence repository
   owner: Payment Operations Manager
   thresholds:
     green: <2%
     amber: 2% to 5%
     red: '>5%'
-  rationale: Directly monitors the control weakness most likely to cause unintended payment release.
-  escalation_path: Payment Operations Manager -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: This is the primary leading KRI for mistaken release risk because it tests whether payment intent was evidenced
+    before funds left the bank, not after a reconciliation or recall activity identified a break.
+  escalation_path: Payment Operations Manager -> Head of Payment Operations -> Second Line Operational Risk Partner -> Operational Risk Committee
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
@@ -23,19 +25,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-DM-001
   kri_name: Payment Notice to Wire File Mismatch Count
   risk_taxonomy_id: RIB-DM
-  metric_definition: Count of payment notice, beneficiary, principal/interest, or wire-file mismatches identified before
-    or after release.
-  formula: mismatches identified in period
+  metric_definition: Count of mismatches between the approved payment notice, exception case, generated wire file, SWIFT message,
+    GL entry, or suspense/nostro record identified before release, during same-day close, or through post-release review.
+  formula: unique notice-to-wire, wire-to-SWIFT, or payment-to-GL mismatches identified in the reporting period
   unit: count
   measurement_frequency: Daily
-  data_source: Loan Agency QA dashboard
+  data_source: Loan Agency QA dashboard, wire generation audit report, and daily GL/nostro reconciliation feed
   owner: Loan Agency Operations Lead
   thresholds:
     green: '0'
     amber: 1 to 2
     red: '>2'
-  rationale: Monitors the key data-quality driver for erroneous release and post-release reconciliation breaks.
-  escalation_path: Loan Agency Operations Lead -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: Mismatched payment data is the clearest upstream signal that an exception repair can become a funds-transfer
+    error or an unresolved accounting break if not remediated before release.
+  escalation_path: Loan Agency Operations Lead -> Payment Operations Manager -> Finance Control Lead -> Second Line Operational Risk Partner
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
@@ -44,18 +47,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-CYB-001
   kri_name: Overdue Privileged Payment Setup Access
   risk_taxonomy_id: RIB-CYB
-  metric_definition: Number of payment setup or emergency access entitlements past recertification or closure target.
-  formula: overdue privileged entitlements
+  metric_definition: Number of privileged payment setup, routing, template, release-queue, or emergency-access entitlements
+    that are past recertification, approval, or closure target at the reporting date.
+  formula: overdue privileged setup entitlements + overdue emergency access grants + unrecertified sensitive roles
   unit: count
   measurement_frequency: Weekly
-  data_source: Identity governance dashboard
+  data_source: Identity governance dashboard, emergency-access log, and payment-platform entitlement extract
   owner: Payment Platform Owner
   thresholds:
     green: '0'
     amber: '1'
     red: '>1'
-  rationale: Sensitive access can change payment release behavior and should remain low tolerance.
-  escalation_path: Payment Platform Owner -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: Privileged setup access can change how payment repairs are routed, generated, or approved; tolerance must remain
+    low because one unauthorized configuration change can affect multiple high-value releases.
+  escalation_path: Payment Platform Owner -> Cyber Access Governance Lead -> Payment Operations Manager -> Technology Risk Committee
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
@@ -83,18 +88,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-ORS-001
   kri_name: Aged Recall or High-Value Exception Cases
   risk_taxonomy_id: RIB-ORS
-  metric_definition: Count of recall or high-value exception cases open beyond the same-day escalation target.
-  formula: cases over target age
+  metric_definition: Count of suspected erroneous-payment, recall, hold, or high-value exception cases open beyond the documented
+    same-day escalation target or missing a required owner, timestamp, or next action.
+  formula: open recall or high-value exception cases over target age + cases missing owner/timestamp/next action
   unit: count
   measurement_frequency: Daily
-  data_source: Payment Exception Workflow
+  data_source: Payment Exception Workflow, recall playbook tracker, and incident management repository
   owner: Payment Operations Manager
   thresholds:
     green: '0'
     amber: 1 to 2
     red: '>2'
-  rationale: Tracks operational resilience of the recall and exception response process.
-  escalation_path: Payment Operations Manager -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: This indicator measures whether the bank can execute the response playbook while recovery options are still viable
+    and before legal, treasury, or accounting uncertainty becomes prolonged.
+  escalation_path: Payment Operations Manager -> Treasury Operations Controller -> Legal Response Lead -> Operational Resilience Forum
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
@@ -103,19 +110,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-TPR-001
   kri_name: Counterparty Recall Response SLA Misses
   risk_taxonomy_id: RIB-TPR
-  metric_definition: Number of recall simulations or live cases where correspondent, custodian, or recipient response missed
-    the target.
-  formula: SLA misses in period
+  metric_definition: Number of live recall events, hold requests, return requests, or tabletop simulations where correspondent,
+    custodian, or recipient-institution acknowledgement or action missed the documented response target.
+  formula: external recall or hold requests missing acknowledgement/action target in the reporting period
   unit: count
   measurement_frequency: Quarterly
-  data_source: Recall playbook tracker
+  data_source: Recall playbook tracker, correspondent contact inventory, and incident simulation record
   owner: Treasury Operations Controller
   thresholds:
     green: '0'
     amber: '1'
     red: '>1'
-  rationale: Measures third-party response reliability after funds leave the bank.
-  escalation_path: Treasury Operations Controller -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: After settlement, recovery depends on external institutions; this KRI distinguishes internal recall execution
+    from the third-party response risk that management cannot directly control.
+  escalation_path: Treasury Operations Controller -> Relationship Manager -> Third Party Risk Partner -> Payment Risk Committee
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
@@ -143,19 +151,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-RR-001
   kri_name: Material Payment Incident Escalation Gaps
   risk_taxonomy_id: RIB-RR
-  metric_definition: Open findings or tabletop gaps tied to materiality, executive notification, or regulatory reporting
-    timing.
-  formula: open escalation gaps
+  metric_definition: Count of open findings, tabletop gaps, or live-event exceptions where materiality, executive notification,
+    operational-loss capture, or regulatory-reporting assessment was late, incomplete, or not assigned to a named owner.
+  formula: open material-payment incident governance gaps + late/incomplete notification or reporting assessments
   unit: count
   measurement_frequency: Monthly
-  data_source: Operational risk governance tracker
+  data_source: Operational Risk Governance Repository, incident tabletop tracker, and operational loss event log
   owner: Legal and Regulatory Response Lead
   thresholds:
     green: '0'
     amber: '1'
     red: '>1'
-  rationale: Monitors unresolved governance gaps that could delay reporting or executive escalation.
-  escalation_path: Legal and Regulatory Response Lead -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: Management needs this KRI because a payment error can become a governance failure if classification, reporting,
+    and executive notification do not occur on the same evidentiary timeline as recall and accounting actions.
+  escalation_path: Legal and Regulatory Response Lead -> Compliance Advisory Lead -> Head of Operational Risk -> Risk Governance Committee
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
@@ -281,18 +290,20 @@ kri_library:
 - kri_id: KRI-PAYEXC-IFR-001
   kri_name: High-Value Release Approval Evidence Gaps
   risk_taxonomy_id: RIB-IFR
-  metric_definition: Sampled high-value releases lacking reviewer note, source evidence link, or independent approver evidence.
-  formula: evidence gaps / sampled releases * 100
+  metric_definition: Percentage of sampled high-value releases lacking reviewer note, source-document link, approver independence,
+    or evidence that the final wire output was reviewed before release.
+  formula: sampled high-value releases with approval-evidence gaps / sampled high-value releases * 100
   unit: '%'
   measurement_frequency: Monthly
-  data_source: Payment Exception Workflow QA
+  data_source: Payment Exception Workflow QA, approval log, and sensitive-entitlement monitoring report
   owner: Loan Agency Operations Lead
   thresholds:
     green: <2%
     amber: 2% to 5%
     red: '>5%'
-  rationale: Tracks maker/checker evidence quality and override susceptibility.
-  escalation_path: Loan Agency Operations Lead -> Second Line Operational Risk Partner -> Risk Governance Committee
+  rationale: This KRI connects maker/checker control quality with override risk by measuring whether approval evidence proves
+    independent challenge, not merely that a workflow status changed to approved.
+  escalation_path: Loan Agency Operations Lead -> Internal Fraud Risk Partner -> Second Line Operational Risk Partner -> Operational Risk Committee
   use_cases:
   - Selected risk monitoring
   - Payment operations scorecard
