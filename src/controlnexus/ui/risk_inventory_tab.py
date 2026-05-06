@@ -2005,7 +2005,6 @@ def _render_control_coverage_panel(
     mapping: ControlMapping,
     workspace: RiskInventoryWorkspace | None,
 ) -> None:
-    statement_detail = control_statement_detail(record, mapping, workspace)
     design_rating = mapping.design_effectiveness.rating.value if mapping.design_effectiveness else "Not Rated"
     operating_rating = mapping.operating_effectiveness.rating.value if mapping.operating_effectiveness else "Not Rated"
     assessment_html = "".join(
@@ -2039,20 +2038,12 @@ def _render_control_coverage_panel(
             ),
         )
     )
-    badge_html = "".join(
-        _badge(label, value, "neutral")
-        for label, value in (
-            ("Owner", statement_detail["owner"]),
-            ("Frequency", statement_detail["frequency"]),
-            ("Type", statement_detail["control_type"]),
-        )
-        if value
-    )
     root_causes = mapping.mapped_root_causes or record.risk_statement.causes or record.taxonomy_node.typical_root_causes
     root_cause_html = "".join(
         f'<span class="ri-chip">{html.escape(root_cause)}</span>'
         for root_cause in root_causes[:5]
     )
+    statement = mapping.control_description or mapping.mitigation_rationale or ""
     st.markdown(
         f"""
         <div class="ri-control-coverage-panel">
@@ -2061,14 +2052,10 @@ def _render_control_coverage_panel(
                     <span class="ri-control-id">{html.escape(mapping.control_id)}</span>
                     <b>{html.escape(mapping.control_name)}</b>
                 </div>
-                <span class="ri-control-type">{html.escape(statement_detail["coverage_label"])}</span>
             </div>
             <div class="ri-control-context ri-control-statement-wrap">
-                <b>Optimal Full-Coverage Control Statement</b>
-                <p class="ri-control-statement">{html.escape(statement_detail["control_statement"])}</p>
-                <p class="ri-evidence-line"><b>Evidence to Prove Full Coverage.</b> {html.escape(statement_detail["expected_evidence"])}</p>
+                <p class="ri-control-statement">{html.escape(statement)}</p>
             </div>
-            <div class="ri-control-badge-row">{badge_html}</div>
             <div class="ri-control-assessment-grid">{assessment_html}</div>
             <div class="ri-control-context">
                 <b>Risk Coverage Rationale</b>
