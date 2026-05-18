@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from regrisk.agents.base import AgentContext, BaseAgent
+from regrisk.agents.source_type_prompts import coverage_guidance
 
 _SYSTEM_PROMPT = """\
 You are evaluating whether existing internal controls adequately cover a specific regulatory obligation.
@@ -75,9 +76,11 @@ class CoverageAssessorAgent(BaseAgent):
             }
 
         # Build user prompt for LLM evaluation
+        guidance = coverage_guidance(obligation.get("source_type", ""))
+        guidance_block = f"\n{guidance}\n" if guidance else ""
         user_prompt = f"""\
 Evaluate control coverage for this regulatory obligation:
-
+{guidance_block}
 OBLIGATION: {citation}
 REQUIREMENT: {obligation.get('abstract', '')}
 OBLIGATION CATEGORY: {obligation.get('obligation_category', '')}

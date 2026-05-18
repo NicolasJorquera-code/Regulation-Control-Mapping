@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from regrisk.agents.base import AgentContext, BaseAgent
+from regrisk.agents.source_type_prompts import mapper_guidance
 
 _SYSTEM_PROMPT_TEMPLATE = """\
 You are mapping regulatory obligations to business processes using the APQC Process Classification Framework (PCF).
@@ -93,17 +94,23 @@ class APQCMapperAgent(BaseAgent):
         )
 
         ob_lines: list[str] = []
+        group_source_type = ""
         for ob in obligations:
             cit = ob.get("citation", "")
             cat = ob.get("obligation_category", "")
             rel = ob.get("relationship_type", "")
             crit = ob.get("criticality_tier", "")
             abstract = ob.get("abstract", "")
+            st = ob.get("source_type", "")
+            group_source_type = group_source_type or st
             ob_lines.append(f"  - {cit} [{cat}, {rel}, {crit}]:\n    {abstract[:300]}")
+
+        guidance = mapper_guidance(group_source_type)
+        guidance_block = f"\n{guidance}\n" if guidance else ""
 
         user_prompt = f"""\
 Map the following regulatory obligations to APQC processes:
-
+{guidance_block}
 REGULATION: {regulation_name}
 SECTION: {section_citation} — {section_title}
 

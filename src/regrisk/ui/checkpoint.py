@@ -63,6 +63,7 @@ _STAGE_KEYS: dict[str, list[str]] = {
         "gap_report",
         "compliance_matrix",
         "risk_register",
+        "proposed_improvements",
     ],
     STAGE_ASSESS_PARTIAL: [
         "classified_obligations",
@@ -79,6 +80,7 @@ _STAGE_KEYS: dict[str, list[str]] = {
         "scored_risks",
         "compliance_matrix",
         "risk_register",
+        "proposed_improvements",
     ],
 }
 
@@ -214,22 +216,34 @@ def list_checkpoints(directory: Path | None = None) -> list[dict[str, Any]]:
             ob_count = meta.get("obligation_count")
             llm_mode = meta.get("llm_mode", "")
             is_patched = meta.get("patched", False)
+            improvements_count = meta.get("improvements_count", 0)
 
             # Build a human-readable display string
             label = meta.get("stage_label", "?")
-            if is_patched:
+            if improvements_count:
+                label = f"💡 Improved {label}"
+            elif is_patched:
                 label = f"\U0001f527 Patched {label}"
             parts = [label]
             parts.append(meta.get("regulation_name", "?"))
             detail_bits: list[str] = []
             if ob_count is not None:
                 detail_bits.append(f"{ob_count} obligations")
+            if improvements_count:
+                detail_bits.append(f"{improvements_count} improvements")
             if llm_mode:
                 detail_bits.append(llm_mode)
             if detail_bits:
                 parts.append(" · ".join(detail_bits))
+            # Use improvement timestamp, then patch timestamp, then original
+            imp_ts = meta.get("improvement_timestamp")
             patch_ts = meta.get("patch_timestamp")
-            parts.append(patch_ts if is_patched and patch_ts else ts_raw)
+            if imp_ts:
+                parts.append(imp_ts)
+            elif is_patched and patch_ts:
+                parts.append(patch_ts)
+            else:
+                parts.append(ts_raw)
 
             results.append({
                 "path": p,
@@ -246,4 +260,77 @@ def list_checkpoints(directory: Path | None = None) -> list[dict[str, Any]]:
         except (json.JSONDecodeError, OSError):
             continue
 
+    # Ensure display names are unique by appending filename stub on collision
+    seen: dict[str, int] = {}
+    for item in results:
+        d = item["display"]
+        if d in seen:
+            seen[d] += 1
+            stem = item["filename"].rsplit(".", 1)[0][-20:]
+            item["display"] = f"{d} ({stem})"
+        else:
+            seen[d] = 1
+
     return results
+
+
+# ---------------------------------------------------------------------------
+# Checkpoint validation
+# ---------------------------------------------------------------------------
+
+# Keys that are optional (may not exist in older checkpoints)
+_OPTIONAL_KEYS: frozenset[str] = frozenset({"proposed_improvements"})
+
+
+def validate_checkpoint(data: dict[str, Any]) -> tuple[bool, list[str]]:
+    """Check that all required keys for the checkpoint's stage are present.
+
+    Returns (is_valid, list_of_missing_keys).  Optional keys (e.g. proposed_improvements)
+    are excluded from the validation — their absence does not make a checkpoint invalid.
+    """
+    meta = data.get("_meta", {})
+    stage = meta.get("stage", "")
+    expected_keys = _STAGE_KEYS.get(stage, [])
+    required_keys = [k for k in expected_keys if k not in _OPTIONAL_KEYS]
+    missing = [k for k in required_keys if k not in data]
+    return (len(missing) == 0, missing)
+
+
+def list_valid_checkpoints(
+    directory: Path | None = None,
+    required_stage: str | None = None,
+) -> tuple[list[dict[str, Any]], int]:
+    """List checkpoints that have all required fields for their stage.
+
+    Parameters
+    ----------
+    directory : optional checkpoint directory
+    required_stage : if set, also filter to only this stage
+
+    Returns
+    -------
+    (valid_checkpoints, hidden_count) — the valid list and the number filtered out.
+    """
+    all_cps = list_checkpoints(directory)
+    valid: list[dict[str, Any]] = []
+    hidden = 0
+
+    for cp in all_cps:
+        if required_stage and cp.get("stage") != required_stage:
+            # Stage filter — not counted as "hidden"
+            continue
+        # Perform validation by loading the file
+        try:
+            data = json.loads(Path(cp["path"]).read_text(encoding="utf-8"))
+            is_valid, _missing = validate_checkpoint(data)
+            if is_valid:
+                valid.append(cp)
+            else:
+                hidden += 1
+                logger.debug(
+                    "Checkpoint %s hidden: missing keys %s", cp["filename"], _missing,
+                )
+        except (json.JSONDecodeError, OSError):
+            hidden += 1
+
+    return valid, hidden

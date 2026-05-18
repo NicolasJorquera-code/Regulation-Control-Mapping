@@ -20,6 +20,8 @@ from regrisk.ui.checkpoint import (
     save_checkpoint,
     load_checkpoint,
     list_checkpoints,
+    list_valid_checkpoints,
+    validate_checkpoint,
     stage_label,
     stage_keys,
 )
@@ -75,6 +77,202 @@ CRITICALITY_EXPLANATIONS: dict[str, str] = {
 def color_category(val: str) -> str:
     """Return CSS style string for a category value."""
     return CATEGORY_COLORS.get(val, "")
+
+
+# ---------------------------------------------------------------------------
+# Executive-style shared helpers (used across all tabs)
+# ---------------------------------------------------------------------------
+
+# Status / coverage / risk → pill background colors (used by render_premium_table)
+_PILL_COLORS: dict[str, str] = {
+    # Coverage
+    "Covered": "#2e7d32",
+    "Partially Covered": "#f9a825",
+    "Not Covered": "#c62828",
+    # Risk ratings
+    "Critical": "#7b1fa2",
+    "High": "#c62828",
+    "Medium": "#f9a825",
+    "Low": "#9e9e9e",
+    # Match grades
+    "Full": "#2e7d32",
+    "Partial": "#f9a825",
+    "None": "#c62828",
+    "Not Satisfied": "#c62828",
+    "Satisfied": "#2e7d32",
+    # Quality ratings
+    "Effective": "#2e7d32",
+    "Needs Improvement": "#f9a825",
+    "Ineffective": "#c62828",
+    # Categories (subdued)
+    "Controls": "#1565C0",
+    "Documentation": "#2e7d32",
+    "Attestation": "#7B1FA2",
+    "General Awareness": "#6c757d",
+    "Not Assigned": "#c62828",
+}
+
+
+def render_page_header(
+    title: str,
+    caption: str | None = None,
+    icon: str = "",
+    count: int | None = None,
+) -> None:
+    """Render a consistent executive-style page header.
+
+    Title with a colored bottom border, optional icon and count badge,
+    plus an optional muted caption underneath.
+    """
+    from html import escape
+    icon_html = f'<span class="exec-page-icon">{escape(icon)}</span>' if icon else ""
+    count_html = f'<span class="exec-page-count">{count}</span>' if count is not None else ""
+    st.markdown(
+        f'<div class="exec-page-header">{icon_html}'
+        f'<h1>{escape(title)}</h1>{count_html}</div>',
+        unsafe_allow_html=True,
+    )
+    if caption:
+        st.markdown(
+            f'<div class="exec-page-caption">{escape(caption)}</div>',
+            unsafe_allow_html=True,
+        )
+
+
+def render_section_header(
+    label: str,
+    count: int | None = None,
+    accent: str = "#1f4e79",
+    icon: str = "",
+) -> None:
+    """Render a colored uppercase section header with optional count badge."""
+    from html import escape
+    icon_html = f'<span>{escape(icon)}</span>' if icon else ""
+    count_html = (f'<span class="exec-section-count">{count}</span>'
+                  if count is not None else "")
+    st.markdown(
+        f'<div class="exec-section-header" style="--accent:{accent};">'
+        f'{icon_html}<span>{escape(label)}</span>{count_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_metadata_strip(items: list[tuple[str, Any]]) -> None:
+    """Render a horizontal strip of `<b>label:</b> value` chips inside a card."""
+    from html import escape
+    parts = [
+        f'<span><b>{escape(str(label))}:</b> {escape(str(value))}</span>'
+        for label, value in items if value is not None and value != ""
+    ]
+    st.markdown(
+        f'<div class="exec-metadata-strip">{"".join(parts)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_callout(message: str, variant: str = "info") -> None:
+    """Render a left-bordered colored callout (info or warn)."""
+    from html import escape
+    css = "exec-callout exec-callout-warn" if variant == "warn" else "exec-callout"
+    st.markdown(f'<div class="{css}">{escape(message)}</div>',
+                unsafe_allow_html=True)
+
+
+def render_premium_table(
+    df: pd.DataFrame,
+    columns: list[str] | None = None,
+    column_labels: dict[str, str] | None = None,
+    height: int = 460,
+    status_cols: list[str] | None = None,
+    numeric_cols: list[str] | None = None,
+    code_cols: list[str] | None = None,
+    truncate_cols: list[str] | None = None,
+    pill_color_overrides: dict[str, str] | None = None,
+) -> None:
+    """Render a polished HTML table with sticky header, zebra rows, hover, status pills.
+
+    Parameters
+    ----------
+    df: source DataFrame.
+    columns: ordered list of columns to render. Defaults to df.columns.
+    column_labels: optional override for column display names.
+    height: max height in pixels (then scrolls).
+    status_cols: columns whose string values should be rendered as colored pills.
+    numeric_cols: columns rendered right-aligned, monospace, tabular numerals.
+    code_cols: columns rendered monospace (e.g., citations, IDs).
+    truncate_cols: columns truncated to 2 lines with ellipsis.
+    pill_color_overrides: dict[value -> hex color] to override _PILL_COLORS.
+    """
+    from html import escape
+    if df is None or len(df) == 0:
+        st.markdown('<div class="text-muted">No rows.</div>',
+                    unsafe_allow_html=True)
+        return
+
+    cols = columns or list(df.columns)
+    cols = [c for c in cols if c in df.columns]
+    if not cols:
+        return
+
+    status_cols = status_cols or []
+    numeric_cols = numeric_cols or []
+    code_cols = code_cols or []
+    truncate_cols = truncate_cols or []
+    color_map = {**_PILL_COLORS, **(pill_color_overrides or {})}
+    label_map = column_labels or {}
+
+    def _label(c: str) -> str:
+        return label_map.get(c, _display_col_name(c))
+
+    def _classes(c: str) -> str:
+        cl = []
+        if c in numeric_cols:
+            cl.append("numeric-col")
+        if c in code_cols:
+            cl.append("code-col")
+        return " ".join(cl)
+
+    # Header
+    header_cells = []
+    for c in cols:
+        cls = _classes(c)
+        cls_attr = f' class="{cls}"' if cls else ""
+        header_cells.append(f'<th{cls_attr}>{escape(_label(c))}</th>')
+    header_html = "".join(header_cells)
+
+    # Rows
+    rows_html: list[str] = []
+    for _, row in df[cols].iterrows():
+        cells: list[str] = []
+        for c in cols:
+            val = row[c]
+            cell_text = "" if pd.isna(val) else str(val)
+            cls_list = []
+            if c in numeric_cols:
+                cls_list.append("numeric-col")
+            if c in code_cols:
+                cls_list.append("code-col")
+            inner: str
+            if c in status_cols and cell_text:
+                color = color_map.get(cell_text, "#6c757d")
+                inner = (f'<span class="status-pill" '
+                         f'style="background:{color};">{escape(cell_text)}</span>')
+            elif c in truncate_cols:
+                inner = f'<div class="truncate-2">{escape(cell_text)}</div>'
+            else:
+                inner = escape(cell_text)
+            cls_attr = f' class="{" ".join(cls_list)}"' if cls_list else ""
+            cells.append(f'<td{cls_attr}>{inner}</td>')
+        rows_html.append(f"<tr>{''.join(cells)}</tr>")
+
+    html = (
+        f'<div class="premium-table-container" style="max-height:{height}px;">'
+        f'<table class="premium-table">'
+        f'<thead><tr>{header_html}</tr></thead>'
+        f'<tbody>{"".join(rows_html)}</tbody>'
+        f'</table></div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
@@ -161,8 +359,17 @@ def render_checkpoint_save(stage: str, key_prefix: str) -> None:
             )
 
 
+@st.cache_data(ttl=10, show_spinner=False)
+def _cached_list_checkpoints() -> list[dict[str, Any]]:
+    """Cache list_checkpoints across all render_checkpoint_load calls in one page render."""
+    return list_checkpoints()
+
+
 def render_checkpoint_load(allowed_stages: list[str], key_prefix: str) -> None:
     """Render a checkpoint loader (file upload + saved-on-disk picker)."""
+    import logging
+    _log = logging.getLogger("regrisk.ui.checkpoint_load")
+
     with st.expander("💾 Resume from Checkpoint"):
         tab_upload, tab_disk = st.tabs(["Upload File", "Saved on Disk"])
 
@@ -173,18 +380,28 @@ def render_checkpoint_load(allowed_stages: list[str], key_prefix: str) -> None:
                 key=f"{key_prefix}_upload",
             )
             if uploaded:
-                data = json.loads(uploaded.getvalue())
-                meta = data.get("_meta", {})
-                ckpt_stage = meta.get("stage", "")
-                if ckpt_stage not in allowed_stages:
-                    st.error(f"This checkpoint is for stage '{meta.get('stage_label', ckpt_stage)}' — "
-                             f"expected one of: {', '.join(stage_label(s) for s in allowed_stages)}")
+                # Guard against rerun loop: track which file we already applied
+                upload_id = f"{uploaded.name}_{uploaded.size}"
+                applied_key = f"_applied_upload_{key_prefix}"
+                if st.session_state.get(applied_key) == upload_id:
+                    _log.debug("Skipping re-apply of already-loaded upload: %s", upload_id)
+                    st.success(f"✅ Checkpoint **{uploaded.name}** is loaded.")
                 else:
-                    apply_checkpoint(data)
+                    data = json.loads(uploaded.getvalue())
+                    meta = data.get("_meta", {})
+                    ckpt_stage = meta.get("stage", "")
+                    if ckpt_stage not in allowed_stages:
+                        st.error(f"This checkpoint is for stage '{meta.get('stage_label', ckpt_stage)}' — "
+                                 f"expected one of: {', '.join(stage_label(s) for s in allowed_stages)}")
+                    else:
+                        _log.info("Applying uploaded checkpoint: %s (stage=%s)", uploaded.name, ckpt_stage)
+                        st.session_state[applied_key] = upload_id
+                        apply_checkpoint(data)
 
         with tab_disk:
-            checkpoints = list_checkpoints()
-            relevant = [c for c in checkpoints if c["stage"] in allowed_stages]
+            all_checkpoints = _cached_list_checkpoints()
+            relevant = [c for c in all_checkpoints if c["stage"] in allowed_stages]
+
             if not relevant:
                 st.info("No saved checkpoints found.")
             else:
@@ -201,9 +418,46 @@ def render_checkpoint_load(allowed_stages: list[str], key_prefix: str) -> None:
 
 def apply_checkpoint(data: dict[str, Any]) -> None:
     """Write checkpoint data into session_state and rerun."""
+    import logging
+    _log = logging.getLogger("regrisk.ui.checkpoint_apply")
+
     meta = data.pop("_meta", {})
+    stage = meta.get("stage", "")
+    _log.info(
+        "Applying checkpoint: stage=%s regulation=%s keys_in_data=%s",
+        stage, meta.get("regulation_name"), sorted(data.keys()),
+    )
+
+    # Warn about missing keys but proceed anyway
+    expected = stage_keys(stage)
+    missing = [k for k in expected if k not in data and k != "proposed_improvements"]
+
     for k, v in data.items():
         st.session_state[k] = v
+        if isinstance(v, list):
+            _log.info("  session_state[%s] = list[%d]", k, len(v))
+        elif isinstance(v, dict):
+            _log.info("  session_state[%s] = dict[%d keys]", k, len(v))
+        else:
+            _log.info("  session_state[%s] = %s", k, type(v).__name__)
+
+    if missing:
+        _log.warning("Missing keys for stage %s: %s", stage, missing)
+        st.warning(
+            f"Checkpoint is missing {len(missing)} expected field(s): "
+            f"{', '.join(missing[:5])}{'...' if len(missing) > 5 else ''}"
+        )
+
+    # Log what the tabs will see
+    _log.info(
+        "Post-apply check: classified=%d, mappings=%d, assessments=%d, gap_report=%s, improvements=%d",
+        len(st.session_state.get("classified_obligations", [])),
+        len(st.session_state.get("obligation_mappings", [])),
+        len(st.session_state.get("coverage_assessments", [])),
+        bool(st.session_state.get("gap_report")),
+        len(st.session_state.get("proposed_improvements", [])),
+    )
+
     st.success(f"Restored **{meta.get('stage_label', '?')}** checkpoint "
                f"for *{meta.get('regulation_name', '?')}*")
     st.rerun()
@@ -690,6 +944,127 @@ def render_risk_chip(risk: dict, key_suffix: str = "", show_inline: bool = False
                 )
 
 
+# ---------------------------------------------------------------------------
+# Proposed Control Improvement chip
+# ---------------------------------------------------------------------------
+
+_CHANGE_TYPE_BADGE: dict[str, tuple[str, str]] = {
+    "new": ("#1565c0", "white"),
+    "enhancement": ("#ef6c00", "white"),
+}
+
+
+def render_improvement_chip(improvement: dict, show_inline: bool = False) -> None:
+    """Render a proposed control improvement as a two-column chip.
+
+    Left column: proposed control details (following ControlRecord schema).
+    Right column: improvement context (rationale, gap addressed, change type).
+    """
+    from html import escape as _esc
+
+    proposed = improvement.get("proposed_control", {})
+    change_type = improvement.get("change_type", "new")
+    rationale = improvement.get("improvement_rationale", "")
+    gap_addressed = improvement.get("gap_addressed", "")
+    original_id = improvement.get("original_control_id")
+
+    ctrl_id = proposed.get("control_id", "")
+    ct_bg, ct_fg = _CHANGE_TYPE_BADGE.get(change_type, ("#e0e0e0", "#333"))
+    quality = proposed.get("quality_rating", "")
+    q_bg, q_fg = _QUALITY_BADGE.get(quality, ("#e0e0e0", "#333"))
+
+    with st.container(border=True):
+        # Teal top border to distinguish from coverage/risk chips
+        st.markdown(
+            '<div style="border-top:3px solid #00897b;margin:-1rem -1rem 0.5rem -1rem;'
+            'border-radius:4px 4px 0 0"></div>',
+            unsafe_allow_html=True,
+        )
+
+        col_left, col_right = st.columns([2, 3])
+
+        # ── LEFT: Proposed control details ──
+        with col_left:
+            # Header: PROPOSED badge + Control ID + quality badge
+            st.markdown(
+                f'<span style="display:inline-block;background:#00897b;color:white;'
+                f'border-radius:4px;padding:1px 6px;font-size:0.7rem;font-weight:700;'
+                f'letter-spacing:0.04em;margin-right:6px">PROPOSED</span>'
+                f'**{_esc(ctrl_id)}** &nbsp;'
+                f'<span style="background:{q_bg};color:{q_fg};'
+                f'border-radius:4px;padding:2px 8px;font-size:0.78rem;font-weight:600">'
+                f'{_esc(quality)}</span>',
+                unsafe_allow_html=True,
+            )
+
+            # Control type
+            ctrl_type = " · ".join(filter(None, [
+                proposed.get("selected_level_1", ""),
+                proposed.get("selected_level_2", ""),
+            ]))
+            if ctrl_type:
+                st.caption(f"Type: {ctrl_type}")
+
+            # Key fields
+            _detail_fields = [
+                ("Who", proposed.get("who", "")),
+                ("What", proposed.get("what", "")),
+                ("When", proposed.get("when", "")),
+                ("Frequency", proposed.get("frequency", "")),
+                ("Where", proposed.get("where", "")),
+                ("Why", proposed.get("why", "")),
+                ("Evidence", proposed.get("evidence", "")),
+                ("Business Unit", proposed.get("business_unit_name", "")),
+            ]
+            for label, value in _detail_fields:
+                if value and str(value).strip() and str(value).lower() not in ("nan", "none", "to be determined"):
+                    st.markdown(
+                        f'<div style="font-size:0.85rem;margin-bottom:2px">'
+                        f'<strong>{label}:</strong> {_esc(str(value).strip())}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+        # ── RIGHT: Improvement context ──
+        with col_right:
+            # Change type badge
+            change_label = "New Control" if change_type == "new" else "Enhancement"
+            st.markdown(
+                f'<span style="display:inline-block;background:{ct_bg};color:{ct_fg};'
+                f'border-radius:4px;padding:2px 10px;font-size:0.82rem;font-weight:600">'
+                f'{change_label}</span>',
+                unsafe_allow_html=True,
+            )
+
+            if original_id:
+                st.caption(f"Enhances: `{original_id}`")
+
+            # APQC ID
+            apqc_id = improvement.get("source_apqc_id", "")
+            if apqc_id:
+                st.caption(f"APQC: `{apqc_id}`")
+
+            # Description
+            desc = proposed.get("full_description", "")
+            if desc:
+                st.markdown(desc)
+
+            # Gap addressed
+            if gap_addressed:
+                st.markdown(
+                    f'<div style="font-size:0.85rem;color:#555;margin-top:6px">'
+                    f'<strong>Gap Addressed:</strong> {_esc(gap_addressed)}</div>',
+                    unsafe_allow_html=True,
+                )
+
+            # Rationale
+            if rationale:
+                st.markdown(
+                    f'<div style="font-size:0.85rem;color:#555;margin-top:4px">'
+                    f'<strong>Rationale:</strong> {_esc(rationale)}</div>',
+                    unsafe_allow_html=True,
+                )
+
+
 def render_mapping_chip(mapping: dict) -> None:
     """Render a single APQC mapping as a compact chip inside a container."""
     process_name = mapping.get("apqc_process_name", "")
@@ -839,9 +1214,21 @@ def _badge_rating(val: str) -> str:
     return f'<span class="rating-badge-default">{_html_escape(val)}</span>'
 
 
+def _badge_source_type(val: str) -> str:
+    if not val:
+        return "—"
+    low = val.strip().lower()
+    if low == "policy_requirement":
+        return '<span class="source-badge-policy">Policy Requirement</span>'
+    if low == "procedure_step":
+        return '<span class="source-badge-procedure">Procedure Step</span>'
+    return f'<span class="rating-badge-default">{_html_escape(val)}</span>'
+
+
 BADGE_RENDERERS: dict[str, Any] = {
     "selected_level_1": _badge_control_type,
     "quality_rating": _badge_rating,
+    "source_type": _badge_source_type,
 }
 
 

@@ -37,6 +37,11 @@ class AssessState(TypedDict, total=False):
     risk_idx: int
     scored_risks: Annotated[list[dict[str, Any]], operator.add]
 
+    # Control improvement loop
+    improvement_gaps: list[dict[str, Any]]
+    improvement_idx: int
+    proposed_improvements: Annotated[list[dict[str, Any]], operator.add]
+
     # Final
     risk_register: dict[str, Any]
     gap_report: dict[str, Any]

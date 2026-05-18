@@ -33,6 +33,7 @@ from langgraph.graph import END, START, StateGraph
 
 from regrisk.agents.apqc_mapper import APQCMapperAgent
 from regrisk.agents.base import AgentContext
+from regrisk.agents.control_improver import ControlImprovementAgent
 from regrisk.agents.coverage_assessor import CoverageAssessorAgent
 from regrisk.agents.risk_extractor_scorer import RiskExtractorAndScorerAgent
 from regrisk.core.events import EventEmitter, EventType, PipelineEvent
@@ -63,6 +64,7 @@ _AGENT_CLASSES: dict[str, type] = {
     "mapper": APQCMapperAgent,
     "assessor": CoverageAssessorAgent,
     "risk_scorer": RiskExtractorAndScorerAgent,
+    "improver": ControlImprovementAgent,
 }
 
 
@@ -435,6 +437,95 @@ def extract_and_score_node(state: AssessState) -> dict[str, Any]:
 def has_more_gaps(state: AssessState) -> str:
     if state.get("risk_idx", 0) < len(state.get("gap_obligations", [])):
         return "extract_and_score"
+    return "prepare_improvements"
+
+
+def prepare_improvements_node(state: AssessState) -> dict[str, Any]:
+    """Prepare gap assessments for control improvement proposals."""
+    _infra.emit_event(EventType.STAGE_STARTED, "Preparing control improvement proposals")
+
+    assessments = state.get("coverage_assessments", [])
+    gaps = [a for a in assessments if a.get("overall_coverage") in ("Not Covered", "Partially Covered")]
+
+    _infra.emit_event(EventType.STAGE_COMPLETED, f"Found {len(gaps)} gaps for improvement proposals")
+
+    return {
+        "improvement_gaps": gaps,
+        "improvement_idx": 0,
+    }
+
+
+def propose_improvement_node(state: AssessState) -> dict[str, Any]:
+    """Propose an improved or new control for the current gap."""
+    idx = state.get("improvement_idx", 0)
+    gaps = state.get("improvement_gaps", [])
+
+    if idx >= len(gaps):
+        return {}
+
+    gap = gaps[idx]
+    total = len(gaps)
+    citation = gap.get("citation", "")
+
+    _infra.emit_event(EventType.ITEM_STARTED, f"Proposing improvement ({idx + 1}/{total}): {citation}")
+
+    # Find obligation data
+    approved = state.get("approved_obligations", [])
+    ob_data: dict[str, Any] = {}
+    for ob in approved:
+        if ob.get("citation") == citation:
+            ob_data = ob
+            break
+
+    # Find existing control (if assessment has one)
+    existing_control: dict[str, Any] | None = None
+    ctrl_id = gap.get("control_id")
+    if ctrl_id:
+        for c in state.get("controls", []):
+            if c.get("control_id") == ctrl_id:
+                existing_control = c
+                break
+
+    # Find APQC process name from mappings
+    apqc_id = gap.get("apqc_hierarchy_id", "")
+    apqc_name = ""
+    for m in state.get("obligation_mappings", []):
+        if m.get("citation") == citation and m.get("apqc_hierarchy_id") == apqc_id:
+            apqc_name = m.get("apqc_process_name", "")
+            break
+
+    context = _infra.build_agent_context(max_tokens=4096)
+    agent = _infra.get_agent("improver", _AGENT_CLASSES, context)
+    loop = _infra.get_or_create_event_loop()
+
+    existing_improvements = state.get("proposed_improvements", [])
+    improvement_counter = len(existing_improvements)
+
+    result = loop.run_until_complete(
+        agent.execute(
+            obligation=ob_data or {"citation": citation},
+            assessment=gap,
+            existing_control=existing_control,
+            apqc_hierarchy_id=apqc_id,
+            apqc_process_name=apqc_name,
+            improvement_counter=improvement_counter,
+        )
+    )
+
+    _infra.emit_event(
+        EventType.ITEM_COMPLETED,
+        f"Proposed {result.get('change_type', '?')} control for {citation}",
+    )
+
+    return {
+        "proposed_improvements": [result],
+        "improvement_idx": idx + 1,
+    }
+
+
+def has_more_improvements(state: AssessState) -> str:
+    if state.get("improvement_idx", 0) < len(state.get("improvement_gaps", [])):
+        return "propose_improvement"
     return "finalize"
 
 
@@ -542,6 +633,7 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
         "gap_report": gap_report,
         "compliance_matrix": compliance_matrix,
         "risk_register": risk_register,
+        "proposed_improvements": state.get("proposed_improvements", []),
     }
 
 
@@ -579,6 +671,8 @@ def build_assess_graph(trace_db=None, run_id: str = ""):
     graph.add_node("assess_coverage", _wrap("assess_coverage", assess_coverage_node))
     graph.add_node("prepare_risks", _wrap("prepare_risks", prepare_risks_node))
     graph.add_node("extract_and_score", _wrap("extract_and_score", extract_and_score_node))
+    graph.add_node("prepare_improvements", _wrap("prepare_improvements", prepare_improvements_node))
+    graph.add_node("propose_improvement", _wrap("propose_improvement", propose_improvement_node))
     graph.add_node("finalize", _wrap("finalize", finalize_node))
     graph.add_edge(START, "map_group")
     graph.add_conditional_edges("map_group", has_more_map_groups)
@@ -586,5 +680,7 @@ def build_assess_graph(trace_db=None, run_id: str = ""):
     graph.add_conditional_edges("assess_coverage", has_more_assessments)
     graph.add_edge("prepare_risks", "extract_and_score")
     graph.add_conditional_edges("extract_and_score", has_more_gaps)
+    graph.add_edge("prepare_improvements", "propose_improvement")
+    graph.add_conditional_edges("propose_improvement", has_more_improvements)
     graph.add_edge("finalize", END)
     return graph.compile()

@@ -1,0 +1,144 @@
+flowchart TB
+    classDef start fill:#0b3d91,color:#fff,stroke:#0b3d91,font-weight:bold
+    classDef regPath fill:#e3f2fd,color:#0d47a1,stroke:#1976d2,stroke-width:2px
+    classDef polPath fill:#f3e5f5,color:#4a148c,stroke:#7b1fa2,stroke-width:2px
+    classDef shared fill:#f5f5f5,color:#1a1a1a,stroke:#616161,stroke-width:1px
+    classDef decision fill:#fff8e1,color:#5d4037,stroke:#f9a825,stroke-width:2px
+    classDef ctx fill:#fffde7,color:#5c4700,stroke:#caa334,stroke-width:1px,stroke-dasharray:3 2
+    classDef obj fill:#e8f5e9,color:#1b5e20,stroke:#388e3c,stroke-width:1px,font-style:italic
+    classDef review fill:#ffebee,color:#7a1f29,stroke:#c0506a,stroke-width:2px
+    classDef output fill:#e0f2f1,color:#004d40,stroke:#00897b,stroke-width:2px
+
+    START["Source Workbook<br/>uploaded to data/"]:::start
+
+    %% ── Dispatcher ───────────────────────────────────────────────
+    DISP{{"Ingest Dispatcher<br/>detect_source_inventory()"}}:::decision
+    DISP_CTX["<b>Context consulted</b><br/>• Sheet names in workbook<br/>• scope_config.source_mode<br/>• File name heuristics"]:::ctx
+
+    START --> DISP
+    DISP_CTX -.-> DISP
+
+    %% ═══════════════════════════════════════════════════════════════
+    %% REGULATION-LED PATH (left column)
+    %% ═══════════════════════════════════════════════════════════════
+    subgraph REG["REGULATION-LED PATH"]
+        direction TB
+        REG_PARSE["regulation_parser<br/>reads 'Requirements' sheet"]:::regPath
+        REG_GROUP["group_obligations()<br/>by Citation Level 2 / 3"]:::regPath
+        REG_OBJ["Obligation<br/>source_type = Regulatory_Obligation<br/>source_id = citation"]:::obj
+        REG_PARSE --> REG_GROUP --> REG_OBJ
+    end
+
+    %% ═══════════════════════════════════════════════════════════════
+    %% POLICY-LED PATH (right column)
+    %% ═══════════════════════════════════════════════════════════════
+    subgraph POL["POLICY / PROCEDURE-LED PATH"]
+        direction TB
+        POL_PARSE["policy_parser<br/>reads 'Source_Inventory' sheet"]:::polPath
+        POL_NORM["_normalize_source_type()<br/>Policy / Standard / Procedure"]:::polPath
+        POL_GROUP["group_policy_obligations()<br/>by parent_source_id"]:::polPath
+        POL_OBJ["Obligation<br/>source_type = Policy / Procedure<br/>parent_source_id, source_metadata"]:::obj
+        POL_PARSE --> POL_NORM --> POL_GROUP --> POL_OBJ
+    end
+
+    DISP -->|Sheet 'Requirements'<br/>or source_mode=regulation| REG_PARSE
+    DISP -->|Sheet 'Source_Inventory'<br/>or source_mode=policy| POL_PARSE
+
+    %% ═══════════════════════════════════════════════════════════════
+    %% CONVERGENCE — same pipeline downstream
+    %% ═══════════════════════════════════════════════════════════════
+    REG_OBJ --> CONV(("Same downstream<br/>pipeline"))
+    POL_OBJ --> CONV
+    CONV:::shared
+
+    %% ── Layer 2: Classification ──────────────────────────────────
+    CLS{{"ObligationClassifier<br/>+ source_type prompt branch"}}:::decision
+    CLS_CTX["<b>Context consulted</b><br/>• source_type guidance fragment<br/>• Section title, subpart<br/>• Mandate title, abstract<br/>• Existing classification taxonomy<br/>  (5 categories, 4 relationships,<br/>  3 criticality tiers)"]:::ctx
+    CLS_OUT["ClassifiedObligation<br/>category, relationship_type,<br/>criticality, rationale"]:::obj
+
+    CONV --> CLS
+    CLS_CTX -.-> CLS
+    CLS --> CLS_OUT
+
+    %% ── Layer 3: APQC Mapping ────────────────────────────────────
+    MAP{{"APQCMapper<br/>+ source_type prompt branch"}}:::decision
+    MAP_CTX["<b>Context consulted</b><br/>• APQC hierarchy summary<br/>• Business unit (policy mode)<br/>• Regulatory links (policy mode)<br/>• Keyword fallback dict<br/>• Reg: prefer L3-L4 specificity<br/>• Policy: prefer L2-L3 families<br/>• Procedure: prefer L4-L5"]:::ctx
+    MAP_OUT["ObligationAPQCMapping<br/>apqc_hierarchy_id,<br/>relationship_type, confidence"]:::obj
+
+    CLS_OUT --> MAP
+    MAP_CTX -.-> MAP
+    MAP --> MAP_OUT
+
+    %% ── Layer 4: Coverage Decision ───────────────────────────────
+    COV{{"CoverageAssessor<br/>structural + semantic + relationship"}}:::decision
+    COV_CTX["<b>Context consulted</b><br/>• Existing ControlRecord at APQC node<br/>• Control who/what/when/frequency<br/>• Relationship type from classification<br/>• Source-type framing"]:::ctx
+
+    MAP_OUT --> COV
+    COV_CTX -.-> COV
+
+    COV_DEC{Coverage outcome?}:::decision
+    COV --> COV_DEC
+
+    COV_OBJ_FULL["CoverageAssessment<br/>overall_coverage = Covered"]:::obj
+    COV_OBJ_PART["CoverageAssessment<br/>overall_coverage = Partial"]:::obj
+    COV_OBJ_GEN["CoverageAssessment<br/>overall_coverage = Not Covered<br/>requires_control_generation = True"]:::obj
+
+    COV_DEC -->|Control found<br/>+ semantic Full| COV_OBJ_FULL
+    COV_DEC -->|Control found<br/>+ semantic Partial| COV_OBJ_PART
+    COV_DEC -->|No control AND<br/>source_type ∈ Policy/Procedure| COV_OBJ_GEN
+    COV_DEC -->|No control AND<br/>source_type = Regulation| COV_OBJ_PART
+
+    %% ── Layer 4b: Control Improver (only on policy-led gaps) ─────
+    IMP{{"ControlImprover<br/>change_type = new"}}:::decision
+    IMP_CTX["<b>Context consulted</b><br/>• Procedure step text (the 'what')<br/>• Business unit (the 'who')<br/>• Policy frequency (the 'when')<br/>• Evidence reference if provided<br/>• ControlRecord 15-field schema"]:::ctx
+    IMP_OBJ["ProposedControlImprovement<br/>15-field control,<br/>flagged as proposed"]:::obj
+
+    COV_OBJ_GEN --> IMP
+    IMP_CTX -.-> IMP
+    IMP --> IMP_OBJ
+
+    %% ── Layer 5: Risk Extraction ─────────────────────────────────
+    RISK{{"RiskExtractorScorer<br/>+ source_type prompt branch"}}:::decision
+    RISK_CTX["<b>Context consulted</b><br/>• Approved risk taxonomy<br/>• Impact + Frequency 1-4 scales<br/>• Coverage status<br/>• Risk theme hint (policy mode)<br/>• Framing branch:<br/>  Reg → noncompliance / fines<br/>  Policy → breach / audit finding<br/>  Procedure → execution failure"]:::ctx
+    RISK_OBJ["ScoredRisk<br/>category, sub_category,<br/>impact × frequency,<br/>inherent_rating"]:::obj
+
+    COV_OBJ_PART --> RISK
+    COV_OBJ_GEN --> RISK
+    RISK_CTX -.-> RISK
+    RISK --> RISK_OBJ
+
+    %% ── Layer 6: Deterministic Review (NOT LLM) ──────────────────
+    REV{{"core/review.py<br/>14 deterministic rules<br/>NO LLM"}}:::decision
+    REV_CTX["<b>Context consulted</b><br/>• source_metadata.source_owner<br/>• Effective_Date / Review_Date<br/>• confidence values<br/>• mapping fanout count<br/>• coverage status<br/>• has_improvement_proposal flag<br/>• regulation_links presence<br/>• inherent_risk_rating<br/>• classification category<br/>• parent_source_id presence"]:::ctx
+
+    COV_OBJ_FULL --> REV
+    COV_OBJ_PART --> REV
+    IMP_OBJ --> REV
+    RISK_OBJ --> REV
+    REV_CTX -.-> REV
+
+    REV_DEC{needs_review?}:::decision
+    REV --> REV_DEC
+
+    AUTO["Auto-Accept<br/>needs_review = False"]:::shared
+    HRQ["Human Review Queue<br/>needs_review = True<br/>+ list of reason codes"]:::review
+
+    REV_DEC -->|No reasons fired| AUTO
+    REV_DEC -->|≥1 reason fired| HRQ
+
+    %% ── Layer 7: Output ──────────────────────────────────────────
+    WRITER["excel_export.py<br/>writes workbook"]:::shared
+    AUTO --> WRITER
+    HRQ -->|after reviewer<br/>resolution| WRITER
+
+    OUT_LEG["7 Legacy Sheets<br/>Summary, Classified Obligations,<br/>APQC Mappings, Coverage,<br/>Gaps, Risk Register,<br/>Proposed Improvements"]:::output
+    OUT_NEW["5 New Additive Sheets<br/>Source Inventory,<br/>Policy/Procedure Inventory,<br/>Needs Review Queue,<br/>Metadata Dictionaries, Run Log"]:::output
+
+    WRITER --> OUT_LEG
+    WRITER --> OUT_NEW
+
+    %% ── Feedback loop ────────────────────────────────────────────
+    HRQ -. corrections .-> CLS
+    HRQ -. corrections .-> MAP
+    HRQ -. corrections .-> IMP
+    HRQ -. rule tuning .-> REV

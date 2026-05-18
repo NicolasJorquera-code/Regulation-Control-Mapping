@@ -46,6 +46,8 @@ from regrisk.ui.components import (
     render_obligation_card,
     render_obligation_detail,
     render_obligation_text_only,
+    render_page_header,
+    render_section_header,
     save_uploaded_file,
 )
 from regrisk.ui.session_keys import SK
@@ -80,7 +82,13 @@ def render_classification_review_tab() -> None:
         st.info("Run classification first (Tab 1).")
         return
 
-    st.header(f"Classification Review ({len(classified)} obligations)")
+    render_page_header(
+        "Classification Review",
+        caption=("Review the LLM’s obligation classification: category, criticality and "
+                 "relationship type. Click a card to inspect full detail."),
+        icon="📑",
+        count=len(classified),
+    )
 
     df = pd.DataFrame(classified)
     total_count = len(df)
@@ -161,7 +169,8 @@ def render_classification_review_tab() -> None:
                 groups[subpart].append((idx, ob))
 
             for subpart in sorted(groups.keys()):
-                st.subheader(subpart, divider="gray")
+                render_section_header(subpart, count=len(groups[subpart]),
+                                      accent="#1f4e79")
                 for idx, ob in groups[subpart]:
                     clicked = render_obligation_card(
                         ob, idx, st.session_state[sel_key], key_prefix="tab2_ob",
@@ -248,7 +257,12 @@ def render_mapping_review_tab() -> None:
         rec.setdefault("criticality_tier", "Low")
         mapped_records.append(rec)
 
-    st.header("APQC Mapping Review")
+    render_page_header(
+        "APQC Mapping Review",
+        caption=("Mapping of obligations to APQC processes. Inspect each obligation’s mapped "
+                 "processes and confirm the relationship is appropriate."),
+        icon="🔗",
+    )
 
     from collections import Counter
 
@@ -315,7 +329,8 @@ def render_mapping_review_tab() -> None:
                 groups[subpart].append((idx, ob))
 
             for subpart in sorted(groups.keys()):
-                st.subheader(subpart, divider="gray")
+                render_section_header(subpart, count=len(groups[subpart]),
+                                      accent="#1565c0")
                 for idx, ob in groups[subpart]:
                     cit = ob.get("citation", "")
                     n_maps = len(mappings_by_citation.get(cit, []))
@@ -537,6 +552,7 @@ def _run_assessment() -> None:
     st.session_state["gap_report"] = result.get("gap_report", {})
     st.session_state["compliance_matrix"] = result.get("compliance_matrix", {})
     st.session_state["risk_register"] = result.get("risk_register", {})
+    st.session_state["proposed_improvements"] = result.get("proposed_improvements", [])
 
     save_checkpoint(STAGE_ASSESSED, dict(st.session_state))
 

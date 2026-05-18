@@ -7,6 +7,7 @@ Deterministic (no LLM). Pure Python + pandas.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 import pandas as pd
 
@@ -68,9 +69,21 @@ def parse_regulation_excel(path: str) -> tuple[str, list[Obligation]]:
             regulation_name = data["mandate_title"]
 
         # Remove mandate_citation (not in the Obligation model)
-        data.pop("mandate_citation", None)
+        mandate_cit = data.pop("mandate_citation", None)
 
-        obligations.append(Obligation(**data))
+        # Stamp source-type fields (Phase 2 hybrid model — backward compatible)
+        citation_val = data.get("citation") or ""
+        source_metadata: dict[str, Any] = {
+            "mandate_citation": mandate_cit,
+            "regulation_name": regulation_name or data.get("mandate_title", ""),
+        }
+
+        obligations.append(Obligation(
+            **data,  # type: ignore[arg-type]
+            source_type="Regulatory_Obligation",
+            source_id=citation_val or None,
+            source_metadata=source_metadata,
+        ))
 
     return regulation_name, obligations
 

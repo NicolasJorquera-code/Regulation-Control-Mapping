@@ -37,6 +37,11 @@ from regrisk.tracing.decorators import trace_node
 from regrisk.tracing.transport_wrapper import TracingTransportClient
 from regrisk.ingest.apqc_loader import load_apqc_hierarchy
 from regrisk.ingest.control_loader import discover_control_files, load_and_merge_controls
+from regrisk.ingest.policy_parser import (
+    detect_source_inventory,
+    group_policy_obligations,
+    parse_policy_excel,
+)
 from regrisk.ingest.regulation_parser import group_obligations, parse_regulation_excel
 from regrisk.validation.validator import validate_classification
 
@@ -108,10 +113,20 @@ def ingest_node(state: ClassifyState) -> dict[str, Any]:
 
     errors: list[str] = []
 
-    # Parse regulation
+    # Parse source workbook — dispatch by shape (Phase 2 hybrid model).
+    # If the workbook contains a 'Source_Inventory' sheet, treat it as a
+    # Policy / Procedure inventory; otherwise fall back to the legacy
+    # regulation parser. Explicit override via scope_config['source_mode'].
+    scope = state.get("scope_config", {})
+    source_mode = scope.get("source_mode")  # 'regulation' | 'policy' | None
+
     try:
-        regulation_name, obligations = parse_regulation_excel(reg_path)
-        groups = group_obligations(obligations)
+        if source_mode == "policy" or (source_mode is None and detect_source_inventory(reg_path)):
+            regulation_name, obligations = parse_policy_excel(reg_path)
+            groups = group_policy_obligations(obligations)
+        else:
+            regulation_name, obligations = parse_regulation_excel(reg_path)
+            groups = group_obligations(obligations)
         groups_dicts = [g.model_dump() for g in groups]
 
         # Apply scope filtering

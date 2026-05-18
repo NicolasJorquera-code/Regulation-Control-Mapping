@@ -22,6 +22,7 @@ def export_gap_report(
     assessments: list[dict[str, Any]],
     risks: list[dict[str, Any]],
     path: str | io.BytesIO,
+    proposed_improvements: list[dict[str, Any]] | None = None,
 ) -> str | io.BytesIO:
     """Export a multi-sheet Excel workbook with full pipeline results.
 
@@ -113,6 +114,40 @@ def export_gap_report(
         else:
             pd.DataFrame({"Note": ["No risks extracted"]}).to_excel(
                 writer, sheet_name="Risk Register", index=False,
+            )
+
+        # Sheet 7: Proposed Improvements
+        if proposed_improvements:
+            imp_rows: list[dict[str, Any]] = []
+            for imp in proposed_improvements:
+                ctrl = imp.get("proposed_control", {})
+                row = {
+                    "source_citation": imp.get("source_citation", ""),
+                    "source_apqc_id": imp.get("source_apqc_id", ""),
+                    "change_type": imp.get("change_type", ""),
+                    "original_control_id": imp.get("original_control_id", ""),
+                    "control_id": ctrl.get("control_id", ""),
+                    "hierarchy_id": ctrl.get("hierarchy_id", ""),
+                    "leaf_name": ctrl.get("leaf_name", ""),
+                    "full_description": ctrl.get("full_description", ""),
+                    "selected_level_1": ctrl.get("selected_level_1", ""),
+                    "selected_level_2": ctrl.get("selected_level_2", ""),
+                    "who": ctrl.get("who", ""),
+                    "what": ctrl.get("what", ""),
+                    "when": ctrl.get("when", ""),
+                    "frequency": ctrl.get("frequency", ""),
+                    "where": ctrl.get("where", ""),
+                    "why": ctrl.get("why", ""),
+                    "evidence": ctrl.get("evidence", ""),
+                    "quality_rating": ctrl.get("quality_rating", ""),
+                    "business_unit_name": ctrl.get("business_unit_name", ""),
+                    "improvement_rationale": imp.get("improvement_rationale", ""),
+                    "gap_addressed": imp.get("gap_addressed", ""),
+                }
+                imp_rows.append(row)
+            df_imp = pd.DataFrame(imp_rows).rename(columns=_display_col_name)
+            df_imp.to_excel(
+                writer, sheet_name="Proposed Improvements", index=False,
             )
 
     return path

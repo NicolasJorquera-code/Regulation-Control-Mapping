@@ -23,17 +23,31 @@ from regrisk.ui.checkpoint import STAGE_ASSESSED, STAGE_ASSESS_PARTIAL, STAGE_CL
 from regrisk.ui.components import (
     build_partial_results,
     format_citation,
+    render_callout,
     render_checkpoint_load,
     render_checkpoint_save,
     render_coverage_chip,
     render_filter_bar,
+    render_improvement_chip,
     render_obligation_text_only,
+    render_page_header,
+    render_section_header,
 )
 from regrisk.ui.session_keys import SK
 
 
 def render_coverage_tab() -> None:
     """Render the Coverage tab with obligation viewer and coverage dashboard."""
+    import logging as _logging
+    _tab_log = _logging.getLogger("regrisk.ui.tab.coverage")
+    _tab_log.info(
+        "Rendering Coverage tab: gap_report=%s, assessments=%d, classified=%d, improvements=%d",
+        bool(st.session_state.get(SK.GAP_REPORT)),
+        len(st.session_state.get(SK.COVERAGE_ASSESSMENTS, [])),
+        len(st.session_state.get(SK.CLASSIFIED_OBLIGATIONS, [])),
+        len(st.session_state.get(SK.PROPOSED_IMPROVEMENTS, [])),
+    )
+
     gap_report = st.session_state.get(SK.GAP_REPORT, {})
 
     if not gap_report:
@@ -47,7 +61,19 @@ def render_coverage_tab() -> None:
         st.info("Run the full assessment pipeline first (Tabs 1–3).")
         return
 
-    st.header("Coverage")
+    render_page_header(
+        "Coverage",
+        caption=("Per-obligation coverage assessment across mapped APQC processes — "
+                 "browse, filter and inspect each obligation's controls and gaps."),
+        icon="📊",
+    )
+
+    # ── Load proposed improvements (if available) ──
+    improvements = st.session_state.get(SK.PROPOSED_IMPROVEMENTS, [])
+    improvements_by_key: dict[tuple[str, str], dict] = {}
+    for imp in improvements:
+        key = (imp.get("source_citation", ""), imp.get("source_apqc_id", ""))
+        improvements_by_key[key] = imp
 
     # ── Partial results warning ──
     if gap_report.get("_partial"):
@@ -134,7 +160,8 @@ def render_coverage_tab() -> None:
             groups[subpart].append(ob)
 
         for subpart in sorted(groups.keys()):
-            st.subheader(subpart, divider="gray")
+            render_section_header(subpart, count=len(groups[subpart]),
+                                  accent="#1f4e79")
             for ob in groups[subpart]:
                 cit = ob.get("citation", "")
                 ob_assessments = assessments_by_cit.get(cit, [])
@@ -161,6 +188,20 @@ def render_coverage_tab() -> None:
                         if ob_assessments:
                             for a in ob_assessments:
                                 render_coverage_chip(a, show_inline=True)
+
+                                # Proposed improvement (if gap and improvement exists)
+                                cov_status = a.get("overall_coverage", "")
+                                if cov_status in ("Not Covered", "Partially Covered"):
+                                    imp_key = (a.get("citation", ""), a.get("apqc_hierarchy_id", ""))
+                                    imp = improvements_by_key.get(imp_key)
+                                    if imp:
+                                        st.markdown(
+                                            '<div style="font-size:0.82rem;font-weight:600;'
+                                            'color:#00897b;margin:8px 0 4px 0">'
+                                            '\U0001f4a1 Proposed Improvement</div>',
+                                            unsafe_allow_html=True,
+                                        )
+                                        render_improvement_chip(imp, show_inline=True)
                         else:
                             st.caption("No coverage assessment available.")
 
@@ -309,22 +350,40 @@ def _render_coverage_dashboard(
 ) -> None:
     """Render the coverage dashboard: KPIs + coverage progress bar."""
     # ── KPI Summary Strip ──
-    k1, k2, k3 = st.columns(3)
-    with k1:
+    # Check for proposed improvements
+    improvements = st.session_state.get(SK.PROPOSED_IMPROVEMENTS, [])
+    has_improvements = len(improvements) > 0
+
+    cols = st.columns(4 if has_improvements else 3)
+
+    with cols[0]:
         st.markdown(
             _kpi_card("Total Assessed", total_assessed),
             unsafe_allow_html=True,
         )
-    with k2:
+    with cols[1]:
         st.markdown(
             _kpi_card("Covered", covered, _pct(covered, total_assessed), accent="positive"),
             unsafe_allow_html=True,
         )
-    with k3:
+    with cols[2]:
         st.markdown(
             _kpi_card("Gaps", gaps, _pct(gaps, total_assessed), accent="negative", loud=True),
             unsafe_allow_html=True,
         )
+    if has_improvements:
+        n_new = sum(1 for i in improvements if i.get("change_type") == "new")
+        n_enh = len(improvements) - n_new
+        with cols[3]:
+            st.markdown(
+                _kpi_card(
+                    "Improvements",
+                    len(improvements),
+                    f"{n_new} new · {n_enh} enh.",
+                    accent="warning",
+                ),
+                unsafe_allow_html=True,
+            )
 
     # ── Compact coverage progress bar ──
     if total_assessed > 0:
@@ -356,6 +415,7 @@ def _render_actions(gap_report: dict) -> None:
     st.divider()
 
     risks = st.session_state.get(SK.SCORED_RISKS, [])
+    proposed_imps = st.session_state.get(SK.PROPOSED_IMPROVEMENTS, [])
     buf = io.BytesIO()
     export_gap_report(
         gap_report,
@@ -364,6 +424,7 @@ def _render_actions(gap_report: dict) -> None:
         st.session_state.get(SK.COVERAGE_ASSESSMENTS, []),
         risks,
         buf,
+        proposed_improvements=proposed_imps or None,
     )
     st.download_button(
         "📥 Download Full Report",

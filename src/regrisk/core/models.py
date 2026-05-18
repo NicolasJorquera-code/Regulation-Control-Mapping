@@ -15,7 +15,13 @@ from pydantic import BaseModel, Field
 # ── Ingest artifacts (deterministic) ──────────────────────────────────────
 
 class Obligation(BaseModel, frozen=True):
-    """Single row from the regulation Excel."""
+    """Single row from the regulation Excel — or, with source_type set,
+    a Policy Requirement, Standard, or Procedure Step from the
+    generalized Source Inventory workbook.
+
+    The class name is preserved for backward compatibility (50+ call sites);
+    the ``source_type`` field discriminates obligation-led vs policy-led rows.
+    """
 
     citation: str
     mandate_title: str
@@ -31,6 +37,14 @@ class Obligation(BaseModel, frozen=True):
     citation_level_3: str
     effective_date: str
     applicability: str
+
+    # ── Hybrid source-type fields (additive; defaults preserve legacy) ──
+    source_type: str = "Regulatory_Obligation"
+    source_id: str | None = None
+    parent_source_id: str | None = None
+    requirement_type: str | None = None
+    source_metadata: dict[str, Any] = Field(default_factory=dict)
+    source_confidence: float | None = None
 
 
 class ObligationGroup(BaseModel, frozen=True):
@@ -95,7 +109,7 @@ class ClassifiedObligation(BaseModel, frozen=True):
 # ── APQC Mapping artifacts (LLM Phase 3) ─────────────────────────────────
 
 class ObligationAPQCMapping(BaseModel, frozen=True):
-    """One obligation-to-APQC-process link (many-to-many)."""
+    """One source-to-APQC-process link (many-to-many)."""
 
     citation: str
     apqc_hierarchy_id: str
@@ -104,11 +118,15 @@ class ObligationAPQCMapping(BaseModel, frozen=True):
     relationship_detail: str
     confidence: float = Field(ge=0.0, le=1.0)
 
+    source_type: str = "Regulatory_Obligation"
+    needs_review: bool = False
+    needs_review_reasons: list[str] = Field(default_factory=list)
+
 
 # ── Coverage Assessment artifacts (Phase 4) ──────────────────────────────
 
 class CoverageAssessment(BaseModel, frozen=True):
-    """Assessment of whether a control covers a mapped obligation."""
+    """Assessment of whether a control covers a mapped source requirement."""
 
     citation: str
     apqc_hierarchy_id: str
@@ -121,6 +139,11 @@ class CoverageAssessment(BaseModel, frozen=True):
     relationship_rationale: str
 
     overall_coverage: str
+
+    source_type: str = "Regulatory_Obligation"
+    requires_control_generation: bool = False
+    needs_review: bool = False
+    needs_review_reasons: list[str] = Field(default_factory=list)
 
 
 # ── Risk artifacts (Phase 5) ─────────────────────────────────────────────
@@ -143,6 +166,11 @@ class ScoredRisk(BaseModel, frozen=True):
     inherent_risk_rating: str
 
     coverage_status: str
+
+    source_type: str = "Regulatory_Obligation"
+    business_unit: str | None = None
+    needs_review: bool = False
+    needs_review_reasons: list[str] = Field(default_factory=list)
 
 
 # ── Final output artifacts (Phase 6) ─────────────────────────────────────
@@ -172,3 +200,17 @@ class RiskRegister(BaseModel):
     risk_distribution: dict[str, int]
     critical_count: int
     high_count: int
+
+
+# ── Proposed Control Improvement (Phase 7) ────────────────────────────────
+
+class ProposedControlImprovement(BaseModel, frozen=True):
+    """A proposed new or enhanced control to close a coverage gap."""
+
+    proposed_control: dict[str, Any]  # ControlRecord fields as dict
+    improvement_rationale: str
+    change_type: str  # "new" or "enhancement"
+    gap_addressed: str
+    source_citation: str
+    source_apqc_id: str
+    original_control_id: str | None = None

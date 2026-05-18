@@ -45,13 +45,11 @@ from regrisk.ui.results_tab import render_coverage_tab
 from regrisk.ui.risk_register_tab import render_risk_register_tab
 from regrisk.ui.traceability_tab import render_traceability_tab
 from regrisk.ui.evaluation_tab import render_evaluation_tab
-from regrisk.ui.data_explorer_tab import render_data_explorer_tab
 from regrisk.core.config import default_config_path
 
 # ── Tab registry: label → (icon, render_function) ──
 _TAB_REGISTRY: dict[str, tuple[str, Any]] = {
     "Upload & Configure":    ("📁", render_upload_tab),
-    "Data Source Explorer":  ("🔍", render_data_explorer_tab),
     "Classification Review": ("🏷️", render_classification_review_tab),
     "Mapping Review":        ("🗺️", render_mapping_review_tab),
     "Coverage":              ("📊", render_coverage_tab),
@@ -225,6 +223,14 @@ _GLOBAL_CSS = """
     display: inline-block; background: #e2e3e5; color: #333;
     border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
 }
+.source-badge-policy {
+    display: inline-block; background: #0277BD; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
+.source-badge-procedure {
+    display: inline-block; background: #6A1B9A; color: white;
+    border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; font-weight: 600;
+}
 
 /* ── Explorer table ── */
 .explorer-table-container {
@@ -273,6 +279,179 @@ _GLOBAL_CSS = """
     display: inline-block; background: #e2e3e5; color: #333;
     border-radius: 12px; padding: 2px 10px; font-size: 0.8rem; font-weight: 500;
     margin-left: 8px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Executive-style shared components (used across all tabs)                */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+/* Page-level header banner */
+.exec-page-header {
+    margin: 0 0 0.25rem 0;
+    padding: 0 0 8px 0;
+    border-bottom: 3px solid #1f4e79;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.exec-page-header h1 {
+    font-size: 1.55rem;
+    margin: 0;
+    color: #1f4e79;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.exec-page-header .exec-page-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+.exec-page-header .exec-page-count {
+    background: #1f4e79;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+.exec-page-caption {
+    color: #555;
+    font-size: 0.88rem;
+    margin: 4px 0 14px 0;
+}
+
+/* Section header bar (colored uppercase divider with count badge) */
+.exec-section-header {
+    margin: 14px 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--accent, #1f4e79);
+    color: var(--accent, #1f4e79);
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.exec-section-header .exec-section-count {
+    background: var(--accent, #1f4e79);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 1px 7px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+/* Metadata strip card (used in data source headers) */
+.exec-metadata-strip {
+    background: #f5f7fa;
+    border: 1px solid #e0e6ee;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    color: #333;
+    margin-bottom: 12px;
+}
+.exec-metadata-strip > span {
+    white-space: nowrap;
+}
+
+/* Premium table — sticky header, zebra rows, hover, status pills */
+.premium-table-container {
+    max-height: 460px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #d8dee5;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.premium-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.86rem;
+    color: #222;
+}
+.premium-table thead th {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, #1f4e79 0%, #25578a 100%);
+    color: #fff;
+    border-bottom: 2px solid #173e63;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    z-index: 2;
+}
+.premium-table thead th.numeric-col {
+    text-align: right;
+}
+.premium-table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eef0f3;
+    vertical-align: top;
+    line-height: 1.45;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+.premium-table tbody td.numeric-col {
+    text-align: right;
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    color: #1a3d6d;
+}
+.premium-table tbody td.code-col {
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.82rem;
+    color: #1a3d6d;
+}
+.premium-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+.premium-table tbody tr:hover {
+    background: #eef4fb;
+}
+.premium-table tbody td .status-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+}
+.premium-table .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 480px;
+}
+
+/* Page-level info / warning callouts (consistent with executive style) */
+.exec-callout {
+    border-left: 4px solid #1f4e79;
+    background: #f0f5fa;
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    color: #1f3b5e;
+    margin: 10px 0;
+}
+.exec-callout-warn {
+    border-left-color: #f9a825;
+    background: #fffbea;
+    color: #5d4d10;
 }
 </style>
 """

@@ -14,6 +14,11 @@ import pandas as pd
 import streamlit as st
 
 from regrisk.tracing.db import TraceDB
+from regrisk.ui.components import (
+    render_page_header,
+    render_premium_table,
+    render_section_header,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +56,7 @@ def _delta_arrow(val: float, higher_is_better: bool = True) -> str:
 
 def _render_run_history(trace_db: TraceDB) -> str | None:
     """Section 1 — Run History Table. Returns selected run_id or None."""
-    st.subheader("Run History")
+    render_section_header("Run History", accent="#1f4e79", icon="📈")
 
     metrics_list = trace_db.list_run_metrics(limit=50)
     if not metrics_list:
@@ -80,7 +85,12 @@ def _render_run_history(trace_db: TraceDB) -> str | None:
         })
 
     df = pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    render_premium_table(
+        df,
+        code_cols=["run_id", "model", "provider"],
+        numeric_cols=["tokens", "est_cost", "pass_rate", "quality", "coverage", "llm_calls"],
+        height=380,
+    )
 
     # Select a run for detail view
     run_ids = [m["run_id"] for m in metrics_list]
@@ -96,7 +106,7 @@ def _render_run_history(trace_db: TraceDB) -> str | None:
 
 def _render_run_detail(trace_db: TraceDB, run_id: str) -> None:
     """Section 2 — Selected Run Detail."""
-    st.subheader("Run Detail")
+    render_section_header("Run Detail", accent="#2e7d32", icon="🔎")
 
     m = trace_db.get_run_metrics(run_id)
     if not m:
@@ -124,7 +134,8 @@ def _render_run_detail(trace_db: TraceDB, run_id: str) -> None:
     ]
     phase_df = pd.DataFrame(phases, columns=["Phase", "Total", "Passed", "Retries", "Pass Rate"])
     phase_df["Pass Rate"] = phase_df["Pass Rate"].apply(lambda x: f"{x * 100:.1f}%")
-    st.dataframe(phase_df, use_container_width=True, hide_index=True)
+    render_premium_table(phase_df, numeric_cols=["Total", "Passed", "Retries", "Pass Rate"],
+                         height=240)
 
     # Extra metrics
     col_a, col_b = st.columns(2)
@@ -166,7 +177,7 @@ def _render_run_detail(trace_db: TraceDB, run_id: str) -> None:
 
 def _render_comparison(trace_db: TraceDB) -> None:
     """Section 3 — Run Comparison."""
-    st.subheader("Run Comparison")
+    render_section_header("Run Comparison", accent="#7b1fa2", icon="🔀")
 
     metrics_list = trace_db.list_run_metrics(limit=50)
     if len(metrics_list) < 2:
@@ -218,7 +229,8 @@ def _render_comparison(trace_db: TraceDB) -> None:
                 "Run A": f"{va:{fmt}}" if isinstance(va, (int, float)) else str(va),
                 "Run B": f"{vb:{fmt}}" if isinstance(vb, (int, float)) else str(vb),
             })
-        st.dataframe(pd.DataFrame(side_rows), use_container_width=True, hide_index=True)
+        render_premium_table(pd.DataFrame(side_rows),
+                             numeric_cols=["Run A", "Run B"], height=300)
 
         # Delta indicators
         st.markdown("**Deltas (B − A)**")
@@ -244,7 +256,7 @@ def _render_comparison(trace_db: TraceDB) -> None:
 
 def _render_cost_quality_scatter(trace_db: TraceDB) -> None:
     """Section 4 — Cost vs Quality Scatter."""
-    st.subheader("Cost vs Quality")
+    render_section_header("Cost vs Quality", accent="#c62828", icon="💰")
 
     history = trace_db.get_cost_history(limit=50)
     if not history:
@@ -301,9 +313,11 @@ def _render_cost_quality_scatter(trace_db: TraceDB) -> None:
 
 def render_evaluation_tab() -> None:
     """Render the Evaluation tab (Tab 6)."""
-    st.markdown(
-        "*Developer tool — compare pipeline runs, track quality metrics, "
-        "and analyze cost/quality tradeoffs.*"
+    render_page_header(
+        "Evaluation",
+        caption=("Developer tool — compare pipeline runs, track quality metrics, and "
+                 "analyze cost/quality tradeoffs."),
+        icon="📊",
     )
 
     trace_db = _get_trace_db()
