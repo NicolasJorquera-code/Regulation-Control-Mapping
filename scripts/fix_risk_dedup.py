@@ -7,7 +7,7 @@ re-sequenced (RISK-001, RISK-002, …) and all downstream references
 (compliance_matrix, risk_register) are updated accordingly.
 
 Usage:
-    python _fix_risk_dedup.py [<checkpoint_path>]
+    python scripts/fix_risk_dedup.py [<checkpoint_path>]
 
 If no path is given the latest Full_Assessment checkpoint is used.
 The original file is NOT modified; a new file is saved alongside it.
