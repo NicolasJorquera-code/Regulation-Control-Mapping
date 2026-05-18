@@ -1,7 +1,14 @@
 # ADR 0002 -- Config-driven agents with deterministic fallback
 
-**Status:** Accepted
+**Status:** Superseded by [ADR 0006](0006-llm-required-and-ai-governance.md)
 **Date:** captured retroactively during the github-ready cleanup pass
+
+> **Note (2026):** The "deterministic fallback" half of this decision
+> has been reversed. regrisk now requires an LLM client; the keyword
+> fallbacks have been removed from every agent. The "config-driven"
+> half (taxonomies, scales, thresholds in YAML; risk taxonomy in JSON;
+> per-source-type prompt fragments) is still in force. See ADR 0006
+> for the new model and rationale.
 
 ## Context
 

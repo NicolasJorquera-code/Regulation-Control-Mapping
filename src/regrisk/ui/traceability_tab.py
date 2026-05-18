@@ -214,7 +214,7 @@ def render_traceability_tab() -> None:
                 if c.get("error"):
                     st.error(f"Error: {c['error']}")
     else:
-        st.caption("No LLM calls recorded (pipeline may have run in deterministic/CPU-only mode).")
+        st.caption("No LLM calls recorded yet -- run the pipeline to populate this view.")
 
     # ── Section F: Maintenance ──
     st.divider()

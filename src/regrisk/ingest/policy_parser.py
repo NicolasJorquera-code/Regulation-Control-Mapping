@@ -5,7 +5,7 @@ Reads the generalized ``Source_Inventory`` sheet (Phase 2 of the hybrid
 source-led design) and emits ``Obligation`` instances stamped with the
 appropriate ``source_type`` (Policy_Requirement | Standard | Procedure_Step).
 
-Deterministic (no LLM). Pure Python + pandas. Mirrors the shape of
+Pure file I/O. Pure Python + pandas. Mirrors the shape of
 :mod:`regrisk.ingest.regulation_parser` so downstream agents and graphs
 do not need to know whether the source is regulation-led or policy-led.
 """

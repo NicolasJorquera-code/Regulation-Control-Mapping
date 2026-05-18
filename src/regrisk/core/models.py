@@ -12,7 +12,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-# ── Ingest artifacts (deterministic) ──────────────────────────────────────
+# ── Ingest artifacts (file I/O) ───────────────────────────────────────────────
 
 class Obligation(BaseModel, frozen=True):
     """Single row from the regulation Excel — or, with source_type set,

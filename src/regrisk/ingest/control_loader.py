@@ -1,7 +1,7 @@
 """
 Control inventory loader — auto-discovers and merges section control files.
 
-Deterministic (no LLM). Pure Python + pandas + glob.
+Pure file I/O. Pure Python + pandas + glob.
 """
 
 from __future__ import annotations

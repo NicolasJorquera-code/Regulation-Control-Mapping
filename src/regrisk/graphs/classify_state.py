@@ -21,7 +21,7 @@ class ClassifyState(TypedDict, total=False):
     risk_taxonomy: dict[str, Any]
     llm_enabled: bool
 
-    # Ingest (deterministic)
+    # Ingest (file I/O)
     regulation_name: str
     total_obligations: int
     obligation_groups: list[dict[str, Any]]

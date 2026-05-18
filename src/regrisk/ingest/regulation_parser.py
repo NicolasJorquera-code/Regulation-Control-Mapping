@@ -1,7 +1,7 @@
 """
 Regulation Excel parser — Promontory-format regulatory obligation inventory.
 
-Deterministic (no LLM). Pure Python + pandas.
+Pure file I/O. Pure Python + pandas.
 """
 
 from __future__ import annotations

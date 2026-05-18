@@ -1,5 +1,5 @@
 """
-Deterministic validator with typed failure codes.
+Validator -- AI output schema + categorical-value enforcement with typed failure codes.
 
 Validates pipeline artifacts at each stage without calling an LLM.
 Each rule produces a specific failure code for targeted feedback.

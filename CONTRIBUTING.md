@@ -39,14 +39,18 @@ desired granularity (one commit per phase).
            super().__init__(context, name="YourAgent")
 
        async def execute(self, *, obligation, ...) -> dict:
-           if self.context.client is None:
-               return self._deterministic_fallback(obligation)
-           return await self._llm_path(obligation)
+           prompt = self._build_prompt(obligation)
+           raw = await self.call_llm(system_prompt=..., user_prompt=prompt)
+           parsed = self.parse_json(raw)
+           # validate + return
+           return parsed
    ```
 
-   Every agent must work without an LLM (deterministic mode is how the
-   test suite runs in CI). See `agents/obligation_classifier.py` for a
-   reference implementation.
+   Every agent's LLM output must pass through `validation/validator.py`
+   and feed into the AI Governance review layer (`core/review.py`).
+   `call_llm` raises `LLMRequiredError` if no client is configured --
+   do not catch it; the UI/CLI surfaces it as a setup error.
+   See `agents/obligation_classifier.py` for a reference implementation.
 
 2. **Register** the class in the relevant graph's `_AGENT_CLASSES`:
 
@@ -70,15 +74,21 @@ desired granularity (one commit per phase).
    if you introduced new keys.
 
 5. **Add validation** in `src/regrisk/validation/validator.py` if the
-   agent emits structured output that needs schema checks.
+   agent emits structured output that needs schema or categorical-value
+   checks. This is the first half of the AI Governance layer.
 
-6. **Add deterministic review** for the artifact in
+6. **Add an AI Governance review rule** for the artifact in
    `src/regrisk/core/review.py` and invoke it from the graph's terminal
    node (see how `assess_graph.finalize_node` already wires the other
-   `review_*` functions).
+   `review_*` functions). This is the second half of the AI Governance
+   layer -- it stamps `needs_review` + named reason codes on every LLM
+   output before it is exported or surfaced for human review.
 
-7. **Add a test** in `tests/test_<your_agent>.py` covering deterministic
-   mode at minimum.
+7. **Add a test** in `tests/test_<your_agent>.py`. Use the
+   `stub_llm_context` fixture (see `tests/_stub_llm.py`); add a
+   response branch for your agent in `_AGENT_SIGNATURES` so the stub
+   recognises your prompt and returns valid canned JSON. No real API
+   key is needed.
 
 ## How to add a new demo dataset
 

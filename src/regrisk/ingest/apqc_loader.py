@@ -1,7 +1,7 @@
 """
 APQC Process Classification Framework loader.
 
-Deterministic (no LLM). Pure Python + pandas.
+Pure file I/O. Pure Python + pandas.
 """
 
 from __future__ import annotations

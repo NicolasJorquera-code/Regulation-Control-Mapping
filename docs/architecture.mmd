@@ -107,8 +107,8 @@ flowchart TB
     RISK_CTX -.-> RISK
     RISK --> RISK_OBJ
 
-    %% ── Layer 6: Deterministic Review (NOT LLM) ──────────────────
-    REV{{"core/review.py<br/>14 deterministic rules<br/>NO LLM"}}:::decision
+    %% ── Layer 6: AI Governance Review (rule-based, NOT LLM) ──────────────
+    REV{{"core/review.py + validation/<br/>AI Governance layer<br/>14 rules, NO LLM"}}:::decision
     REV_CTX["<b>Context consulted</b><br/>• source_metadata.source_owner<br/>• Effective_Date / Review_Date<br/>• confidence values<br/>• mapping fanout count<br/>• coverage status<br/>• has_improvement_proposal flag<br/>• regulation_links presence<br/>• inherent_risk_rating<br/>• classification category<br/>• parent_source_id presence"]:::ctx
 
     COV_OBJ_FULL --> REV
