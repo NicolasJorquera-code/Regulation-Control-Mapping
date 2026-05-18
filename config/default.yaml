@@ -94,6 +94,5 @@ ui:
     - "Mapping Review"
     - "Coverage"
     - "Risk Register"
-    - "Executive View"
     # - "Traceability"     # uncomment to restore
     # - "Evaluation"       # uncomment to restore
