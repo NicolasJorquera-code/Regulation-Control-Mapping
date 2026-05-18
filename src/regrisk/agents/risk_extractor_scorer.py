@@ -112,51 +112,27 @@ COVERAGE GAP: {gap_rationale}
 Extract 1-3 risks and score them."""
 
         raw = await self.call_llm(system_prompt, user_prompt)
-        if raw:
-            parsed = self.parse_json(raw)
-            risks = parsed.get("risks", [])
-            if risks:
-                scored: list[dict[str, Any]] = []
-                for i, r in enumerate(risks):
-                    impact = max(1, min(4, int(r.get("impact_rating", 2))))
-                    freq = max(1, min(4, int(r.get("frequency_rating", 2))))
-                    scored.append({
-                        "risk_id": f"{risk_id_prefix}-{risk_counter + i + 1:03d}",
-                        "source_citation": citation,
-                        "source_apqc_id": apqc_hierarchy_id,
-                        "risk_description": r.get("risk_description", ""),
-                        "risk_category": r.get("risk_category", "Compliance Risk"),
-                        "sub_risk_category": r.get("sub_risk_category", "Regulatory Compliance Risk"),
-                        "impact_rating": impact,
-                        "impact_rationale": r.get("impact_rationale", ""),
-                        "frequency_rating": freq,
-                        "frequency_rationale": r.get("frequency_rationale", ""),
-                        "inherent_risk_rating": derive_inherent_rating(impact, freq),
-                        "coverage_status": coverage_status,
-                    })
-                return {"risks": scored}
+        parsed = self.parse_json(raw)
+        risks = parsed.get("risks", [])
+        if not risks:
+            return {"risks": []}
 
-        # Deterministic fallback
-        impact, freq = self._default_scores(criticality)
-        return {"risks": [{
-            "risk_id": f"{risk_id_prefix}-{risk_counter + 1:03d}",
-            "source_citation": citation,
-            "source_apqc_id": apqc_hierarchy_id,
-            "risk_description": f"Non-compliance risk for {citation} due to {coverage_status.lower()} control coverage.",
-            "risk_category": "Compliance Risk",
-            "sub_risk_category": "Regulatory Compliance Risk",
-            "impact_rating": impact,
-            "impact_rationale": f"Deterministic score based on {criticality} criticality.",
-            "frequency_rating": freq,
-            "frequency_rationale": f"Deterministic score based on {criticality} criticality.",
-            "inherent_risk_rating": derive_inherent_rating(impact, freq),
-            "coverage_status": coverage_status,
-        }]}
-
-    @staticmethod
-    def _default_scores(criticality: str) -> tuple[int, int]:
-        if criticality == "High":
-            return 3, 2
-        if criticality == "Medium":
-            return 2, 2
-        return 1, 1
+        scored: list[dict[str, Any]] = []
+        for i, r in enumerate(risks):
+            impact = max(1, min(4, int(r.get("impact_rating", 2))))
+            freq = max(1, min(4, int(r.get("frequency_rating", 2))))
+            scored.append({
+                "risk_id": f"{risk_id_prefix}-{risk_counter + i + 1:03d}",
+                "source_citation": citation,
+                "source_apqc_id": apqc_hierarchy_id,
+                "risk_description": r.get("risk_description", ""),
+                "risk_category": r.get("risk_category", "Compliance Risk"),
+                "sub_risk_category": r.get("sub_risk_category", "Regulatory Compliance Risk"),
+                "impact_rating": impact,
+                "impact_rationale": r.get("impact_rationale", ""),
+                "frequency_rating": freq,
+                "frequency_rationale": r.get("frequency_rationale", ""),
+                "inherent_risk_rating": derive_inherent_rating(impact, freq),
+                "coverage_status": coverage_status,
+            })
+        return {"risks": scored}

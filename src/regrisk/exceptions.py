@@ -6,7 +6,7 @@ class RegRiskError(Exception):
 
 
 class IngestError(RegRiskError):
-    """Data ingestion failed — file not found, parse error, or schema mismatch."""
+    """Data ingestion failed -- file not found, parse error, or schema mismatch."""
 
 
 class TransportError(RegRiskError):
@@ -14,4 +14,13 @@ class TransportError(RegRiskError):
 
 
 class ValidationError(RegRiskError):
-    """A pipeline artifact failed deterministic validation."""
+    """An LLM-produced artifact failed AI governance validation."""
+
+
+class LLMRequiredError(RegRiskError):
+    """The pipeline was invoked without a configured LLM client.
+
+    regrisk is an LLM-driven pipeline; every agent requires a working
+    transport client. Configure ICA_API_KEY or OPENAI_API_KEY in your
+    environment (see ``.env.example``) before running the pipeline.
+    """

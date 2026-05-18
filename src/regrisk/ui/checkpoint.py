@@ -134,15 +134,13 @@ def save_checkpoint(
     ts_display = now.strftime("%Y-%m-%d %H:%M:%S UTC")
     reg_name = session_data.get("regulation_name", "unknown")
     safe_name = _sanitise_name(reg_name)
-    llm_enabled = session_data.get("llm_enabled", False)
-    mode_tag = "llm" if llm_enabled else "det"
 
     # Count obligations for the filename descriptor
     obligations = session_data.get("classified_obligations", [])
     ob_count = len(obligations)
 
     stage_lbl = _STAGE_LABELS.get(stage, stage).replace(" ", "_")
-    filename = f"{stage_lbl}_{safe_name}_{ob_count}obs_{mode_tag}_{ts_filename}.json"
+    filename = f"{stage_lbl}_{safe_name}_{ob_count}obs_llm_{ts_filename}.json"
     path = target_dir / filename
 
     keys = _STAGE_KEYS.get(stage, list(session_data.keys()))
@@ -164,7 +162,7 @@ def save_checkpoint(
             "stage_label": _STAGE_LABELS.get(stage, stage),
             "regulation_name": reg_name,
             "timestamp": ts_display,
-            "llm_mode": "LLM-assisted" if llm_enabled else "Deterministic",
+            "llm_mode": "LLM-assisted",
             "obligation_count": ob_count,
             "mapping_count": mapping_count,
             "assessment_count": assessment_count,

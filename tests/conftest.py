@@ -1,7 +1,9 @@
 """
 Shared test fixtures.
 
-All fixtures provide deterministic data — no LLM or network calls required.
+Domain data fixtures are pure Python. Agent / graph fixtures install a
+``StubLLMClient`` (see ``tests/_stub_llm.py``) on the shared graph
+infrastructure so the LLM code path is exercised without real API keys.
 """
 
 from __future__ import annotations
@@ -18,6 +20,8 @@ from regrisk.core.models import (
     Obligation,
     ObligationGroup,
 )
+
+from tests._stub_llm import StubLLMClient
 
 
 # ---------------------------------------------------------------------------
@@ -56,13 +60,46 @@ def sample_risk_taxonomy() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Agent context (no LLM)
+# Agent context (stub LLM)
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def no_llm_context() -> AgentContext:
-    """AgentContext with no client — deterministic mode."""
-    return AgentContext(client=None)
+def stub_llm_context() -> AgentContext:
+    """AgentContext wired to the StubLLMClient -- realistic LLM path, no API keys."""
+    return AgentContext(client=StubLLMClient())
+
+
+# Backwards-compatible alias for tests still requesting the old fixture name.
+@pytest.fixture
+def no_llm_context(stub_llm_context: AgentContext) -> AgentContext:
+    return stub_llm_context
+
+
+@pytest.fixture(autouse=True)
+def _install_stub_on_graph_infras(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Install a StubLLMClient on both graph singletons for every test.
+
+    Both ``classify_graph`` and ``assess_graph`` consult a module-level
+    ``GraphInfra`` to build agent contexts. We patch ``build_client_from_env``
+    at every import site so the stub is returned even after the test's own
+    ``reset_caches()`` setup hook runs.
+    """
+    from regrisk.graphs import classify_graph, assess_graph, graph_infra
+
+    def _stub_factory() -> StubLLMClient:
+        return StubLLMClient()
+
+    # The function is imported into graph_infra's module namespace; patch
+    # there (where it is actually looked up).
+    monkeypatch.setattr(graph_infra, "build_client_from_env", _stub_factory)
+
+    # Also pre-install in case anything reads the cache before the first
+    # build_agent_context() call.
+    classify_graph._infra.install_test_client(StubLLMClient())
+    assess_graph._infra.install_test_client(StubLLMClient())
+    yield
+    classify_graph._infra.reset_caches()
+    assess_graph._infra.reset_caches()
 
 
 # ---------------------------------------------------------------------------

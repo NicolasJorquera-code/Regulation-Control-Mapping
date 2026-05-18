@@ -80,6 +80,18 @@ class GraphInfra:
             self._event_loop = None
         self.emitter = EventEmitter()
 
+    def install_test_client(self, client: Any) -> None:
+        """Override the cached LLM client with a test stand-in.
+
+        Bypasses ``build_client_from_env`` so the test suite can run with a
+        ``StubLLMClient`` and exercise the real LLM code path without any
+        API keys. Not for production use.
+        """
+        self._llm_client_cache = client
+        for agent in self._agent_cache.values():
+            if hasattr(agent, "context"):
+                agent.context.client = client
+
     def install_tracing_transport(self, trace_db: Any, run_id: str) -> None:
         """Replace the cached LLM client with a tracing wrapper."""
         if self._llm_client_cache is None:
