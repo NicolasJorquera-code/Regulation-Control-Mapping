@@ -38,6 +38,13 @@ from regrisk.agents.coverage_assessor import CoverageAssessorAgent
 from regrisk.agents.risk_extractor_scorer import RiskExtractorAndScorerAgent
 from regrisk.core.events import EventEmitter, EventType, PipelineEvent
 from regrisk.core.models import APQCNode, ControlRecord
+from regrisk.core.review import (
+    annotate_artifact,
+    merge_reasons,
+    review_coverage,
+    review_mapping,
+    review_risk,
+)
 from regrisk.core.transport import build_client_from_env
 from regrisk.graphs.assess_state import AssessState
 from regrisk.graphs.graph_infra import GraphInfra
@@ -539,9 +546,58 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
     raw_risks = state.get("scored_risks", [])
 
     # Deduplicate: keep one risk per (source_citation, risk_category),
-    # prioritising the highest impact × frequency score.
+    # prioritising the highest impact x frequency score.
     risk_id_prefix = state.get("pipeline_config", {}).get("risk_id_prefix", "RISK")
     risks = deduplicate_risks(raw_risks, id_prefix=risk_id_prefix)
+
+    # ---- Deterministic review layer (core/review.py) ----
+    # Source-of-truth dicts for cross-artifact rules:
+    #   approved_obligations carries BOTH the original source fields
+    #   (source_type, source_metadata, parent_source_id, dates) AND the
+    #   classification output (obligation_category, relationship_type),
+    #   so one lookup serves as both ``source`` and ``classification``.
+    src_by_cit: dict[str, dict[str, Any]] = {ob.get("citation", ""): ob for ob in approved}
+
+    # Annotate mappings with fanout + low-confidence reasons.
+    fanout_counter: dict[str, int] = defaultdict(int)
+    for m in mappings:
+        fanout_counter[m.get("citation", "")] += 1
+    for m in mappings:
+        cit = m.get("citation", "")
+        annotate_artifact(
+            m,
+            review_mapping(m, fanout=fanout_counter[cit], source=src_by_cit.get(cit)),
+        )
+
+    # Annotate coverage assessments.
+    # has_improvement_proposal: any proposed_improvements row with same citation.
+    improvements_by_cit: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for imp in state.get("proposed_improvements", []):
+        improvements_by_cit[imp.get("citation", "")].append(imp)
+    for a in assessments:
+        cit = a.get("citation", "")
+        annotate_artifact(
+            a,
+            review_coverage(
+                a,
+                classification=src_by_cit.get(cit),
+                source=src_by_cit.get(cit),
+                has_improvement_proposal=bool(improvements_by_cit.get(cit)),
+            ),
+        )
+
+    # Annotate scored risks.
+    for r in risks:
+        annotate_artifact(r, review_risk(r))
+
+    # Annotate proposed improvements (no dedicated review_* rule today,
+    # but propagate source-level reasons from the underlying obligation so
+    # the Needs Review Queue stays consistent across artifact types).
+    for imp in state.get("proposed_improvements", []):
+        cit = imp.get("citation", "")
+        src = src_by_cit.get(cit)
+        if src and src.get("needs_review_reasons"):
+            annotate_artifact(imp, list(src.get("needs_review_reasons", [])))
 
     # Classified counts
     classified_counts: dict[str, int] = defaultdict(int)
