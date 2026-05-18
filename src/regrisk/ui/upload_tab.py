@@ -497,9 +497,12 @@ def render_upload_tab() -> None:
             st.metric("Est. LLM Calls", run_groups,
                       help="One LLM call per obligation group for classification")
         with summary_cols[3]:
-            llm_status = "🟢 ICA" if os.environ.get("ICA_API_KEY") else \
-                         "🟢 OpenAI" if os.environ.get("OPENAI_API_KEY") else \
-                         "⚪ Deterministic"
+            if os.environ.get("ICA_API_KEY"):
+                llm_status = "🟢 ICA"
+            elif os.environ.get("OPENAI_API_KEY"):
+                llm_status = "🟢 OpenAI"
+            else:
+                llm_status = "🔴 Not configured"
             st.metric("LLM Provider", llm_status)
 
         if selected_groups:
@@ -546,9 +549,18 @@ def render_upload_tab() -> None:
 
             has_source = bool(effective_source_path or reg_file)
             has_apqc = bool(apqc_path or apqc_file)
-            ready = has_source and has_apqc
+            has_llm = bool(os.environ.get("ICA_API_KEY") or os.environ.get("OPENAI_API_KEY"))
+            ready = has_source and has_apqc and has_llm
 
-            if not ready:
+            if not has_llm:
+                st.error(
+                    "**LLM credentials required.** regrisk is an LLM-driven pipeline; "
+                    "set `ICA_API_KEY` or `OPENAI_API_KEY` in your environment "
+                    "(see `.env.example`) and restart the app. The Resume-from-Checkpoint "
+                    "dropdown above still works for browsing prior runs."
+                )
+
+            if not has_source or not has_apqc:
                 missing = []
                 if not has_source:
                     missing.append("Policy Inventory" if is_policy_mode else "Regulation")

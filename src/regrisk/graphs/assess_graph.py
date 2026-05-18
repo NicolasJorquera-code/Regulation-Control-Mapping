@@ -260,7 +260,7 @@ def assess_coverage_node(state: AssessState) -> dict[str, Any]:
     loop = _infra.get_or_create_event_loop()
 
     if not candidates:
-        # No candidates → deterministic Not Covered
+        # No candidate mappings -> automatic Not Covered (no AI judgment needed)
         assessment = loop.run_until_complete(
             agent.execute(
                 obligation=obligation,
@@ -550,7 +550,7 @@ def finalize_node(state: AssessState) -> dict[str, Any]:
     risk_id_prefix = state.get("pipeline_config", {}).get("risk_id_prefix", "RISK")
     risks = deduplicate_risks(raw_risks, id_prefix=risk_id_prefix)
 
-    # ---- Deterministic review layer (core/review.py) ----
+    # ---- AI Governance review layer (core/review.py) ----
     # Source-of-truth dicts for cross-artifact rules:
     #   approved_obligations carries BOTH the original source fields
     #   (source_type, source_metadata, parent_source_id, dates) AND the

@@ -248,7 +248,9 @@ def build_client_from_env(
 ) -> AsyncTransportClient | None:
     """Auto-detect LLM provider from environment variables.
 
-    Detection order: ICA → OpenAI. Returns None for deterministic mode.
+    Detection order: ICA -> OpenAI. Returns ``None`` if no credentials are
+    set; callers must surface this as a startup error (regrisk requires an
+    LLM client to run -- see ADR 0006).
     """
     # --- IBM Cloud AI (ICA) ---
     ica_key = os.environ.get("ICA_API_KEY")

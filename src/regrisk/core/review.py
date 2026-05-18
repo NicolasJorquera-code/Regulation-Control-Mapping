@@ -1,12 +1,12 @@
 """
-Deterministic Needs-Review derivation.
+AI Governance -- Needs-Review derivation.
 
-Pure-Python rules table run AFTER each agent produces an artifact. Every
+Pure-Python rules table run AFTER each LLM-produced artifact. Every
 ``needs_review`` flag and ``needs_review_reasons`` list in the system is
-emitted by this module \u2014 no LLM judges itself, so reviews stay auditable.
+emitted by this module -- no LLM judges itself, so reviews stay auditable.
 
 See the design plan (section 12) for the rule catalogue. Rules are
-deterministic, dependency-free, and idempotent: re-running on the same
+rule-based, dependency-free, and idempotent: re-running on the same
 input produces the same flags.
 
 Inputs are accepted as plain ``dict`` (matching the LangGraph state shape)

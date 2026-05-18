@@ -142,7 +142,7 @@ REQUIREMENT_TYPES: frozenset[str] = frozenset({
     "Reporting_Obligation",
 })
 
-# ── Review reason codes (deterministic, machine-readable) ────────────────
+# ── Review reason codes (AI governance, machine-readable) ──────────────────
 
 REVIEW_MISSING_SOURCE_OWNER = "missing_source_owner"
 REVIEW_LOW_MAPPING_CONFIDENCE = "low_mapping_confidence"

@@ -262,11 +262,11 @@ def has_more_classify_groups(state: ClassifyState) -> str:
 
 
 def end_classify_node(state: ClassifyState) -> dict[str, Any]:
-    """Summary statistics, deterministic review stamping, and completion event."""
+    """Summary statistics, AI governance review stamping, and completion event."""
     classified = state.get("classified_obligations", [])
     total = state.get("total_obligations", 0)
 
-    # ---- Deterministic review layer (core/review.py) ----
+    # ---- AI Governance review layer (core/review.py) ----
     # Build a lookup of source obligations by citation so review_source can
     # consult source_type / source_metadata / parent_source_id / dates etc.
     sources_by_citation: dict[str, dict[str, Any]] = {}

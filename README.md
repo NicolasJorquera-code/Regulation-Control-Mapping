@@ -3,7 +3,7 @@
 > Two-graph LangGraph pipeline + Streamlit UI that maps regulatory
 > obligations (or internal policies and procedures) to APQC business
 > processes, assesses control coverage, proposes new controls for gaps,
-> extracts and scores risks, and emits a deterministic human-review queue.
+> extracts and scores risks, and emits an AI-governance-stamped human-review queue.
 
 ## What problem this solves
 
@@ -16,16 +16,18 @@ policy) and must answer four questions:
 4. **What is the residual risk if uncovered?** (Impact x Frequency on a 4-point scale)
 
 regrisk produces all four answers end-to-end and surfaces a "Needs
-Review Queue" of items where a human still needs to look. It runs
-without any API keys in deterministic mode and is intended for compliance
+Review Queue" of items where a human still needs to look. It is an
+LLM-driven pipeline (ICA or OpenAI) wrapped in an **AI Governance** layer
+of rule-based software checks that validate every model output before it
+is stamped, exported, or surfaced for review. It is intended for compliance
 analysts, control owners, and the AI / data science engineers who
 maintain the pipeline.
 
 ## Architecture
 
 Two LangGraph state machines bridged via Streamlit `st.session_state`,
-plus a deterministic post-step that stamps human-review reasons on
-every artifact.
+plus an **AI Governance** post-step that validates LLM output and stamps
+human-review reasons on every artifact.
 
 ```mermaid
 flowchart LR
@@ -52,7 +54,7 @@ flowchart LR
         F2[finalize]:::g2
     end
 
-    REV[core/review.py<br/>14 deterministic rules<br/>NO LLM]:::rev
+    REV[core/review.py + validation/<br/>AI Governance layer<br/>rule-based, no LLM]:::rev
 
     SRC --> I1
     I1 --> C1
@@ -75,10 +77,11 @@ agent lives in [docs/architecture.mmd](docs/architecture.mmd).
 ADRs for the non-obvious decisions:
 
 - [0001 -- LangGraph orchestration with two graphs](docs/adr/0001-langgraph-orchestration.md)
-- [0002 -- Config-driven agents with deterministic fallback](docs/adr/0002-config-driven-agents.md)
+- [0002 -- Config-driven agents](docs/adr/0002-config-driven-agents.md) *(superseded by 0006)*
 - [0003 -- SQLite-backed tracing](docs/adr/0003-sqlite-tracing.md)
-- [0004 -- Deterministic review layer as pure library](docs/adr/0004-deterministic-review-layer.md)
+- [0004 -- AI Governance review layer as pure library](docs/adr/0004-ai-governance-review-layer.md)
 - [0005 -- Checkpoint loading is the demo contract](docs/adr/0005-checkpoint-demo-loading-contract.md)
+- [0006 -- LLM is required; AI Governance replaces deterministic fallbacks](docs/adr/0006-llm-required-and-ai-governance.md)
 
 ## Project structure
 
@@ -110,7 +113,7 @@ regrisk/
 │   ├── patch_checkpoint.py
 │   └── ...
 ├── src/regrisk/
-│   ├── agents/              # LLM agents with deterministic fallbacks
+│   ├── agents/              # LLM agents (all require an LLM client)
 │   ├── core/                # config, models, events, review, scoring, transport
 │   ├── exceptions.py
 │   ├── export/              # Excel writer
@@ -131,8 +134,9 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Optional: copy .env.example -> .env and fill in API keys.
-# Without keys, the pipeline runs in deterministic mode.
+# Required: copy .env.example -> .env and provide an LLM key
+# (ICA_API_KEY or OPENAI_API_KEY). The pipeline will refuse to launch
+# without one -- see ADR 0006.
 cp .env.example .env
 ```
 
@@ -159,7 +163,8 @@ for the contract.
 
 ```bash
 python -m pytest tests/ -q
-# -> 136 passed in ~3s, no API keys required
+# -> 136 passed in ~3s; tests use a stub LLM client (tests/_stub_llm.py),
+#    so no real API keys are required in CI.
 ```
 
 ## Demo walkthrough
@@ -180,12 +185,13 @@ Loading the most recent `Full_Assessment_*.json` (or any
 To add a new agent, follow the four-step pattern documented in
 [CONTRIBUTING.md](CONTRIBUTING.md):
 
-1. Subclass `BaseAgent` in `src/regrisk/agents/<your_agent>.py` with both an LLM path and a deterministic fallback.
+1. Subclass `BaseAgent` in `src/regrisk/agents/<your_agent>.py` and define its LLM prompt + response schema.
 2. Register the class in the relevant graph's `_AGENT_CLASSES` dict.
 3. Add a graph node function that uses `_infra.get_agent(...)` and emits `EventType` events.
 4. Wire conditional edges and update state TypedDict if needed.
+5. Add a `review_*` rule in `core/review.py` (the **AI Governance** layer) for any new output field that should be machine-checked before it reaches a human.
 
-See [ADR 0002](docs/adr/0002-config-driven-agents.md) for the rationale.
+See [ADR 0006](docs/adr/0006-llm-required-and-ai-governance.md) for the rationale.
 
 ## Configuration
 

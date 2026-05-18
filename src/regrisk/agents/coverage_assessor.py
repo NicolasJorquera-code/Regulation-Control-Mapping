@@ -61,7 +61,7 @@ class CoverageAssessorAgent(BaseAgent):
 
         citation = obligation.get("citation", "")
 
-        # No candidate controls → deterministic Not Covered
+        # No candidate controls -> automatic Not Covered (no AI judgment needed)
         if control is None:
             return {
                 "citation": citation,
@@ -103,30 +103,15 @@ CANDIDATE CONTROL:
 Evaluate whether this control covers the obligation."""
 
         raw = await self.call_llm(_SYSTEM_PROMPT, user_prompt)
-        if raw:
-            parsed = self.parse_json(raw)
-            if parsed.get("overall_coverage"):
-                return {
-                    "citation": citation,
-                    "apqc_hierarchy_id": apqc_hierarchy_id,
-                    "control_id": control.get("control_id"),
-                    "structural_match": True,
-                    "semantic_match": parsed.get("semantic_match", "None"),
-                    "semantic_rationale": parsed.get("semantic_rationale", ""),
-                    "relationship_match": parsed.get("relationship_match", "Not Satisfied"),
-                    "relationship_rationale": parsed.get("relationship_rationale", ""),
-                    "overall_coverage": parsed["overall_coverage"],
-                }
-
-        # Deterministic fallback: structural match → Partially Covered
+        parsed = self.parse_json(raw)
         return {
             "citation": citation,
             "apqc_hierarchy_id": apqc_hierarchy_id,
             "control_id": control.get("control_id"),
             "structural_match": True,
-            "semantic_match": "Partial",
-            "semantic_rationale": "Deterministic fallback — structural match found but semantic evaluation unavailable.",
-            "relationship_match": "Partial",
-            "relationship_rationale": "Deterministic fallback — relationship evaluation unavailable.",
-            "overall_coverage": "Partially Covered",
+            "semantic_match": parsed.get("semantic_match", "None"),
+            "semantic_rationale": parsed.get("semantic_rationale", ""),
+            "relationship_match": parsed.get("relationship_match", "Not Satisfied"),
+            "relationship_rationale": parsed.get("relationship_rationale", ""),
+            "overall_coverage": parsed.get("overall_coverage", "Not Covered"),
         }

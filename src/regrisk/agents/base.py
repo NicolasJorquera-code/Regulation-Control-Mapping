@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from regrisk.core.transport import AsyncTransportClient
+from regrisk.exceptions import LLMRequiredError
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +63,14 @@ class BaseAgent(ABC):
     ) -> str:
         """Send a simple system+user message pair and return the assistant text.
 
-        Returns an empty string when no LLM client is available (deterministic mode).
+        Raises ``LLMRequiredError`` when no LLM client is configured. regrisk is
+        an LLM-driven pipeline; there is no non-LLM fallback path.
         """
         if self.context.client is None:
-            logger.info("[%s] call #%d — no LLM client, using deterministic fallback", self.name, self.call_count + 1)
-            return ""
+            raise LLMRequiredError(
+                f"[{self.name}] no LLM client configured. "
+                "Set ICA_API_KEY or OPENAI_API_KEY in your environment."
+            )
 
         # Update trace context so transport wrapper knows which agent is calling
         from regrisk.tracing.decorators import get_current_trace_context, set_current_trace_context
@@ -117,7 +121,10 @@ class BaseAgent(ABC):
     ) -> dict[str, Any]:
         """Multi-round tool-calling loop."""
         if self.context.client is None:
-            return {"role": "assistant", "content": ""}
+            raise LLMRequiredError(
+                f"[{self.name}] no LLM client configured for tool-calling. "
+                "Set ICA_API_KEY or OPENAI_API_KEY in your environment."
+            )
 
         # Update trace context
         from regrisk.tracing.decorators import get_current_trace_context, set_current_trace_context

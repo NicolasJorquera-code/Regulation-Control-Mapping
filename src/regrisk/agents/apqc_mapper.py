@@ -46,25 +46,9 @@ Respond ONLY with JSON:
 }}
 """
 
-# Keyword → APQC category mapping for deterministic fallback
-_KEYWORD_APQC_MAP: dict[str, list[tuple[str, str]]] = {
-    "liquidity": [("9.7.1", "Manage treasury operations")],
-    "capital": [("9.5.1", "Manage capital structure")],
-    "stress test": [("9.7.1", "Manage treasury operations"), ("11.1.1", "Establish enterprise risk framework")],
-    "risk committee": [("11.1.1", "Establish enterprise risk framework")],
-    "risk management": [("11.1.1", "Establish enterprise risk framework")],
-    "credit": [("9.6.1", "Manage credit")],
-    "counterparty": [("9.6.1", "Manage credit")],
-    "compliance": [("11.2.1", "Manage regulatory compliance")],
-    "audit": [("11.3.1", "Manage internal audit")],
-    "report": [("11.2.1", "Manage regulatory compliance")],
-    "governance": [("11.1.1", "Establish enterprise risk framework")],
-    "board": [("11.1.1", "Establish enterprise risk framework")],
-    "foreign": [("11.2.1", "Manage regulatory compliance")],
-    "debt": [("9.5.1", "Manage capital structure")],
-    "resolution": [("11.1.1", "Establish enterprise risk framework")],
-    "contingency": [("9.7.1", "Manage treasury operations")],
-}
+# Module-level keyword routing previously used for a no-LLM fallback has been
+# removed. The pipeline now requires an LLM client; see ADR 0006.
+
 
 
 class APQCMapperAgent(BaseAgent):
@@ -120,46 +104,6 @@ OBLIGATIONS TO MAP ({len(obligations)}):
 Produce mappings for ALL listed obligations."""
 
         raw = await self.call_llm(system_prompt, user_prompt, max_tokens=8000)
-        if raw:
-            parsed = self.parse_json(raw)
-            mappings = parsed.get("mappings", [])
-            if mappings:
-                return {"mappings": mappings}
-
-        # Deterministic fallback
-        return {"mappings": self._deterministic_map(obligations)}
-
-    @staticmethod
-    def _deterministic_map(obligations: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Keyword-based deterministic mapping to APQC categories."""
-        mappings: list[dict[str, Any]] = []
-        for ob in obligations:
-            cit = ob.get("citation", "")
-            combined = f"{ob.get('section_title', '')} {ob.get('abstract', '')}".lower()
-
-            matched = False
-            for keyword, targets in _KEYWORD_APQC_MAP.items():
-                if keyword in combined:
-                    for apqc_id, apqc_name in targets:
-                        mappings.append({
-                            "citation": cit,
-                            "apqc_hierarchy_id": apqc_id,
-                            "apqc_process_name": apqc_name,
-                            "relationship_type": ob.get("relationship_type", "Constrains Execution"),
-                            "relationship_detail": f"Deterministic mapping based on keyword '{keyword}' in obligation text.",
-                            "confidence": 0.5,
-                        })
-                    matched = True
-                    break
-
-            if not matched:
-                # Default to risk management
-                mappings.append({
-                    "citation": cit,
-                    "apqc_hierarchy_id": "11.1.1",
-                    "apqc_process_name": "Establish enterprise risk framework",
-                    "relationship_type": ob.get("relationship_type", "Constrains Execution"),
-                    "relationship_detail": "Default mapping — no specific keyword match found.",
-                    "confidence": 0.3,
-                })
-        return mappings
+        parsed = self.parse_json(raw)
+        mappings = parsed.get("mappings", [])
+        return {"mappings": mappings}

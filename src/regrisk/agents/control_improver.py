@@ -144,53 +144,27 @@ Propose a {"enhanced version of the existing" if existing_control else "new"} co
 that would achieve "Covered" status for this obligation."""
 
         raw = await self.call_llm(_SYSTEM_PROMPT, user_prompt)
-        if raw:
-            parsed = self.parse_json(raw)
-            proposed = parsed.get("proposed_control", {})
-            if proposed and proposed.get("control_id"):
-                # Ensure hierarchy_id is set correctly
-                proposed.setdefault("hierarchy_id", apqc_hierarchy_id)
-                return {
-                    "proposed_control": proposed,
-                    "improvement_rationale": parsed.get("improvement_rationale", ""),
-                    "change_type": parsed.get("change_type", change_type),
-                    "gap_addressed": parsed.get("gap_addressed", ""),
-                    "source_citation": citation,
-                    "source_apqc_id": apqc_hierarchy_id,
-                    "original_control_id": (
-                        existing_control.get("control_id") if existing_control else None
-                    ),
-                }
-
-        # Deterministic fallback — skeleton control
-        return {
-            "proposed_control": {
-                "control_id": default_ctrl_id,
-                "hierarchy_id": apqc_hierarchy_id,
-                "leaf_name": f"Control for {citation}",
-                "full_description": (
-                    f"Proposed control to address {coverage_status.lower()} gap for "
-                    f"obligation {citation} at APQC node {apqc_hierarchy_id}. "
-                    f"Manual review required to define specifics."
+        parsed = self.parse_json(raw)
+        proposed = parsed.get("proposed_control", {})
+        if not (proposed and proposed.get("control_id")):
+            return {
+                "proposed_control": None,
+                "improvement_rationale": "",
+                "change_type": change_type,
+                "gap_addressed": assessment.get("semantic_rationale", ""),
+                "source_citation": citation,
+                "source_apqc_id": apqc_hierarchy_id,
+                "original_control_id": (
+                    existing_control.get("control_id") if existing_control else None
                 ),
-                "selected_level_1": "Preventive",
-                "selected_level_2": "Policy Control",
-                "who": "To be determined",
-                "what": f"Address requirement: {obligation.get('abstract', '')[:200]}",
-                "when": "To be determined",
-                "frequency": "To be determined",
-                "where": "Enterprise-wide",
-                "why": f"Close {coverage_status.lower()} gap for {citation}",
-                "evidence": "To be determined",
-                "quality_rating": "Needs Improvement",
-                "business_unit_name": "To be determined",
-            },
-            "improvement_rationale": (
-                "LLM unavailable — deterministic fallback produced a skeleton control. "
-                "Manual review and completion required."
-            ),
-            "change_type": change_type,
-            "gap_addressed": assessment.get("semantic_rationale", ""),
+            }
+
+        proposed.setdefault("hierarchy_id", apqc_hierarchy_id)
+        return {
+            "proposed_control": proposed,
+            "improvement_rationale": parsed.get("improvement_rationale", ""),
+            "change_type": parsed.get("change_type", change_type),
+            "gap_addressed": parsed.get("gap_addressed", ""),
             "source_citation": citation,
             "source_apqc_id": apqc_hierarchy_id,
             "original_control_id": (
