@@ -23,6 +23,11 @@ from regrisk.graphs.classify_graph import (
 )
 from regrisk.ingest.apqc_loader import load_apqc_hierarchy
 from regrisk.ingest.control_loader import load_and_merge_controls
+from regrisk.ingest.policy_parser import (
+    detect_source_inventory,
+    group_policy_obligations,
+    parse_policy_excel,
+)
 from regrisk.ingest.regulation_parser import group_obligations, parse_regulation_excel
 from regrisk.tracing.db import TraceDB
 from regrisk.tracing.listener import SQLiteTraceListener
@@ -39,6 +44,7 @@ from regrisk.ui.checkpoint import (
 from regrisk.ui.components import (
     apply_checkpoint,
     render_checkpoint_load,
+    render_page_header,
     save_uploaded_file,
 )
 
@@ -75,7 +81,7 @@ def _new_run_id() -> str:
 
 def _detect_data_files() -> dict[str, Any]:
     """Check the data/ folder for known input files and return paths found."""
-    found: dict[str, Any] = {"regulation": None, "apqc": None, "controls_dir": None, "control_files": []}
+    found: dict[str, Any] = {"regulation": None, "policy": None, "apqc": None, "controls_dir": None, "control_files": []}
 
     if not _DATA_DIR.is_dir():
         return found
@@ -84,6 +90,13 @@ def _detect_data_files() -> dict[str, Any]:
         if "regulation" in f.name.lower():
             found["regulation"] = str(f)
             break
+
+    # Detect policy / procedure source inventory workbook
+    for f in _DATA_DIR.glob("*.xlsx"):
+        if "policy" in f.name.lower() or "source_inventory" in f.name.lower():
+            if detect_source_inventory(str(f)):
+                found["policy"] = str(f)
+                break
 
     for f in _DATA_DIR.glob("*.xlsx"):
         if "apqc" in f.name.lower():
@@ -175,6 +188,48 @@ def _prescan_regulation(reg_path: str) -> list[dict[str, Any]]:
     ]
 
 
+# Policy / Procedure previews (Phase 5 — hybrid source model)
+
+@st.cache_data(show_spinner="Loading policy inventory preview…")
+def _preview_policy(policy_path: str) -> tuple[int, int, list[str], pd.DataFrame]:
+    """Return (policy_count, procedure_count, columns, preview_df)."""
+    _, obligations = parse_policy_excel(policy_path)
+    policies = [o for o in obligations if o.source_type == "Policy_Requirement"]
+    procedures = [o for o in obligations if o.source_type == "Procedure_Step"]
+    records = [
+        {
+            "source_id": o.source_id or o.citation,
+            "source_type": o.source_type,
+            "title": o.mandate_title,
+            "parent": o.parent_source_id or "",
+            "business_unit": o.applicability,
+            "owner": (o.source_metadata or {}).get("source_owner", ""),
+            "abstract": (o.abstract or "")[:200],
+        }
+        for o in obligations
+    ]
+    df = pd.DataFrame(records)
+    return len(policies), len(procedures), list(df.columns), df
+
+
+@st.cache_data(show_spinner="Scanning policy structure…")
+def _prescan_policy(policy_path: str) -> list[dict[str, Any]]:
+    """Like _prescan_regulation but for policy workbooks."""
+    _, obligations = parse_policy_excel(policy_path)
+    groups = group_policy_obligations(obligations)
+    return [
+        {
+            "group_id": g.group_id,
+            "subpart": g.subpart,
+            "section_citation": g.section_citation,
+            "section_title": g.section_title,
+            "topic_title": g.topic_title,
+            "obligation_count": g.obligation_count,
+        }
+        for g in groups
+    ]
+
+
 def _subpart_summary(groups: list[dict]) -> list[dict[str, Any]]:
     by_subpart: dict[str, dict] = {}
     for g in groups:
@@ -231,6 +286,13 @@ def _load_demo_data() -> None:
 def render_upload_tab() -> None:
     """Render the Upload & Configure tab."""
 
+    render_page_header(
+        "Upload & Configure",
+        caption=("Pick a regulation or policy dataset, the APQC reference taxonomy and your "
+                 "controls inventory, then run classification → mapping → assessment."),
+        icon="⚙️",
+    )
+
     classified = st.session_state.get("classified_obligations", [])
 
     # ── One-time success toast after classification completes ──
@@ -243,6 +305,7 @@ def render_upload_tab() -> None:
     # ── Panel A: Data Sources ──
     detected = _detect_data_files()
     reg_path: str | None = detected["regulation"]
+    policy_path: str | None = detected["policy"]
     apqc_path: str | None = detected["apqc"]
     control_files_list: list[str] = detected["control_files"]
     controls_dir: str | None = detected["controls_dir"]
@@ -252,9 +315,49 @@ def render_upload_tab() -> None:
     uploaded_controls: list[Any] | None = None
 
     _ds_expanded = not bool(classified)
+
+    # ── Source mode selector (regulation vs policy/procedure) ──
+    available_modes: list[str] = []
+    if reg_path:
+        available_modes.append("Regulation Dataset")
+    if policy_path:
+        available_modes.append("Policy / Procedure Inventory")
+    if not available_modes:
+        available_modes.append("Regulation Dataset")
+
+    if len(available_modes) > 1:
+        source_mode_label = st.radio(
+            "Source type",
+            options=available_modes,
+            index=0,
+            horizontal=True,
+            key="source_mode_radio",
+            help="Choose which dataset to classify: a traditional regulation or an internal policy/procedure inventory.",
+        )
+    else:
+        source_mode_label = available_modes[0]
+
+    is_policy_mode = source_mode_label == "Policy / Procedure Inventory"
+
     with st.expander("📂 Data Sources", expanded=_ds_expanded):
 
-        if reg_path:
+        # --- Policy / Procedure preview ---
+        if policy_path and is_policy_mode:
+            try:
+                n_pol, n_proc, cols, preview_df = _preview_policy(policy_path)
+                with st.expander(
+                    f"📋 Policy Inventory — {Path(policy_path).name} ({n_pol} policies, {n_proc} procedures)",
+                    expanded=False,
+                ):
+                    st.caption(f"Columns: {', '.join(cols)}")
+                    st.dataframe(preview_df, width="stretch", hide_index=True)
+            except Exception as exc:
+                st.warning(f"Could not preview policy inventory: {exc}")
+        elif is_policy_mode:
+            st.warning("No policy inventory file found in data/. Expected a file with 'policy' or 'source_inventory' in the name containing a `Source_Inventory` sheet.")
+
+        # --- Regulation preview ---
+        if reg_path and not is_policy_mode:
             try:
                 total, cols, preview_df = _preview_regulation(reg_path)
                 with st.expander(f"📜 Regulation — {Path(reg_path).name} ({total:,} obligations)", expanded=False):
@@ -262,7 +365,7 @@ def render_upload_tab() -> None:
                     st.dataframe(preview_df, width="stretch", hide_index=True)
             except Exception as exc:
                 st.warning(f"Could not preview regulation: {exc}")
-        else:
+        elif not is_policy_mode and not reg_path:
             st.warning("Regulation file not found in data/")
             reg_file = st.file_uploader("Upload Regulation Excel (Promontory format)", type=["xlsx"], key="reg_file")
 
@@ -294,13 +397,26 @@ def render_upload_tab() -> None:
             )
 
     reg_path_for_scan: str | None = reg_path
+    # Effective source path: regulation or policy depending on mode
+    effective_source_path: str | None = policy_path if is_policy_mode else reg_path
 
     # ── Panel B: Run Scope ──
     with st.expander("🎯 Run Scope", expanded=_ds_expanded):
 
         all_groups: list[dict] = []
         subpart_options: list[str] = []
-        if reg_path_for_scan:
+
+        if is_policy_mode and policy_path:
+            try:
+                all_groups = _prescan_policy(policy_path)
+                subpart_summaries = _subpart_summary(all_groups)
+                subpart_options = [
+                    f"{s['subpart']} — {s['topic'][:50]} ({s['groups']} groups, {s['obligations']} items)"
+                    for s in subpart_summaries
+                ]
+            except Exception as exc:
+                st.warning(f"Could not pre-scan policy inventory: {exc}")
+        elif reg_path_for_scan:
             try:
                 all_groups = _prescan_regulation(reg_path_for_scan)
                 subpart_summaries = _subpart_summary(all_groups)
@@ -323,7 +439,10 @@ def render_upload_tab() -> None:
         )
 
         selected_groups = all_groups
-        scope_config: dict[str, Any] = {"mode": scope_mode}
+        scope_config: dict[str, Any] = {
+            "mode": scope_mode,
+            "source_mode": "policy" if is_policy_mode else "regulation",
+        }
 
         if scope_mode == "Filter by subpart":
             if subpart_options:
@@ -399,38 +518,50 @@ def render_upload_tab() -> None:
     if classified:
         with st.expander("🔄 Re-run Classification", expanded=False):
             st.caption("This will discard current classification results and re-run the pipeline.")
-            has_reg = bool(reg_path or reg_file)
+            has_source = bool(effective_source_path or reg_file)
             has_apqc = bool(apqc_path or apqc_file)
-            ready = has_reg and has_apqc
+            ready = has_source and has_apqc
 
             if not ready:
-                st.warning("Please provide Regulation and APQC files to proceed.")
+                missing = []
+                if not has_source:
+                    missing.append("Policy Inventory" if is_policy_mode else "Regulation")
+                if not has_apqc:
+                    missing.append("APQC")
+                st.warning(f"Please provide {' and '.join(missing)} file(s) to proceed.")
 
             if st.button("🔄 Re-run Classification", type="secondary", disabled=not ready,
                          width='stretch'):
-                if reg_path and apqc_path:
+                if effective_source_path and apqc_path:
                     _run_classification_from_paths(
-                        reg_path, apqc_path, controls_dir,
+                        effective_source_path, apqc_path, controls_dir,
                         scope_config,
                     )
                 else:
                     _run_classification(reg_file, apqc_file, uploaded_controls, scope_config)
     else:
         with st.container(border=True):
-            st.subheader("🚀 Launch Classification")
+            label = "📋 Launch Policy Classification" if is_policy_mode else "🚀 Launch Classification"
+            st.subheader(label)
 
-            has_reg = bool(reg_path or reg_file)
+            has_source = bool(effective_source_path or reg_file)
             has_apqc = bool(apqc_path or apqc_file)
-            ready = has_reg and has_apqc
+            ready = has_source and has_apqc
 
             if not ready:
-                st.warning("Please provide Regulation and APQC files to proceed.")
+                missing = []
+                if not has_source:
+                    missing.append("Policy Inventory" if is_policy_mode else "Regulation")
+                if not has_apqc:
+                    missing.append("APQC")
+                st.warning(f"Please provide {' and '.join(missing)} file(s) to proceed.")
 
-            if st.button("🚀 Start Classification", type="primary", disabled=not ready,
+            btn_label = "📋 Start Policy Classification" if is_policy_mode else "🚀 Start Classification"
+            if st.button(btn_label, type="primary", disabled=not ready,
                          width='stretch'):
-                if reg_path and apqc_path:
+                if effective_source_path and apqc_path:
                     _run_classification_from_paths(
-                        reg_path, apqc_path, controls_dir,
+                        effective_source_path, apqc_path, controls_dir,
                         scope_config,
                     )
                 else:

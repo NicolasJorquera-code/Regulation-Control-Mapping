@@ -10,6 +10,12 @@ import pandas as pd
 import streamlit as st
 
 from regrisk.tracing.db import TraceDB
+from regrisk.ui.components import (
+    render_callout,
+    render_page_header,
+    render_premium_table,
+    render_section_header,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -49,10 +55,11 @@ def render_traceability_tab() -> None:
     runs = trace_db.list_runs(limit=50)
 
     # ── Section A: Run Selector ──
-    st.header("🔍 Execution Trace Viewer")
-    st.info(
-        "ℹ️ This tab provides **developer-level execution traces** for pipeline debugging "
-        "and audit. For compliance review, see **Tabs 2–4**."
+    render_page_header(
+        "Execution Trace Viewer",
+        caption=("Developer-level execution traces for pipeline debugging and audit. "
+                 "For compliance review, see Tabs 2–4."),
+        icon="🔍",
     )
     st.caption(
         "Every pipeline run is recorded to a local SQLite database at "
@@ -94,7 +101,7 @@ def render_traceability_tab() -> None:
         return
 
     # ── Section B: Run Overview ──
-    st.subheader("📊 Run Overview")
+    render_section_header("Run Overview", accent="#1f4e79", icon="📊")
     status_badge = {"running": "🟡 Running", "completed": "🟢 Completed", "failed": "🔴 Failed"}.get(
         summary.get("status", ""), summary.get("status", "")
     )
@@ -107,7 +114,7 @@ def render_traceability_tab() -> None:
     col5.metric("Node Time", f"{duration_s:.1f}s")
 
     # ── Section C: Event Timeline ──
-    st.subheader("📋 Event Timeline")
+    render_section_header("Event Timeline", accent="#1565c0", icon="📋")
     events = trace_db.get_run_events(selected_id)
     if events:
         event_rows = []
@@ -120,12 +127,12 @@ def render_traceability_tab() -> None:
                 "Message": e.get("message") or "",
             })
         df_events = pd.DataFrame(event_rows)
-        st.dataframe(df_events, width='stretch', hide_index=True)
+        render_premium_table(df_events, code_cols=["Time"], height=320)
     else:
         st.caption("No events recorded.")
 
     # ── Section D: Node Executions ──
-    st.subheader("⚙️ Node Executions")
+    render_section_header("Node Executions", accent="#2e7d32", icon="⚙️")
     nodes = trace_db.get_run_nodes(selected_id)
     if nodes:
         node_rows = []
@@ -138,7 +145,8 @@ def render_traceability_tab() -> None:
                 "Error": n.get("error") or "",
             })
         df_nodes = pd.DataFrame(node_rows)
-        st.dataframe(df_nodes, width='stretch', hide_index=True)
+        render_premium_table(df_nodes, numeric_cols=["Duration (ms)"],
+                             truncate_cols=["Input", "Output"], height=320)
 
         if len(node_rows) > 1:
             chart_df = df_nodes[["Node", "Duration (ms)"]].set_index("Node")
@@ -147,7 +155,7 @@ def render_traceability_tab() -> None:
         st.caption("No node executions recorded.")
 
     # ── Section E: LLM Call Inspector ──
-    st.subheader("🤖 LLM Call Inspector")
+    render_section_header("LLM Call Inspector", accent="#7b1fa2", icon="🤖")
     llm_calls = trace_db.get_run_llm_calls(selected_id)
     if llm_calls:
         total_prompt_tok = sum(c.get("prompt_tokens") or 0 for c in llm_calls)
@@ -175,7 +183,12 @@ def render_traceability_tab() -> None:
                 "Latency (ms)": round(c.get("latency_ms") or 0, 0),
                 "Error": c.get("error") or "",
             })
-        st.dataframe(pd.DataFrame(call_rows), width='stretch', hide_index=True)
+        render_premium_table(
+            pd.DataFrame(call_rows),
+            numeric_cols=["#", "Prompt Tok", "Comp Tok", "Latency (ms)"],
+            code_cols=["Time", "Model"],
+            height=380,
+        )
 
         if len(llm_calls) > 1:
             tok_by_node: dict[str, int] = defaultdict(int)
@@ -232,7 +245,7 @@ def _render_data_lineage() -> None:
     if not classified:
         return
 
-    st.subheader("🔗 Data Lineage Chains")
+    render_section_header("Data Lineage Chains", accent="#00695c", icon="🔗")
     st.caption("End-to-end traceability from obligation through mapping, coverage, and risk.")
 
     mappings = st.session_state.get("obligation_mappings", [])

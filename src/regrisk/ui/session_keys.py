@@ -35,6 +35,7 @@ class SK:
     GAP_REPORT = "gap_report"
     COMPLIANCE_MATRIX = "compliance_matrix"
     RISK_REGISTER = "risk_register"
+    PROPOSED_IMPROVEMENTS = "proposed_improvements"
 
     # ── UI control flags ──
     APPROVED_FOR_MAPPING = "approved_for_mapping"

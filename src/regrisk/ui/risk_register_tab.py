@@ -31,7 +31,9 @@ from regrisk.ui.components import (
     render_checkpoint_save,
     render_filter_bar,
     render_obligation_text_only,
+    render_page_header,
     render_risk_chip,
+    render_section_header,
 )
 from regrisk.ui.session_keys import SK
 
@@ -82,7 +84,12 @@ def render_risk_register_tab() -> None:
         st.info("Run the full assessment pipeline first (Tabs 1–3).")
         return
 
-    st.header("Risk Register")
+    render_page_header(
+        "Risk Register",
+        caption=("Inherent residual risks identified across assessed obligations, grouped by "
+                 "subpart and severity. Drill in to see scoring rationales and linked risks."),
+        icon="⚖️",
+    )
 
     # ── Partial results warning ──
     if gap_report.get("_partial"):
@@ -171,7 +178,7 @@ def render_risk_register_tab() -> None:
             groups[subpart].append(ob)
 
         for subpart in sorted(groups.keys()):
-            st.subheader(subpart, divider="gray")
+            render_section_header(subpart, accent="#c62828")
             for ob in groups[subpart]:
                 cit = ob.get("citation", "")
                 ob_risks = risks_by_cit.get(cit, [])

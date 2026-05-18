@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from regrisk.agents.base import AgentContext, BaseAgent
+from regrisk.agents.source_type_prompts import classifier_guidance
 
 _SYSTEM_PROMPT = """\
 You are a regulatory compliance analyst specializing in regulatory change management for financial institutions.
@@ -73,17 +74,23 @@ class ObligationClassifierAgent(BaseAgent):
 
         # Build user prompt
         ob_lines: list[str] = []
+        group_source_type = ""
         for ob in obligations:
             cit = ob.get("citation", "") if isinstance(ob, dict) else ob.citation
             tl3 = ob.get("title_level_3", "") if isinstance(ob, dict) else ob.title_level_3
             tl4 = ob.get("title_level_4", "") if isinstance(ob, dict) else ob.title_level_4
             tl5 = ob.get("title_level_5", "") if isinstance(ob, dict) else ob.title_level_5
             abstract = ob.get("abstract", "") if isinstance(ob, dict) else ob.abstract
+            st = ob.get("source_type", "") if isinstance(ob, dict) else getattr(ob, "source_type", "")
+            group_source_type = group_source_type or st
             ob_lines.append(f"  - {cit}: {tl3} | {tl4} | {tl5}\n    {abstract[:300]}")
+
+        guidance = classifier_guidance(group_source_type)
+        guidance_block = f"\n{guidance}\n" if guidance else ""
 
         user_prompt = f"""\
 Classify each obligation in this regulatory section:
-
+{guidance_block}
 REGULATION: {regulation_name}
 SECTION: {section_citation} — {section_title}
 SUBPART: {subpart} — {topic_title}

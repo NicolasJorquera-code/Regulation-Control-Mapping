@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from regrisk.agents.base import AgentContext, BaseAgent
+from regrisk.agents.source_type_prompts import risk_guidance
 from regrisk.core.scoring import derive_inherent_rating
 
 _SYSTEM_PROMPT_TEMPLATE = """\
@@ -96,9 +97,12 @@ class RiskExtractorAndScorerAgent(BaseAgent):
             frequency_scale=_format_scale(frequency_scale),
         )
 
+        guidance = risk_guidance(obligation.get("source_type", ""))
+        guidance_block = f"\n{guidance}\n" if guidance else ""
+
         user_prompt = f"""\
 The following regulatory obligation has {coverage_status} control coverage:
-
+{guidance_block}
 OBLIGATION: {citation}
 REQUIREMENT: {obligation.get('abstract', '')}
 CRITICALITY: {criticality}

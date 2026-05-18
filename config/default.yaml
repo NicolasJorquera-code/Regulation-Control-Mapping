@@ -90,7 +90,6 @@ risk_id_prefix: "RISK"
 ui:
   visible_tabs:
     - "Upload & Configure"
-    - "Data Source Explorer"
     - "Classification Review"
     - "Mapping Review"
     - "Coverage"

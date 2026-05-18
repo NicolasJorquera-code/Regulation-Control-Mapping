@@ -30,6 +30,13 @@ from regrisk.core.config import (
     load_risk_taxonomy,
 )
 from regrisk.core.events import EventEmitter, EventType, PipelineEvent
+from regrisk.core.review import (
+    annotate_artifact,
+    merge_reasons,
+    review_classification,
+    review_procedure_contradictions,
+    review_source,
+)
 from regrisk.core.transport import build_client_from_env
 from regrisk.graphs.classify_state import ClassifyState
 from regrisk.graphs.graph_infra import GraphInfra
@@ -37,6 +44,11 @@ from regrisk.tracing.decorators import trace_node
 from regrisk.tracing.transport_wrapper import TracingTransportClient
 from regrisk.ingest.apqc_loader import load_apqc_hierarchy
 from regrisk.ingest.control_loader import discover_control_files, load_and_merge_controls
+from regrisk.ingest.policy_parser import (
+    detect_source_inventory,
+    group_policy_obligations,
+    parse_policy_excel,
+)
 from regrisk.ingest.regulation_parser import group_obligations, parse_regulation_excel
 from regrisk.validation.validator import validate_classification
 
@@ -108,10 +120,20 @@ def ingest_node(state: ClassifyState) -> dict[str, Any]:
 
     errors: list[str] = []
 
-    # Parse regulation
+    # Parse source workbook — dispatch by shape (Phase 2 hybrid model).
+    # If the workbook contains a 'Source_Inventory' sheet, treat it as a
+    # Policy / Procedure inventory; otherwise fall back to the legacy
+    # regulation parser. Explicit override via scope_config['source_mode'].
+    scope = state.get("scope_config", {})
+    source_mode = scope.get("source_mode")  # 'regulation' | 'policy' | None
+
     try:
-        regulation_name, obligations = parse_regulation_excel(reg_path)
-        groups = group_obligations(obligations)
+        if source_mode == "policy" or (source_mode is None and detect_source_inventory(reg_path)):
+            regulation_name, obligations = parse_policy_excel(reg_path)
+            groups = group_policy_obligations(obligations)
+        else:
+            regulation_name, obligations = parse_regulation_excel(reg_path)
+            groups = group_obligations(obligations)
         groups_dicts = [g.model_dump() for g in groups]
 
         # Apply scope filtering
@@ -240,13 +262,39 @@ def has_more_classify_groups(state: ClassifyState) -> str:
 
 
 def end_classify_node(state: ClassifyState) -> dict[str, Any]:
-    """Summary statistics and completion event."""
+    """Summary statistics, deterministic review stamping, and completion event."""
     classified = state.get("classified_obligations", [])
     total = state.get("total_obligations", 0)
 
+    # ---- Deterministic review layer (core/review.py) ----
+    # Build a lookup of source obligations by citation so review_source can
+    # consult source_type / source_metadata / parent_source_id / dates etc.
+    sources_by_citation: dict[str, dict[str, Any]] = {}
+    for grp in state.get("obligation_groups", []):
+        for src in grp.get("obligations", []):
+            cit = src.get("citation") or src.get("source_id")
+            if cit:
+                sources_by_citation[cit] = src
+
+    # Cross-cutting procedure-vs-parent-policy contradiction reasons.
+    contradiction_reasons = review_procedure_contradictions(classified, sources_by_citation)
+
+    for c in classified:
+        cit = c.get("citation") or ""
+        src = sources_by_citation.get(cit, c)  # fall back to the classification itself
+        reasons = merge_reasons(
+            review_source(src),
+            review_classification(c),
+            contradiction_reasons.get(cit, []),
+        )
+        annotate_artifact(c, reasons)
+
+    needs_review_count = sum(1 for c in classified if c.get("needs_review"))
+
     _infra.emit_event(
         EventType.PIPELINE_COMPLETED,
-        f"Classification complete: {len(classified)} obligations classified out of {total}",
+        f"Classification complete: {len(classified)} obligations classified out of {total} "
+        f"({needs_review_count} flagged for review)",
     )
 
     return {}

@@ -1,132 +1,212 @@
-# Regulatory Obligation Control Mapper
+# regrisk -- Regulatory Obligation Control Mapper
 
-A LangGraph-based pipeline that maps regulatory obligations from Federal Reserve Regulation YY to APQC business processes, assesses control coverage, extracts compliance risks, and produces exportable reports.
+> Two-graph LangGraph pipeline + Streamlit UI that maps regulatory
+> obligations (or internal policies and procedures) to APQC business
+> processes, assesses control coverage, proposes new controls for gaps,
+> extracts and scores risks, and emits a deterministic human-review queue.
 
-## Overview
+## What problem this solves
 
-This system takes three inputs:
-1. **Regulatory obligations** (693 from 12 CFR 252 — Regulation YY)
-2. **APQC Process Classification Framework** (1,803 process nodes)
-3. **Internal controls** (520+ controls mapped to APQC processes)
+Compliance teams routinely receive a regulation (or revise an internal
+policy) and must answer four questions:
 
-And produces:
-- Classified obligations (Attestation, Documentation, Controls, General Awareness, Not Assigned)
-- Obligation-to-APQC crosswalk (many-to-many mappings)
-- Control coverage assessment (Covered, Partially Covered, Not Covered)
-- Risk register with scored risks (4-point impact × frequency)
-- Gap analysis with full traceability chains
+1. **What does each obligation actually require?** (Attestation, documentation, controls, awareness?)
+2. **Which business processes does it touch?** (APQC PCF mapping)
+3. **Is it covered by an existing control?** (Covered / Partial / Gap)
+4. **What is the residual risk if uncovered?** (Impact x Frequency on a 4-point scale)
+
+regrisk produces all four answers end-to-end and surfaces a "Needs
+Review Queue" of items where a human still needs to look. It runs
+without any API keys in deterministic mode and is intended for compliance
+analysts, control owners, and the AI / data science engineers who
+maintain the pipeline.
 
 ## Architecture
 
-Two LangGraph state machines with human review checkpoints between them:
+Two LangGraph state machines bridged via Streamlit `st.session_state`,
+plus a deterministic post-step that stamps human-review reasons on
+every artifact.
 
-- **Graph 1 (Classify):** Ingest → Classify all obligations by section group
-- **Graph 2 (Assess):** Map to APQC → Assess coverage → Extract & score risks → Finalize
+```mermaid
+flowchart LR
+    classDef ext  fill:#e3f2fd,color:#0d47a1,stroke:#1976d2
+    classDef g1   fill:#f3e5f5,color:#4a148c,stroke:#7b1fa2
+    classDef g2   fill:#e8f5e9,color:#1b5e20,stroke:#388e3c
+    classDef rev  fill:#fff8e1,color:#5d4037,stroke:#f9a825
+    classDef out  fill:#e0f2f1,color:#004d40,stroke:#00897b
 
-Human review between graphs is implemented via Streamlit's `st.session_state`.
+    SRC[Source workbook<br/>Regulation OR Policy/Procedure]:::ext
+    APQC[APQC PCF taxonomy]:::ext
+    CTRL[Control inventory]:::ext
+
+    subgraph G1[Graph 1: Classify]
+        I1[ingest]:::g1
+        C1[classify_group loop]:::g1
+    end
+
+    subgraph G2[Graph 2: Assess]
+        M2[map_group loop]:::g2
+        CV2[assess_coverage loop]:::g2
+        R2[extract_and_score loop]:::g2
+        IM2[propose_improvement loop]:::g2
+        F2[finalize]:::g2
+    end
+
+    REV[core/review.py<br/>14 deterministic rules<br/>NO LLM]:::rev
+
+    SRC --> I1
+    I1 --> C1
+    C1 --> REV
+    REV --> M2
+    APQC --> M2
+    CTRL --> M2
+    M2 --> CV2
+    CV2 --> R2
+    CV2 --> IM2
+    R2 --> F2
+    IM2 --> F2
+    F2 --> REV
+    REV --> OUT[Excel export<br/>+ Streamlit tabs]:::out
+```
+
+The full per-node diagram with every context fragment consulted by each
+agent lives in [docs/architecture.mmd](docs/architecture.mmd).
+
+ADRs for the non-obvious decisions:
+
+- [0001 -- LangGraph orchestration with two graphs](docs/adr/0001-langgraph-orchestration.md)
+- [0002 -- Config-driven agents with deterministic fallback](docs/adr/0002-config-driven-agents.md)
+- [0003 -- SQLite-backed tracing](docs/adr/0003-sqlite-tracing.md)
+- [0004 -- Deterministic review layer as pure library](docs/adr/0004-deterministic-review-layer.md)
+- [0005 -- Checkpoint loading is the demo contract](docs/adr/0005-checkpoint-demo-loading-contract.md)
+
+## Project structure
+
+```
+regrisk/
+├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── pyproject.toml
+├── .env.example
+├── config/
+│   ├── default.yaml         # PipelineConfig: categories, scales, UI tabs
+│   └── risk_taxonomy.json   # owner-managed risk taxonomy
+├── data/                    # demo workbooks + checkpoints (gitignored)
+│   ├── README.md
+│   ├── APQC_Template.xlsx
+│   ├── regulations yy.xlsx
+│   ├── Control Dataset/
+│   ├── checkpoints/         # preloadable demo states
+│   └── traces.db            # local SQLite trace database
+├── docs/
+│   ├── architecture.mmd
+│   ├── cleanup-audit.md
+│   ├── EVALUATION_SYSTEM.md
+│   └── adr/
+├── scripts/                 # one-off + reusable utilities
+│   ├── README.md
+│   ├── fix_risk_dedup.py
+│   ├── patch_checkpoint.py
+│   └── ...
+├── src/regrisk/
+│   ├── agents/              # LLM agents with deterministic fallbacks
+│   ├── core/                # config, models, events, review, scoring, transport
+│   ├── exceptions.py
+│   ├── export/              # Excel writer
+│   ├── graphs/              # classify_graph + assess_graph + state
+│   ├── ingest/              # regulation, policy, APQC, control loaders
+│   ├── tracing/             # SQLite TraceDB + decorators + transport wrapper
+│   ├── ui/                  # Streamlit tabs
+│   └── validation/
+└── tests/
+```
 
 ## Setup
 
+Requires Python 3.11+.
+
 ```bash
-# Install in development mode
+python -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Run tests (no API keys needed — deterministic mode)
-python -m pytest tests/ -v
+# Optional: copy .env.example -> .env and fill in API keys.
+# Without keys, the pipeline runs in deterministic mode.
+cp .env.example .env
+```
 
-# Launch the Streamlit UI
+## Run
+
+```bash
 python -m streamlit run src/regrisk/ui/app.py
 ```
 
-## LLM Configuration
+The app opens at `http://localhost:8501`. Tabs visible by default are
+controlled by `config.ui.visible_tabs` in [config/default.yaml](config/default.yaml).
 
-Set environment variables for LLM-powered mode:
+### Demo dropdown
+
+`Tab 1 -- Upload & Configure` includes a **"Resume from checkpoint"**
+expander that lists every JSON file under `data/checkpoints/`. Selecting
+one and clicking **Load** populates `st.session_state` with the full
+pipeline output and renders every downstream tab without re-running the
+agents. This is the canonical demo path -- nothing is auto-loaded at
+startup. See [ADR 0005](docs/adr/0005-checkpoint-demo-loading-contract.md)
+for the contract.
+
+### Tests
 
 ```bash
-# Option 1: IBM Cloud AI (ICA)
-export ICA_API_KEY="your-key"
-export ICA_BASE_URL="https://your-ica-endpoint"
-export ICA_MODEL_ID="your-model"
-
-# Option 2: OpenAI
-export OPENAI_API_KEY="your-key"
+python -m pytest tests/ -q
+# -> 136 passed in ~3s, no API keys required
 ```
 
-Without any LLM keys, the pipeline runs in **deterministic mode** using keyword-based fallbacks.
+## Demo walkthrough
 
-## Data Files
+Loading the most recent `Full_Assessment_*.json` (or any
+`Improved_Patched_*.json`) checkpoint demonstrates, tab by tab:
 
-Place input files in the `data/` directory:
+1. **Upload & Configure** -- shows the source workbook, APQC taxonomy, and control inventory that produced the checkpoint, plus the scope filter that was applied.
+2. **Classification Review** -- every obligation classified into category (Attestation / Documentation / Controls / General Awareness / Not Assigned), relationship type, and criticality tier. Rows flagged `needs_review` highlight in the table.
+3. **Mapping Review** -- each obligation mapped to up to 5 APQC processes with confidence. Excessive-fanout flags surface here.
+4. **Coverage** -- per-obligation coverage decision (Covered / Partial / Gap) joined with the candidate control. Partial coverage and pending-control-generation rows are flagged for review.
+5. **Risk Register** -- 1-3 scored risks per gap with Impact x Frequency. Critical residual risks (Critical rating on uncovered obligations) are flagged.
+6. **Traceability** -- per-obligation lineage from citation through APQC node, control, coverage decision, and risks.
+7. **Evaluation** -- run history, per-run cost + quality, LLM call detail. Populated only by live pipeline runs; preloaded checkpoints do not carry traces (by design -- see [ADR 0003](docs/adr/0003-sqlite-tracing.md)).
 
-| File | Description |
+## Extending regrisk
+
+To add a new agent, follow the four-step pattern documented in
+[CONTRIBUTING.md](CONTRIBUTING.md):
+
+1. Subclass `BaseAgent` in `src/regrisk/agents/<your_agent>.py` with both an LLM path and a deterministic fallback.
+2. Register the class in the relevant graph's `_AGENT_CLASSES` dict.
+3. Add a graph node function that uses `_infra.get_agent(...)` and emits `EventType` events.
+4. Wire conditional edges and update state TypedDict if needed.
+
+See [ADR 0002](docs/adr/0002-config-driven-agents.md) for the rationale.
+
+## Configuration
+
+| Source | Purpose |
 |---|---|
-| `data/regulations yy.xlsx` | Promontory-format Regulation YY obligations |
-| `data/APQC_Template.xlsx` | APQC Process Classification Framework |
-| `data/Control Dataset/section_*__controls.xlsx` | Control inventory by APQC section |
+| Environment variables (`.env`) | LLM credentials only. See `.env.example`. |
+| [config/default.yaml](config/default.yaml) | Domain knowledge: taxonomies, scoring scales, thresholds, UI tab visibility. Loaded into `PipelineConfig` (Pydantic). |
+| [config/risk_taxonomy.json](config/risk_taxonomy.json) | Owner-managed risk taxonomy threaded into agents. |
 
-## Project Structure
+## Known limitations
 
-```
-src/regrisk/
-├── agents/              # LLM agents with deterministic fallbacks
-│   ├── base.py          # BaseAgent ABC, AgentContext, registry
-│   ├── obligation_classifier.py
-│   ├── apqc_mapper.py
-│   ├── coverage_assessor.py
-│   └── risk_extractor_scorer.py
-├── core/                # Config, models, events, constants, transport
-│   ├── config.py        # PipelineConfig from YAML
-│   ├── constants.py     # Canonical string constants (categories, statuses, etc.)
-│   ├── events.py        # EventEmitter with domain events
-│   ├── models.py        # Frozen Pydantic domain models
-│   ├── scoring.py       # Pure business-logic scoring (impact × frequency)
-│   └── transport.py     # AsyncTransportClient (OpenAI-compatible)
-├── export/              # Excel export utilities
-│   ├── excel_export.py
-│   └── formatting.py    # Shared display column name formatting
-├── graphs/              # LangGraph state machines
-│   ├── classify_graph.py   # Graph 1: Ingest + Classify
-│   ├── assess_graph.py     # Graph 2: Map + Assess + Score
-│   ├── classify_state.py   # ClassifyState TypedDict
-│   ├── assess_state.py     # AssessState TypedDict
-│   └── graph_infra.py      # Shared graph infrastructure (caches, emitter)
-├── ingest/              # Deterministic data loaders
-│   ├── regulation_parser.py
-│   ├── apqc_loader.py
-│   ├── control_loader.py
-│   └── utils.py         # Shared ingest utilities (clean_str)
-├── tracing/             # SQLite-backed execution tracing
-│   ├── db.py            # TraceDB — run/event/node/LLM-call storage
-│   ├── decorators.py    # @trace_node decorator
-│   ├── listener.py      # SQLiteTraceListener (EventEmitter → DB)
-│   └── transport_wrapper.py  # TracingTransportClient (wraps LLM calls)
-├── ui/                  # Streamlit 5-tab application
-│   ├── app.py           # Entry point — page config, tabs, status bar
-│   ├── components.py    # Shared UI helpers (HTML table, checkpoints, etc.)
-│   ├── upload_tab.py    # Tab 1: Upload & Configure
-│   ├── review_tabs.py   # Tabs 2 & 3: Classification & Mapping Review
-│   ├── results_tab.py   # Tab 4: Coverage, risk heatmap, gap analysis
-│   ├── traceability_tab.py  # Tab 5: Execution traces & data lineage
-│   ├── checkpoint.py    # Checkpoint save/load/list
-│   └── session_keys.py  # Session state key catalog
-└── validation/          # Deterministic validators
-    └── validator.py
-```
+- The auto-load-on-startup helper `_load_demo_data()` exists in `ui/upload_tab.py` but is intentionally unwired -- users must click through the checkpoint dropdown to load demo data.
+- Evaluation tab metrics require a **live** pipeline run; loading a preloaded checkpoint does not retroactively populate `data/traces.db`.
+- No CI / pre-commit hooks (deliberately out of scope of the cleanup pass).
+- Pinning in `pyproject.toml` is loose; production deployments should generate a lockfile.
 
-## Testing
+## License
 
-All tests run without API keys or network access:
+No license is currently declared. Decide before publishing.
 
-```bash
-python -m pytest tests/ -v
-```
+---
 
-## Key Patterns
-
-1. **Module-level caches** — LLM clients and agents built once, reused across nodes
-2. **Annotated[list, operator.add] reducers** — accumulate results across loop iterations
-3. **Deterministic fallbacks** — every agent works without LLM (keyword-based)
-4. **Event emission** — every node emits typed events for UI progress
-5. **Frozen Pydantic models** — immutable pipeline artifacts
-6. **Config-driven behavior** — all thresholds from YAML config
-7. **Conditional edge functions** — return node name strings for explicit routing
+For the full audit + architecture discovery that produced this cleanup
+pass, see [docs/cleanup-audit.md](docs/cleanup-audit.md).
